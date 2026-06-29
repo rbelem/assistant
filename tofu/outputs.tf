@@ -84,3 +84,27 @@ output "ovh_subsidiary" {
   description = "OVH subsidiary used for billing"
   value       = data.ovh_me.account.ovh_subsidiary
 }
+
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Lambda Cloud (OCR)
+***REMOVED*** -----------------------------------------------------------------------------
+
+output "ocr_instance_ip" {
+  description = "Public IP of the Lambda OCR GPU instance"
+  value       = var.ocr_enabled ? try(data.lambda_instance.ocr_running[0].ip, "") : ""
+}
+
+output "ocr_instance_status" {
+  description = "Status of the OCR GPU instance"
+  value       = var.ocr_enabled ? try(data.lambda_instance.ocr_running[0].status, "") : ""
+}
+
+output "ocr_instance_type" {
+  description = "GPU instance type for OCR"
+  value       = var.ocr_instance_type
+}
+
+output "ocr_api_endpoint" {
+  description = "OpenAI-compatible API endpoint for the OCR model"
+  value       = var.ocr_enabled ? "http://${try(data.lambda_instance.ocr_running[0].ip, "")}:10000/v1" : ""
+}

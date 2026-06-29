@@ -38,3 +38,6 @@ Database for n8n and Zitadel (shared Bitnami Helm chart, separate databases). 5G
 
 ***REMOVED******REMOVED*** Helmfile
 Declarative Helm release manager. Manages Bitnami PostgreSQL, n8n, and Zitadel Helm releases. Config in `k8s/helmfile.yaml` with values in `k8s/helm/`. Used alongside raw `kubectl apply` for non-Helm manifests (Hermes, Headroom, Uptime Kuma in `k8s/manifests/`).
+
+***REMOVED******REMOVED*** OCR
+Text extraction from images/PDFs using Baidu Unlimited-OCR model deployed on Lambda Cloud GPU instances (`gpu_1x_a10` or `gpu_1x_l40s`). On-demand lifecycle: Tofu provisions the instance, `scripts/ocr.sh` manages the full flow (launch → deploy model → OCR → return text → terminate). Hermes can invoke via the `ocr` skill. OpenAI-compatible API via vLLM Docker image `vllm/vllm-openai:unlimited-ocr`. Requires `LAMBDA_CLOUD_API_KEY`.

@@ -73,6 +73,33 @@ The `secrets.yml` playbook reads from Bitwarden vault `rodrigo-agent` and writes
 - Manual backup: `ssh root@agent.REDACTED-DOMAIN 'systemctl start restic-backups-daily'`
 - Destroy: `./scripts/deploy.sh destroy` (backup first!)
 
+***REMOVED******REMOVED*** OCR (Baidu Unlimited-OCR on Lambda Cloud)
+
+On-demand GPU OCR for images and PDFs. Managed via OpenTofu in `tofu/lambda.tf`.
+
+***REMOVED******REMOVED******REMOVED*** CLI
+
+```bash
+./scripts/ocr.sh image.png          ***REMOVED*** OCR a single image
+./scripts/ocr.sh document.pdf       ***REMOVED*** OCR a PDF (all pages)
+./scripts/ocr.sh --status            ***REMOVED*** check if instance is alive
+./scripts/ocr.sh --kill              ***REMOVED*** terminate GPU instance
+```
+
+First call auto-launches the GPU instance (~2 min). Subsequent calls reuse a warm
+instance. Instance auto-terminates after 5 min idle (`--keep` to hold).
+
+***REMOVED******REMOVED******REMOVED*** Hermes integration
+
+Hermes has an `ocr` skill (`skills/ocr.md`). Send a file attachment on Discord
+and say "extract text from this" — Hermes invokes the skill automatically.
+
+***REMOVED******REMOVED******REMOVED*** Requirements
+
+- `LAMBDA_CLOUD_API_KEY` env var
+- SSH key in Lambda Cloud (managed via Tofu `tofu/lambda.tf`)
+- GPU instance types: `gpu_1x_a10` (24GB, ~$0.60/hr) or `gpu_1x_l40s` (48GB, ~$0.90/hr)
+
 ***REMOVED******REMOVED*** Gotchas
 
 - **OVH VPS resource** uses `plan = []` list syntax with `configuration` sub-blocks for datacenter + OS. Not block syntax. IPs are retrieved via `data.ovh_vps` data source, not from the resource directly.
@@ -82,3 +109,4 @@ The `secrets.yml` playbook reads from Bitwarden vault `rodrigo-agent` and writes
 - **NixOS locale** uses `en_GB.UTF-8` default with `pt_BR.UTF-8` overrides for regional fields. This matches the user's nix-config convention.
 - **Headroom runs in two places**: local machine (wraps opencode via `headroom wrap opencode`) and VPS (k3s deployment that Hermes routes through).
 - **DNS propagation** on OVH is slow (hours). Use the raw IP for initial deploy.
+- **Lambda GPU instance is NOT always running** — it's managed as an on-demand resource. Set `ocr_enabled = true` in Tofu before `apply`, or use `scripts/ocr.sh` which handles the lifecycle automatically.

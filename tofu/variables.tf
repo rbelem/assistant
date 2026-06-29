@@ -104,3 +104,38 @@ variable "storage_region" {
   type        = string
   default     = "gra"
 }
+
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Lambda Cloud (OCR GPU Instance)
+***REMOVED*** -----------------------------------------------------------------------------
+
+variable "ocr_enabled" {
+  description = "Enable the OCR GPU instance in Tofu (set to true when OCR is needed)"
+  type        = bool
+  default     = false
+}
+
+variable "ocr_instance_name" {
+  description = "Name for the Lambda GPU instance running Unlimited-OCR"
+  type        = string
+  default     = "unlimited-ocr"
+}
+
+variable "ocr_instance_type" {
+  description = "Lambda GPU instance type (gpu_1x_a10=24GB, gpu_1x_l40s=48GB, gpu_1x_a100_sxm4=40GB)"
+  type        = string
+  default     = "gpu_1x_a10"
+}
+
+variable "ocr_region" {
+  description = "Lambda region to launch the OCR instance"
+  type        = string
+  default     = "us-west-2"
+}
+
+variable "lambda_ssh_public_key" {
+  description = "SSH public key to register with Lambda Cloud for OCR instance access"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
