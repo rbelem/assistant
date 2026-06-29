@@ -1,0 +1,114 @@
+---
+- name: Update VPS services
+  hosts: rodrigo-agent
+  become: yes
+  gather_facts: no
+
+  vars:
+    namespaces_to_update:
+      - name: hermes
+        deployment: hermes
+        image_pull_policy: Always
+      - name: headroom
+        deployment: headroom
+        image_pull_policy: Always
+
+  tasks:
+    - name: Verify k3s is running
+      ansible.builtin.command: systemctl is-active k3s
+      register: k3s_status
+      changed_when: false
+      failed_when: k3s_status.rc != 0
+
+    ***REMOVED*** ── Pre-update backup ─────────────────────────────────────────
+    - name: Run pre-update restic backup
+      ansible.builtin.shell: |
+        set -o allexport
+        source /etc/restic/env
+        restic backup /opt/k8s /root/.kube /etc/rancher 2>&1 || echo "BACKUP_WARN: restic not configured or failed"
+      register: pre_backup
+      changed_when: false
+      failed_when: false
+
+    - name: Show pre-update backup status
+      ansible.builtin.debug:
+        msg: "{{ pre_backup.stdout_lines[-5:] | default(['skipped']) }}"
+
+    ***REMOVED*** ── Pull latest images and restart ────────────────────────────
+    - name: Restart deployments to pull latest images
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: "{{ item.deployment }}"
+            namespace: "{{ item.name }}"
+          spec:
+            template:
+              metadata:
+                annotations:
+                  kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+      loop: "{{ namespaces_to_update }}"
+      loop_control:
+        label: "{{ item.name }}/{{ item.deployment }}"
+
+    ***REMOVED*** ── Wait for rollouts ─────────────────────────────────────────
+    - name: Wait for Hermes rollout
+      ansible.builtin.command: >
+        kubectl rollout status deployment/hermes
+        -n hermes
+        --timeout=180s
+      register: hermes_rollout
+      changed_when: false
+      failed_when: false
+
+    - name: Wait for Headroom rollout
+      ansible.builtin.command: >
+        kubectl rollout status deployment/headroom
+        -n headroom
+        --timeout=180s
+      register: headroom_rollout
+      changed_when: false
+      failed_when: false
+
+    ***REMOVED*** ── Post-update backup ────────────────────────────────────────
+    - name: Run post-update restic backup
+      ansible.builtin.shell: |
+        set -o allexport
+        source /etc/restic/env
+        restic backup /opt/k8s /root/.kube /etc/rancher 2>&1 || echo "BACKUP_WARN: restic not configured or failed"
+      register: post_backup
+      changed_when: false
+      failed_when: false
+
+    ***REMOVED*** ── Report status ─────────────────────────────────────────────
+    - name: Get pod status
+      ansible.builtin.command: >
+        kubectl get pods -n hermes -n headroom -o wide
+      register: pod_status
+      changed_when: false
+
+    - name: Get recent events
+      ansible.builtin.command: >
+        kubectl get events -A --sort-by='.lastTimestamp' -n hermes -n headroom
+      register: recent_events
+      changed_when: false
+      failed_when: false
+
+    - name: Print update summary
+      ansible.builtin.debug:
+        msg: |
+          ═══════════════════════════════════════════
+          Update Complete
+          ═══════════════════════════════════════════
+
+          Rollout status:
+            hermes:    {{ 'OK' if hermes_rollout.rc == 0 else 'ISSUES' }}
+            headroom:  {{ 'OK' if headroom_rollout.rc == 0 else 'ISSUES' }}
+
+          Pod status:
+          {{ pod_status.stdout }}
+
+          Recent events:
+          {{ recent_events.stdout_lines[-10:] | default(['none']) | join('\n') }}

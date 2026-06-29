@@ -1,0 +1,216 @@
+---
+- name: Bootstrap VPS for k3s + Hermes Agent
+  hosts: rodrigo-agent
+  become: yes
+  gather_facts: no
+
+  vars:
+    bootstrap_marker: /var/local/.bootstrapped
+    k3s_version: "v1.31.4+k3s1"
+    helm_version: "v3.16.3"
+
+  tasks:
+    - name: Wait for SSH to be available
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Check if already bootstrapped
+      ansible.builtin.stat:
+        path: "{{ bootstrap_marker }}"
+      register: bootstrap_stat
+
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: "{{ vps_hostname }}"
+      when: not bootstrap_stat.stat.exists
+
+    - name: Update /etc/hosts with hostname
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "^127\\.0\\.1\\.1"
+        line: "127.0.1.1 {{ vps_hostname }}"
+        state: present
+      when: not bootstrap_stat.stat.exists
+
+    - name: Install base packages (apt-based)
+      ansible.builtin.apt:
+        name:
+          - curl
+          - ca-certificates
+          - gnupg
+          - python3
+          - python3-pip
+          - apt-transport-https
+          - jq
+          - unzip
+        state: present
+        update_cache: yes
+      when:
+        - not bootstrap_stat.stat.exists
+        - ansible_os_family == "Debian"
+
+    - name: Check if NixOS is already running
+      ansible.builtin.command: nixos-version
+      register: nixos_check
+      changed_when: false
+      failed_when: false
+
+    - name: Set NixOS fact
+      ansible.builtin.set_fact:
+        is_nixos: "{{ nixos_check.rc == 0 }}"
+
+    - name: Note NixOS detected (k3s managed by NixOS module)
+      ansible.builtin.debug:
+        msg: >
+          NixOS detected ({{ nixos_check.stdout }}).
+          k3s and system packages are managed declaratively via NixOS config.
+          Skipping package installation.
+      when: is_nixos
+
+    - name: Install k3s via install script (non-NixOS only)
+      ansible.builtin.shell:
+        cmd: |
+          curl -sfL https://get.k3s.io | \
+            INSTALL_K3S_VERSION="{{ k3s_version }}" \
+            INSTALL_K3S_EXEC="--disable=traefik --write-kubeconfig-mode=644" \
+            sh -
+        creates: /usr/local/bin/k3s
+      when:
+        - not is_nixos
+        - not bootstrap_stat.stat.exists
+
+    - name: Ensure k3s service is running (non-NixOS)
+      ansible.builtin.systemd:
+        name: k3s
+        state: started
+        enabled: yes
+      when: not is_nixos
+
+    - name: Install kubectl (non-NixOS)
+      ansible.builtin.shell:
+        cmd: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+          rm -f kubectl
+        creates: /usr/local/bin/kubectl
+      when:
+        - not is_nixos
+        - not bootstrap_stat.stat.exists
+
+    - name: Install Helm (non-NixOS)
+      ansible.builtin.shell:
+        cmd: |
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | \
+            HELM_VERSION="{{ helm_version }}" bash
+        creates: /usr/local/bin/helm
+      when:
+        - not is_nixos
+        - not bootstrap_stat.stat.exists
+
+    - name: Create kubeconfig directory for root
+      ansible.builtin.file:
+        path: /root/.kube
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+
+    - name: Copy k3s kubeconfig for root user
+      ansible.builtin.copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /root/.kube/config
+        remote_src: yes
+        owner: root
+        group: root
+        mode: "0600"
+        backup: yes
+      when: not is_nixos
+
+    - name: Symlink NixOS kubeconfig for root user
+      ansible.builtin.file:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /root/.kube/config
+        state: link
+        owner: root
+        group: root
+        mode: "0600"
+        force: yes
+      when: is_nixos
+
+    - name: Replace localhost in kubeconfig with actual IP
+      ansible.builtin.replace:
+        path: /root/.kube/config
+        regexp: "127\\.0\\.0\\.1"
+        replace: "{{ ansible_default_ipv4.address | default('127.0.0.1') }}"
+
+    - name: Verify kubectl works
+      ansible.builtin.command: kubectl get nodes
+      register: kubectl_test
+      changed_when: false
+      failed_when: false
+
+    - name: Install Bitwarden CLI via npm
+      ansible.builtin.shell:
+        cmd: npm install -g @bitwarden/cli
+        creates: /usr/local/bin/bw
+      when:
+        - not is_nixos
+        - not bootstrap_stat.stat.exists
+
+    - name: Check if bw CLI is available
+      ansible.builtin.command: which bw
+      register: bw_check
+      changed_when: false
+      failed_when: false
+
+    - name: Create Bitwarden session helper script
+      ansible.builtin.copy:
+        dest: /root/.bw_session.sh
+        owner: root
+        group: root
+        mode: "0700"
+        content: |
+          ***REMOVED***!/usr/bin/env bash
+          ***REMOVED*** Source this file to set BW_SESSION for the current shell
+          ***REMOVED*** Usage: source /root/.bw_session.sh
+          set -euo pipefail
+
+          if [ -f /root/.bw_session_token ]; then
+            export BW_SESSION="$(cat /root/.bw_session_token)"
+            ***REMOVED*** Validate session is still active
+            if ! bw status --session "$BW_SESSION" 2>/dev/null | grep -q '"status":"unlocked"'; then
+              echo "Session expired. Please login and unlock:"
+              echo "  bw login"
+              echo "  bw unlock --raw > /root/.bw_session_token"
+              unset BW_SESSION
+              rm -f /root/.bw_session_token
+              return 1 2>/dev/null || exit 1
+            fi
+          else
+            echo "No session token found. Please login and unlock:"
+            echo "  bw login"
+            echo "  bw unlock --raw > /root/.bw_session_token"
+            return 1 2>/dev/null || exit 1
+          fi
+          echo "Bitwarden session active."
+
+    - name: Create bootstrap marker
+      ansible.builtin.file:
+        path: "{{ bootstrap_marker }}"
+        state: touch
+        modification_time: preserve
+        access_time: preserve
+      when: not bootstrap_stat.stat.exists
+
+    - name: Print bootstrap summary
+      ansible.builtin.debug:
+        msg: |
+          Bootstrap complete!
+          - Hostname: {{ vps_hostname }}
+          - OS: {{ 'NixOS' if is_nixos else ansible_distribution }}
+          - k3s: {{ 'managed by NixOS' if is_nixos else 'installed via script' }}
+          - kubectl test: {{ 'OK' if kubectl_test.rc == 0 else 'FAILED' }}
+          - bw CLI: {{ 'found' if bw_check.rc == 0 else 'NOT FOUND — install manually' }}

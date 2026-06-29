@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hermes-data-pvc
+  namespace: hermes
+  labels:
+    app: hermes-agent
+spec:
+  accessModes:
+    - ReadWriteOnce
+  ***REMOVED*** k3s default storage class — provisions local-path volumes
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi

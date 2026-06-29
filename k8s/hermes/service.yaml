@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hermes-service
+  namespace: hermes
+  labels:
+    app: hermes-agent
+spec:
+  ***REMOVED*** NodePort so host-level Caddy can proxy without k8s DNS resolution
+  type: NodePort
+  selector:
+    app: hermes-agent
+  ports:
+    - name: api
+      port: 8080
+      targetPort: api
+      nodePort: 30080
+      protocol: TCP
+    - name: health
+      port: 9090
+      targetPort: health
+      nodePort: 30090
+      protocol: TCP

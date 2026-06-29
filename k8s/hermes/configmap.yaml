@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-config
+  namespace: hermes
+  labels:
+    app: hermes-agent
+data:
+  ***REMOVED*** Hermes Agent configuration template
+  ***REMOVED*** Actual secrets (API keys, tokens) come from hermes-secrets Secret via envFrom
+  config.yaml: |
+    ***REMOVED*** ──────────────────────────────────────────────
+    ***REMOVED*** Agent settings
+    ***REMOVED*** ──────────────────────────────────────────────
+    agent:
+      ***REMOVED*** Model is selected via HERMES_LLM_PROVIDER + HERMES_OPENROUTER_MODEL env vars
+      ***REMOVED*** Override here if you want a static default
+      model: "anthropic/claude-sonnet-4"
+      temperature: 0.7
+      max_tokens: 4096
+      ***REMOVED*** System prompt can be customized
+      system_prompt: "You are Hermes, a helpful personal AI agent."
+
+    ***REMOVED*** ──────────────────────────────────────────────
+    ***REMOVED*** Platform gateways (enable/disable as needed)
+    ***REMOVED*** Uncomment and configure the platforms you want
+    ***REMOVED*** ──────────────────────────────────────────────
+    platforms:
+      ***REMOVED*** telegram:
+      ***REMOVED***   enabled: true
+      ***REMOVED***   ***REMOVED*** Token comes from HERMES_TELEREDACTED-REGIONM_TOKEN env var (in secret)
+      ***REMOVED***   ***REMOVED*** webhook_url: https://your-domain.com/webhook/telegram
+
+      ***REMOVED*** discord:
+      ***REMOVED***   enabled: false
+      ***REMOVED***   ***REMOVED*** Token comes from HERMES_DISCORD_TOKEN env var (in secret)
+
+      ***REMOVED*** signal:
+      ***REMOVED***   enabled: false
+      ***REMOVED***   ***REMOVED*** signal_cli_path: /usr/bin/signal-cli
+
+      ***REMOVED*** whatsapp:
+      ***REMOVED***   enabled: false
+      ***REMOVED***   ***REMOVED*** Uses whatsapp-web.js or similar bridge
+
+      ***REMOVED*** API gateway is always available on port 8080
+      api:
+        enabled: true
+        host: "0.0.0.0"
+        port: 8080
+
+    ***REMOVED*** ──────────────────────────────────────────────
+    ***REMOVED*** Skills
+    ***REMOVED*** ──────────────────────────────────────────────
+    skills:
+      enabled:
+        - web_search
+        - file_operations
+        - shell_commands
+        - memory_recall
+        - scheduling
+        ***REMOVED*** - code_interpreter
+        ***REMOVED*** - image_generation
+
+    ***REMOVED*** ──────────────────────────────────────────────
+    ***REMOVED*** Scheduler (cron-style jobs)
+    ***REMOVED*** ──────────────────────────────────────────────
+    scheduler:
+      enabled: true
+      jobs:
+        ***REMOVED*** Example: daily summary at 9am
+        ***REMOVED*** - name: daily_summary
+        ***REMOVED***   cron: "0 9 * * *"
+        ***REMOVED***   action: "summarize_recent_activity"
+
+        ***REMOVED*** Example: memory cleanup weekly
+        ***REMOVED*** - name: memory_cleanup
+        ***REMOVED***   cron: "0 3 * * 0"
+        ***REMOVED***   action: "cleanup_old_memories"
+
+    ***REMOVED*** ──────────────────────────────────────────────
+    ***REMOVED*** Memory backend
+    ***REMOVED*** ──────────────────────────────────────────────
+    memory:
+      ***REMOVED*** Default: local file-based memory at HERMES_MEMORY_DIR
+      ***REMOVED*** For PostgreSQL backend, uncomment and set connection string in secret
+      ***REMOVED*** backend: postgresql
+      ***REMOVED*** connection_string comes from HERMES_MEMORY_DB_URL env var (in secret)
+      backend: local
+      max_memories: 10000
+      ***REMOVED*** PostgreSQL optional — set HERMES_MEMORY_DB_URL in hermes-secrets to enable
+      ***REMOVED*** postgresql:
+      ***REMOVED***   host: postgres.infra.svc.cluster.local
+      ***REMOVED***   port: 5432
+      ***REMOVED***   database: hermes_memory
+      ***REMOVED***   ***REMOVED*** user/password from secret

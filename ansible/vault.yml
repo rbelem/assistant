@@ -1,0 +1,90 @@
+***REMOVED*** Bitwarden Vault Structure for rodrigo-agent
+***REMOVED***
+***REMOVED*** Create these items in your Bitwarden vault before running secrets.yml
+***REMOVED***
+***REMOVED*** Vault: "rodrigo-agent" (or use default vault — the playbook searches by item name)
+
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** 1. OpenRouter API Key
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** Type: Login
+***REMOVED*** Name: "OpenRouter API Key"
+***REMOVED*** Field: password → <your openrouter API key>
+***REMOVED*** Notes: Get from https://openrouter.ai/keys
+
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** 2. Hermes Telegram Token
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** Type: Login
+***REMOVED*** Name: "Hermes Telegram Token"
+***REMOVED*** Field: password → <bot token from @BotFather>
+***REMOVED*** Notes: Format: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** 3. Hermes Discord Token
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** Type: Login
+***REMOVED*** Name: "Hermes Discord Token"
+***REMOVED*** Field: password → <discord bot token>
+***REMOVED*** Notes: From Discord Developer Portal → Bot → Token
+
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** 4. Hermes WhatsApp
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** Type: Login
+***REMOVED*** Name: "Hermes WhatsApp"
+***REMOVED*** Custom fields:
+***REMOVED***   - phone_id: <WhatsApp Business phone number ID>
+***REMOVED***   - access_token: <WhatsApp Business API access token>
+***REMOVED*** Notes: From Meta Business Suite → WhatsApp → API Setup
+
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** 5. Hermes Signal
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** Type: Login
+***REMOVED*** Name: "Hermes Signal"
+***REMOVED*** Custom fields:
+***REMOVED***   - phone_number: <Signal phone number with country code>
+***REMOVED*** Notes: Requires signal-cli setup
+
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** 6. Headroom API Key
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** Type: Login
+***REMOVED*** Name: "Headroom API Key"
+***REMOVED*** Field: password → <headroom API key>
+
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** 7. Tailscale Auth Key
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** Type: Login
+***REMOVED*** Name: "Tailscale Auth Key"
+***REMOVED*** Field: password → <tailscale auth key>
+***REMOVED*** Notes: From https://login.tailscale.com/admin/settings/keys
+***REMOVED***         Generate as reusable or one-time depending on preference
+
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** 8. Caddy Admin Password
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** Type: Login
+***REMOVED*** Name: "Caddy Admin Password"
+***REMOVED*** Field: password → <caddy admin password>
+***REMOVED*** Notes: Used for Caddy API admin endpoint
+
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** 9. Restic Backup Password
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** Type: Login
+***REMOVED*** Name: "Restic Backup Password"
+***REMOVED*** Field: password → <restic repository password>
+***REMOVED*** Notes: Encryption key for restic backup repository
+
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** 10. OVH Object Storage
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** Type: Login
+***REMOVED*** Name: "OVH Object Storage"
+***REMOVED*** Custom fields:
+***REMOVED***   - access_key: <OVH S3 access key>
+***REMOVED***   - secret_key: <OVH S3 secret key>
+***REMOVED*** Notes: From OVHcloud Control Panel → Object Storage → S3 Credentials

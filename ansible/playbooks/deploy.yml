@@ -1,0 +1,187 @@
+---
+- name: Deploy services to k3s
+  hosts: rodrigo-agent
+  become: yes
+  gather_facts: no
+
+  vars:
+    k8s_manifests_base: /opt/k8s
+    deploy_marker: /var/local/.services_deployed
+
+  tasks:
+    - name: Ensure k3s is running
+      ansible.builtin.command: systemctl is-active k3s
+      register: k3s_status
+      changed_when: false
+      failed_when: k3s_status.rc != 0
+
+    - name: Ensure kubectl context is set
+      ansible.builtin.command: kubectl config current-context
+      register: kubectl_context
+      changed_when: false
+
+    - name: Verify cluster is reachable
+      ansible.builtin.command: kubectl cluster-info
+      register: cluster_info
+      changed_when: false
+
+    ***REMOVED*** ── Create namespaces ─────────────────────────────────────────
+    - name: Ensure k8s namespaces exist
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ item }}"
+      loop:
+        - hermes
+        - headroom
+        - monitoring
+        - infra
+
+    ***REMOVED*** ── Ensure manifest directories exist ─────────────────────────
+    - name: Ensure manifest directories exist
+      ansible.builtin.file:
+        path: "{{ k8s_manifests_base }}/{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - hermes
+        - headroom
+        - monitoring
+
+    ***REMOVED*** ── Deploy Hermes Agent ───────────────────────────────────────
+    - name: Check for Hermes manifests
+      ansible.builtin.find:
+        paths: "{{ k8s_manifests_base }}/hermes"
+        patterns: "*.yml,*.yaml"
+      register: hermes_manifests
+
+    - name: Deploy Hermes Agent
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ item.path }}"
+      loop: "{{ hermes_manifests.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+      when: hermes_manifests.files | length > 0
+
+    - name: Skip Hermes if no manifests found
+      ansible.builtin.debug:
+        msg: "No manifests found in {{ k8s_manifests_base }}/hermes — skipping"
+      when: hermes_manifests.files | length == 0
+
+    ***REMOVED*** ── Deploy Headroom ───────────────────────────────────────────
+    - name: Check for Headroom manifests
+      ansible.builtin.find:
+        paths: "{{ k8s_manifests_base }}/headroom"
+        patterns: "*.yml,*.yaml"
+      register: headroom_manifests
+
+    - name: Deploy Headroom
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ item.path }}"
+      loop: "{{ headroom_manifests.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+      when: headroom_manifests.files | length > 0
+
+    - name: Skip Headroom if no manifests found
+      ansible.builtin.debug:
+        msg: "No manifests found in {{ k8s_manifests_base }}/headroom — skipping"
+      when: headroom_manifests.files | length == 0
+
+    ***REMOVED*** ── Deploy Uptime Kuma ────────────────────────────────────────
+    - name: Check for monitoring manifests
+      ansible.builtin.find:
+        paths: "{{ k8s_manifests_base }}/monitoring"
+        patterns: "*.yml,*.yaml"
+      register: monitoring_manifests
+
+    - name: Deploy Uptime Kuma
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ item.path }}"
+      loop: "{{ monitoring_manifests.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+      when: monitoring_manifests.files | length > 0
+
+    - name: Skip monitoring if no manifests found
+      ansible.builtin.debug:
+        msg: "No manifests found in {{ k8s_manifests_base }}/monitoring — skipping"
+      when: monitoring_manifests.files | length == 0
+
+    ***REMOVED*** ── Wait for pods ─────────────────────────────────────────────
+    - name: Wait for Hermes pods to be ready
+      ansible.builtin.command: >
+        kubectl wait --for=condition=ready pod
+        -l app=hermes
+        -n hermes
+        --timeout=120s
+      register: hermes_ready
+      changed_when: false
+      failed_when: false
+      when: hermes_manifests.files | length > 0
+
+    - name: Wait for Headroom pods to be ready
+      ansible.builtin.command: >
+        kubectl wait --for=condition=ready pod
+        -l app=headroom
+        -n headroom
+        --timeout=120s
+      register: headroom_ready
+      changed_when: false
+      failed_when: false
+      when: headroom_manifests.files | length > 0
+
+    - name: Wait for Uptime Kuma pods to be ready
+      ansible.builtin.command: >
+        kubectl wait --for=condition=ready pod
+        -l app=uptime-kuma
+        -n monitoring
+        --timeout=120s
+      register: uptime_ready
+      changed_when: false
+      failed_when: false
+      when: monitoring_manifests.files | length > 0
+
+    ***REMOVED*** ── Print status ──────────────────────────────────────────────
+    - name: Get all pods across namespaces
+      ansible.builtin.command: >
+        kubectl get pods -A -o wide
+      register: all_pods
+      changed_when: false
+
+    - name: Get all services
+      ansible.builtin.command: >
+        kubectl get svc -A
+      register: all_services
+      changed_when: false
+
+    - name: Get all ingress routes
+      ansible.builtin.command: >
+        kubectl get ingress -A
+      register: all_ingress
+      changed_when: false
+      failed_when: false
+
+    - name: Print deployment summary
+      ansible.builtin.debug:
+        msg: |
+          ═══════════════════════════════════════════
+          Deployment Complete
+          ═══════════════════════════════════════════
+
+          PODS:
+          {{ all_pods.stdout }}
+
+          SERVICES:
+          {{ all_services.stdout }}
+
+          INGRESS:
+          {{ all_ingress.stdout | default('none') }}

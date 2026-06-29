@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes-agent
+  namespace: hermes
+  labels:
+    app: hermes-agent
+    app.kubernetes.io/name: hermes-agent
+    app.kubernetes.io/part-of: ai-agent-stack
+spec:
+  ***REMOVED*** Single replica — stateful agent, do not scale beyond 1
+  replicas: 1
+  strategy:
+    type: Recreate ***REMOVED*** Avoid two pods fighting over the same PVC
+  selector:
+    matchLabels:
+      app: hermes-agent
+  template:
+    metadata:
+      labels:
+        app: hermes-agent
+        app.kubernetes.io/name: hermes-agent
+    spec:
+      containers:
+        - name: hermes-agent
+          ***REMOVED*** Nous Research Hermes Agent — self-hosted AI agent
+          image: ghcr.io/nousresearch/hermes-agent:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: api
+              containerPort: 8080
+              protocol: TCP
+            - name: health
+              containerPort: 9090
+              protocol: TCP
+          envFrom:
+            ***REMOVED*** Secrets created by Ansible from Bitwarden
+            - secretRef:
+                name: hermes-secrets
+          env:
+            - name: HERMES_LLM_PROVIDER
+              value: "openrouter"
+            - name: HERMES_OPENROUTER_BASE_URL
+              value: "https://openrouter.ai/api/v1"
+            - name: HERMES_MEMORY_DIR
+              value: "/data/memory"
+            - name: HERMES_SKILLS_DIR
+              value: "/data/skills"
+            - name: HERMES_CONFIG_DIR
+              value: "/data/config"
+            - name: TZ
+              value: "REDACTED-TZ"
+          volumeMounts:
+            - name: hermes-data
+              mountPath: /data
+            - name: hermes-config
+              mountPath: /etc/hermes
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: health
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: health
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+      volumes:
+        - name: hermes-data
+          persistentVolumeClaim:
+            claimName: hermes-data-pvc
+        - name: hermes-config
+          configMap:
+            name: hermes-config

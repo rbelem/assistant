@@ -1,0 +1,37 @@
+***REMOVED*** ─────────────────────────────────────────────────────────────
+***REMOVED*** Variable overrides — copy to terraform.tfvars and customize
+***REMOVED*** ─────────────────────────────────────────────────────────────
+***REMOVED*** Not committed. Set your actual values here.
+***REMOVED*** Sensitive values can also be set via TF_VAR_* env vars.
+***REMOVED*** ─────────────────────────────────────────────────────────────
+
+***REMOVED*** Optional: override OVH subsidiary (default: "FR")
+***REMOVED*** ovh_subsidiary = "FR"
+
+***REMOVED*** VPS display name in OVH Manager
+***REMOVED*** vps_display_name = "rodrigo-agent"
+
+***REMOVED*** OVH datacenter (REDACTED-REGION1, REDACTED-REGION1, REDACTED-REGION1, REDACTED-REGION1, etc.)
+***REMOVED*** vps_datacenter = "REDACTED-REGION1"
+
+***REMOVED*** VPS plan code (see: https://www.ovhcloud.com/en/vps/)
+***REMOVED*** vps_plan_code = "REDACTED-PLAN"   ***REMOVED*** 2 vCPU, 2GB RAM, 40GB NVMe, ~€4/mo
+***REMOVED*** vps_plan_code = "vps-value-2-4"   ***REMOVED*** 2 vCPU, 4GB RAM, 80GB NVMe, ~€6/mo
+
+***REMOVED*** OS for the VPS (will be converted to NixOS via nixos-infect)
+***REMOVED*** vps_os = "Debian 12"
+
+***REMOVED*** SSH public key (full key string) — requires vps_image_id too
+***REMOVED*** Get image IDs: GET /vps/{serviceName}/images/available
+***REMOVED*** ssh_public_key = "ssh-ed25519 AAAA..."
+***REMOVED*** vps_image_id   = "45b2f222-ab10-44ed-863f-720942762b6f"
+
+***REMOVED*** DNS — domain must be in OVH DNS zone
+***REMOVED*** domain_name = "REDACTED-DOMAIN"
+***REMOVED*** subdomain   = "agent"
+***REMOVED*** dns_ttl     = 300
+
+***REMOVED*** Object Storage bucket names
+***REMOVED*** state_bucket_name  = "rodrigo-agent-tofu-state"
+***REMOVED*** backup_bucket_name = "rodrigo-agent-backups"
+***REMOVED*** storage_region     = "gra"

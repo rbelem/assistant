@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headroom
+  namespace: headroom
+  labels:
+    app: headroom
+    app.kubernetes.io/name: headroom
+    app.kubernetes.io/part-of: ai-agent-stack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: headroom
+  template:
+    metadata:
+      labels:
+        app: headroom
+        app.kubernetes.io/name: headroom
+    spec:
+      containers:
+        - name: headroom
+          ***REMOVED*** Token compression proxy for AI agents
+          image: ghcr.io/chopratejas/headroom:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - "proxy"
+            - "--port"
+            - "8787"
+          ports:
+            - name: http
+              containerPort: 8787
+              protocol: TCP
+          envFrom:
+            ***REMOVED*** Secrets created by Ansible from Bitwarden
+            ***REMOVED*** (e.g., HEADROOM_API_KEY, upstream LLM credentials)
+            - secretRef:
+                name: headroom-secrets
+          env:
+            - name: TZ
+              value: "REDACTED-TZ"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
