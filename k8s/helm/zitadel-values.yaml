@@ -1,0 +1,39 @@
+replicaCount: 1
+
+zitadel:
+  configmapConfig:
+    ExternalDomain: auth.REDACTED-DOMAIN
+    ExternalSecure: true
+    TLS:
+      Enabled: false  ***REMOVED*** Caddy handles TLS
+    Database:
+      postgres:
+        Host: postgres-postgresql.n8n
+        Port: 5432
+        Database: zitadel
+        User:
+          Username: postgres
+          Password:
+            SecretRef: postgres-secrets
+            SecretKey: postgres-password
+        Admin:
+          Username: postgres
+          Password:
+            SecretRef: postgres-secrets
+            SecretKey: postgres-password
+
+  masterkeySecretName: zitadel-secrets
+  masterkeySecretKey: masterkey
+
+service:
+  type: NodePort
+  port: 8080
+  nodePort: 30003
+
+resources:
+  requests:
+    memory: 256Mi
+    cpu: 250m
+  limits:
+    memory: 512Mi
+    cpu: 500m

@@ -41,13 +41,8 @@ output "vps_ips" {
 }
 
 output "dns_fqdn" {
-  description = "Fully qualified domain name for the VPS"
-  value       = local.fqdn
-}
-
-output "dns_record_id" {
-  description = "OVH DNS zone record ID"
-  value       = ovh_domain_zone_record.vps_a_record.id
+  description = "Base domain name (REDACTED-DOMAIN)"
+  value       = var.domain_name
 }
 
 output "state_bucket" {
@@ -77,7 +72,7 @@ output "storage_endpoint" {
 
 output "ssh_command" {
   description = "SSH command to connect to the VPS (after nixos-infect, use root@)"
-  value       = "ssh debian@${local.fqdn}"
+  value       = "ssh root@hermes.${var.domain_name}"
 }
 
 output "ovh_subsidiary" {

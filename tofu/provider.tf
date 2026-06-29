@@ -1,5 +1,5 @@
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Provider Configuration — OVH Cloud + AWS S3 (for Object Storage)
+***REMOVED*** Provider Configuration — OVH Cloud + AWS S3 + Porkbun DNS
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** OVH credentials are sourced from environment variables:
 ***REMOVED***   OVH_ENDPOINT, OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET,
@@ -7,6 +7,9 @@
 ***REMOVED***
 ***REMOVED*** AWS/S3 credentials for Object Storage:
 ***REMOVED***   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+***REMOVED***
+***REMOVED*** Porkbun DNS credentials:
+***REMOVED***   PORKBUN_API_KEY, PORKBUN_SECRET_API_KEY
 ***REMOVED*** -----------------------------------------------------------------------------
 
 terraform {
@@ -21,6 +24,11 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
+    }
+
+    porkbun = {
+      source  = "marcfrederick/porkbun"
+      version = "~> 1.3"
     }
   }
 }
@@ -51,4 +59,14 @@ provider "aws" {
   skip_region_validation      = true
   skip_requesting_account_id  = true
   s3_use_path_style           = true
+}
+
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Porkbun DNS Provider
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Manages DNS records for REDACTED-DOMAIN (domain registered at Porkbun).
+***REMOVED*** Credentials sourced from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY env vars.
+***REMOVED*** -----------------------------------------------------------------------------
+provider "porkbun" {
+  ***REMOVED*** Credentials from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY env vars
 }

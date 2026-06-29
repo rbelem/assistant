@@ -61,15 +61,9 @@ variable "vps_image_id" {
 ***REMOVED*** -----------------------------------------------------------------------------
 
 variable "domain_name" {
-  description = "Base domain name (must be managed by OVH DNS zone)"
+  description = "Base domain name (managed by Porkbun DNS)"
   type        = string
   default     = "REDACTED-DOMAIN"
-}
-
-variable "subdomain" {
-  description = "Subdomain prefix for the VPS DNS record"
-  type        = string
-  default     = "agent"
 }
 
 variable "dns_ttl" {

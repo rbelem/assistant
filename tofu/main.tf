@@ -1,9 +1,9 @@
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Main Infrastructure — OVH VPS + DNS + Object Storage
+***REMOVED*** Main Infrastructure — OVH VPS + Porkbun DNS + Object Storage
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** Resources:
 ***REMOVED***   1. OVH VPS instance (Debian 12 → converted to NixOS via nixos-infect)
-***REMOVED***   2. DNS A record: agent.REDACTED-DOMAIN → VPS public IP
+***REMOVED***   2. Porkbun DNS A records: *.REDACTED-DOMAIN + subdomains → VPS public IP
 ***REMOVED***   3. S3 buckets for OpenTofu state and restic backups
 ***REMOVED*** -----------------------------------------------------------------------------
 
@@ -13,10 +13,6 @@
 
 ***REMOVED*** Fetch OVH account info (needed for ovh_subsidiary on VPS order)
 data "ovh_me" "account" {}
-
-locals {
-  fqdn = "${var.subdomain}.${var.domain_name}"
-}
 
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** OVH VPS Instance
@@ -83,18 +79,48 @@ data "ovh_vps" "agent_details" {
 }
 
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** DNS Record — agent.REDACTED-DOMAIN → VPS IP
+***REMOVED*** DNS Records — Porkbun (REDACTED-DOMAIN)
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Creates an A record pointing the subdomain to the VPS public IP.
-***REMOVED*** The domain must be managed by OVH DNS zone.
-***REMOVED*** The first IP in the list is typically the primary IPv4 address.
+***REMOVED*** Wildcard + per-subdomain A records pointing to the VPS public IP.
+***REMOVED*** Caddy uses DNS-01 challenge via Porkbun for wildcard TLS certs.
 ***REMOVED*** -----------------------------------------------------------------------------
 
-resource "ovh_domain_zone_record" "vps_a_record" {
-  zone      = var.domain_name
-  subdomain = var.subdomain
-  fieldtype = "A"
-  target    = data.ovh_vps.agent_details.ips[0]
+resource "porkbun_dns_record" "root_wildcard" {
+  domain  = var.domain_name
+  type    = "A"
+  content = data.ovh_vps.agent_details.ips[0]
+  ttl     = var.dns_ttl
+}
+
+resource "porkbun_dns_record" "hermes" {
+  domain    = var.domain_name
+  subdomain = "hermes"
+  type      = "A"
+  content   = data.ovh_vps.agent_details.ips[0]
+  ttl       = var.dns_ttl
+}
+
+resource "porkbun_dns_record" "status" {
+  domain    = var.domain_name
+  subdomain = "status"
+  type      = "A"
+  content   = data.ovh_vps.agent_details.ips[0]
+  ttl       = var.dns_ttl
+}
+
+resource "porkbun_dns_record" "n8n" {
+  domain    = var.domain_name
+  subdomain = "n8n"
+  type      = "A"
+  content   = data.ovh_vps.agent_details.ips[0]
+  ttl       = var.dns_ttl
+}
+
+resource "porkbun_dns_record" "auth" {
+  domain    = var.domain_name
+  subdomain = "auth"
+  type      = "A"
+  content   = data.ovh_vps.agent_details.ips[0]
   ttl       = var.dns_ttl
 }
 

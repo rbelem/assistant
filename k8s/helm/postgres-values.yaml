@@ -1,0 +1,22 @@
+global:
+  postgresql:
+    auth:
+      postgresPassword: ""  ***REMOVED*** set via secret
+      database: postgres    ***REMOVED*** default DB, we'll create n8n+zitadel DBs via hook
+persistence:
+  size: 5Gi
+  storageClass: local-path
+primary:
+  service:
+    type: ClusterIP
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+initdbScripts:
+  create-dbs.sql: |
+    CREATE DATABASE n8n;
+    CREATE DATABASE zitadel;

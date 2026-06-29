@@ -8,13 +8,6 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: headroom
-  labels:
-    app.kubernetes.io/part-of: ai-agent-stack
----
-apiVersion: v1
-kind: Namespace
-metadata:
   name: monitoring
   labels:
     app.kubernetes.io/part-of: ai-agent-stack
@@ -22,6 +15,13 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: infra
+  name: n8n
+  labels:
+    app.kubernetes.io/part-of: ai-agent-stack
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: auth
   labels:
     app.kubernetes.io/part-of: ai-agent-stack

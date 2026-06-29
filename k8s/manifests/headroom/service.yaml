@@ -1,18 +1,16 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: headroom-service
-  namespace: headroom
+  name: headroom
+  namespace: hermes
   labels:
     app: headroom
 spec:
-  ***REMOVED*** NodePort so host-level Caddy can proxy without k8s DNS resolution
-  type: NodePort
+  type: ClusterIP
   selector:
     app: headroom
   ports:
     - name: http
       port: 8787
       targetPort: http
-      nodePort: 30878
       protocol: TCP

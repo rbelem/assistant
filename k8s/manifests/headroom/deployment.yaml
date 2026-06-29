@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: headroom
-  namespace: headroom
+  namespace: hermes
   labels:
     app: headroom
     app.kubernetes.io/name: headroom

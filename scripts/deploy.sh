@@ -2,21 +2,24 @@
 ***REMOVED*** ─────────────────────────────────────────────────────────────
 ***REMOVED*** rodrigo-agent deployment pipeline
 ***REMOVED*** ─────────────────────────────────────────────────────────────
-***REMOVED*** Order: tofu → nixos-infect → nixos-rebuild → ansible → kubectl
+***REMOVED*** Order: tofu → nixos-infect → nixos-rebuild → ansible → helmfile → kubectl
 ***REMOVED***
 ***REMOVED*** Prerequisites:
 ***REMOVED***   - OVH API credentials (OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY)
 ***REMOVED***   - OVH Object Storage credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
-***REMOVED***   - SSH key uploaded to OVH account
+***REMOVED***   - Porkbun API credentials (PORKBUN_API_KEY, PORKBUN_SECRET_API_KEY)
+***REMOVED***   - Lambda Cloud API key (LAMBDA_CLOUD_API_KEY) for OCR GPU instances
+***REMOVED***   - SSH key uploaded to OVH account & Lambda Cloud
 ***REMOVED***   - Bitwarden CLI installed and logged in
-***REMOVED***   - Domain REDACTED-DOMAIN managed by OVH DNS
 ***REMOVED***
 ***REMOVED*** Usage:
 ***REMOVED***   ./deploy.sh                    ***REMOVED*** full deploy (prompts before destructive steps)
 ***REMOVED***   ./deploy.sh --skip-tofu        ***REMOVED*** skip provisioning, go to nixos-infect
 ***REMOVED***   ./deploy.sh --skip-infect      ***REMOVED*** skip nixos-infect, go to nixos-rebuild
 ***REMOVED***   ./deploy.sh --skip-nixos       ***REMOVED*** skip nixos-rebuild, go to ansible
-***REMOVED***   ./deploy.sh --skip-ansible     ***REMOVED*** skip ansible, go to kubectl
+***REMOVED***   ./deploy.sh --skip-ansible     ***REMOVED*** skip ansible, go to helmfile
+***REMOVED***   ./deploy.sh --skip-helmfile    ***REMOVED*** skip helmfile, go to kubectl
+***REMOVED***   ./deploy.sh --skip-tofu --skip-infect --skip-nixos --skip-ansible  ***REMOVED*** helmfile + kubectl only
 ***REMOVED***   ./deploy.sh status             ***REMOVED*** show deployment status
 ***REMOVED***   ./deploy.sh destroy            ***REMOVED*** tear everything down
 ***REMOVED*** ─────────────────────────────────────────────────────────────
@@ -27,10 +30,12 @@ DIR="$(cd "$(dirname "$0")/.." && pwd)"
 VPS_IP="${VPS_IP:-}"
 SSH_USER="${SSH_USER:-root}"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519}"
-K8S_MANIFESTS="$DIR/k8s"
+K8S_MANIFESTS="$DIR/k8s/manifests"
 PLAYBOOKS="$DIR/ansible/playbooks"
 INVENTORY="$DIR/ansible/inventory/hosts.yml"
 VERBOSE="${VERBOSE:-0}"
+HELMFILE_DIR="$DIR/k8s"
+HELMFILE_BIN="${HELMFILE_BIN:-helmfile}"
 
 ***REMOVED*** ── Colors ──────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -57,7 +62,7 @@ run_ssh() {
 ***REMOVED*** ── Phases ──────────────────────────────────────────────────
 
 phase_tofu() {
-  step "1/5 — Provision VPS with OpenTofu"
+  step "1/6 — Provision VPS with OpenTofu"
   cd "$DIR/tofu"
 
   info "Initializing OpenTofu..."
@@ -90,14 +95,16 @@ all:
     vps_hostname: rodrigo-agent
     domain: REDACTED-DOMAIN
     hermes_namespace: hermes
-    headroom_namespace: headroom
+    headroom_namespace: hermes
     monitoring_namespace: monitoring
+    n8n_namespace: n8n
+    auth_namespace: auth
 EOF
   ok "Ansible inventory written."
 }
 
 phase_infect() {
-  step "2/5 — Convert Debian to NixOS (nixos-infect)"
+  step "2/6 — Convert Debian to NixOS (nixos-infect)"
   if [[ -z "$VPS_IP" ]]; then
     err "VPS_IP not set. Run phase_tofu first or export VPS_IP."
     exit 1
@@ -136,7 +143,7 @@ phase_infect() {
 }
 
 phase_nixos() {
-  step "3/5 — Apply NixOS configuration"
+  step "3/6 — Apply NixOS configuration"
   if [[ -z "$VPS_IP" ]]; then
     err "VPS_IP not set."
     exit 1
@@ -153,7 +160,7 @@ phase_nixos() {
 }
 
 phase_ansible() {
-  step "4/5 — Configure services with Ansible + Bitwarden"
+  step "4/6 — Configure services with Ansible + Bitwarden"
   cd "$DIR/ansible"
 
   ***REMOVED*** Ensure Bitwarden is logged in
@@ -175,8 +182,38 @@ phase_ansible() {
   ok "Ansible configuration complete."
 }
 
+phase_helmfile() {
+  step "5/6 — Deploy Helm releases (Postgres, n8n, Zitadel)"
+  if [[ -z "$VPS_IP" ]]; then
+    err "VPS_IP not set."
+    exit 1
+  fi
+
+  if ! command -v "$HELMFILE_BIN" &>/dev/null; then
+    ***REMOVED*** Helmfile should be installed on the VPS via NixOS packages
+    info "Helmfile not found locally. Using helmfile on VPS..."
+    HELMFILE_CMD="run_ssh"
+    HELMFILE_DIR_REMOTE="/opt/k8s"
+  else
+    HELMFILE_CMD="bash -c"
+    HELMFILE_DIR_REMOTE="$HELMFILE_DIR"
+  fi
+
+  info "Copying Helm values to VPS..."
+  run_ssh "mkdir -p $HELMFILE_DIR_REMOTE/helm"
+  rsync -avz -e "ssh -i $SSH_KEY" \
+    "$HELMFILE_DIR/helmfile.yaml" "$SSH_USER@$VPS_IP:$HELMFILE_DIR_REMOTE/"
+  rsync -avz -e "ssh -i $SSH_KEY" \
+    "$HELMFILE_DIR/helm/" "$SSH_USER@$VPS_IP:$HELMFILE_DIR_REMOTE/helm/"
+
+  info "Running helmfile sync..."
+  run_ssh "cd $HELMFILE_DIR_REMOTE && helmfile sync"
+
+  ok "Helm releases deployed."
+}
+
 phase_kubectl() {
-  step "5/5 — Deploy workloads to k3s"
+  step "6/6 — Deploy raw manifests to k3s"
   if [[ -z "$VPS_IP" ]]; then
     err "VPS_IP not set."
     exit 1
@@ -185,19 +222,19 @@ phase_kubectl() {
   info "Copying k8s manifests to VPS..."
   run_ssh "mkdir -p /opt/k8s"
   rsync -avz -e "ssh -i $SSH_KEY" \
-    "$K8S_MANIFESTS/" "$SSH_USER@$VPS_IP:/opt/k8s/"
+    "$K8S_MANIFESTS/manifests/" "$SSH_USER@$VPS_IP:/opt/k8s/manifests/"
 
   info "Creating namespaces..."
-  run_ssh "kubectl apply -f /opt/k8s/namespace.yaml"
+  run_ssh "kubectl apply -f /opt/k8s/manifests/namespace.yaml"
 
   info "Deploying Hermes Agent..."
-  run_ssh "kubectl apply -f /opt/k8s/hermes/"
+  run_ssh "kubectl apply -f /opt/k8s/manifests/hermes/"
 
   info "Deploying Headroom proxy..."
-  run_ssh "kubectl apply -f /opt/k8s/headroom/"
+  run_ssh "kubectl apply -f /opt/k8s/manifests/headroom/"
 
   info "Deploying Uptime Kuma..."
-  run_ssh "kubectl apply -f /opt/k8s/monitoring/"
+  run_ssh "kubectl apply -f /opt/k8s/manifests/monitoring/"
 
   info "Waiting for pods to become ready..."
   run_ssh "
@@ -223,7 +260,7 @@ phase_status() {
   if [[ -n "$VPS_IP" ]]; then
     info "VPS IP: $VPS_IP"
     info "SSH: ssh root@$VPS_IP"
-    info "DNS: https://agent.REDACTED-DOMAIN"
+    info "DNS: hermes.REDACTED-DOMAIN, status.REDACTED-DOMAIN, n8n.REDACTED-DOMAIN, auth.REDACTED-DOMAIN"
 
     if run_ssh "systemctl is-active k3s" 2>/dev/null | grep -q active; then
       ok "k3s: active"
@@ -267,25 +304,43 @@ main() {
       phase_infect
       phase_nixos
       phase_ansible
+      phase_helmfile
       phase_kubectl
       ;;
     --skip-infect)
       phase_tofu
       phase_nixos
       phase_ansible
+      phase_helmfile
       phase_kubectl
       ;;
     --skip-nixos)
       phase_tofu
       phase_infect
       phase_ansible
+      phase_helmfile
       phase_kubectl
       ;;
     --skip-ansible)
       phase_tofu
       phase_infect
       phase_nixos
+      phase_helmfile
       phase_kubectl
+      ;;
+    --skip-helmfile)
+      phase_tofu
+      phase_infect
+      phase_nixos
+      phase_ansible
+      phase_kubectl
+      ;;
+    --skip-kubectl)
+      phase_tofu
+      phase_infect
+      phase_nixos
+      phase_ansible
+      phase_helmfile
       ;;
     help|--help|-h)
       head -20 "$0"
@@ -295,10 +350,13 @@ main() {
       phase_infect
       phase_nixos
       phase_ansible
+      phase_helmfile
       phase_kubectl
       step "Deployment complete! 🚀"
-      info "Access your agent at https://agent.REDACTED-DOMAIN"
-      info "Monitoring at https://agent.REDACTED-DOMAIN/monitor/"
+      info "Access your agent at https://hermes.REDACTED-DOMAIN"
+      info "Status dashboard at https://status.REDACTED-DOMAIN"
+      info "n8n at https://n8n.REDACTED-DOMAIN (Tailscale-only)"
+      info "Auth at https://auth.REDACTED-DOMAIN (Tailscale-only)"
       info "SSH: ssh root@$VPS_IP"
       ;;
   esac

@@ -6,17 +6,17 @@ IaC repo for a self-hosted AI agent runtime (Hermes + Headroom) on OVHcloud VPS 
 
 ```
 Local: opencode → Headroom(:8787) → OpenRouter
-VPS:   Caddy(host) → NodePort → k3s { Hermes Agent, Headroom proxy, Uptime Kuma }
+VPS:   Caddy(host) → NodePort → k3s { Hermes Agent, Headroom proxy, Uptime Kuma, n8n, Zitadel }
 ```
 
-Caddy runs as a NixOS service on the host (not k8s Ingress). It proxies to k8s services **via NodePort**. Don't use ClusterIP or k8s Ingress — Caddy does TLS termination. NodePort mappings: Hermes=30080, Headroom=30878, Uptime Kuma=30001.
+Caddy runs as a NixOS service on the host (not k8s Ingress). It proxies to k8s services **via NodePort**. Don't use ClusterIP or k8s Ingress — Caddy does TLS termination. NodePort mappings: Hermes=30080, Uptime Kuma=30001, n8n=30002, Zitadel=30003. Headroom is ClusterIP-only (internal).
 
 k3s is installed with `--disable traefik --disable servicelb`. Traefik conflicts with Caddy.
 
 ***REMOVED******REMOVED*** Deploy order (exact)
 
 ```
-tofu apply  →  nixos-infect  →  nixos-rebuild  →  ansible  →  kubectl apply
+tofu apply  →  nixos-infect  →  nixos-rebuild  →  ansible  →  helmfile  →  kubectl apply
 ```
 
 Use `./scripts/deploy.sh` with phase skip flags (`--skip-tofu`, `--skip-infect`, etc.). Do not skip phases or reorder.
@@ -42,7 +42,7 @@ bw unlock --raw > /root/.bw_session_token
 
 The `secrets.yml` playbook reads from Bitwarden vault `rodrigo-agent` and writes to k8s Secrets + `/etc/restic/env` + `/etc/tailscale/authkey`.
 
-**k8s manifests:** rsync to `/opt/k8s/` on VPS, then `kubectl apply -f /opt/k8s/namespace.yaml && kubectl apply -f /opt/k8s/hermes/` etc.
+**k8s manifests:** rsync to `/opt/k8s/` on VPS, then `kubectl apply -f /opt/k8s/manifests/namespace.yaml && kubectl apply -f /opt/k8s/manifests/hermes/` etc.
 
 ***REMOVED******REMOVED*** Key files
 
@@ -55,9 +55,15 @@ The `secrets.yml` playbook reads from Bitwarden vault `rodrigo-agent` and writes
 | `nix/k3s.nix` | k3s single-node server, traefik and servicelb disabled |
 | `ansible/playbooks/secrets.yml` | Bitwarden → k8s Secret sync. Fetches 10 items, creates 4 secrets |
 | `ansible/playbooks/deploy.yml` | kubectl apply from /opt/k8s/. Waits for rollout. Idempotent |
-| `k8s/hermes/deployment.yaml` | Hermes: 1 replica, Recreate strategy (PVC), probes, 2CPU/4Gi limits |
-| `k8s/headroom/service.yaml` | NodePort 30878 |
-| `k8s/hermes/service.yaml` | NodePort 30080 |
+| `k8s/helmfile.yaml` | Helm releases: PostgreSQL, n8n, Zitadel |
+| `k8s/helm/postgres-values.yaml` | Bitnami PostgreSQL values for shared n8n+Zitadel use |
+| `k8s/helm/n8n-values.yaml` | n8n Helm chart values |
+| `k8s/helm/zitadel-values.yaml` | Zitadel Helm chart values |
+| `k8s/manifests/namespace.yaml` | Namespaces: hermes, monitoring, n8n, auth |
+| `k8s/manifests/hermes/deployment.yaml` | Hermes: 1 replica, Recreate strategy (PVC), probes, 2CPU/4Gi limits |
+| `k8s/manifests/hermes/configmap.yaml` | Hermes config: Discord gateway, DeepSeek V4 Flash model, OCR skill |
+| `k8s/manifests/headroom/service.yaml` | ClusterIP in hermes namespace |
+| `k8s/manifests/hermes/service.yaml` | NodePort 30080 |
 | `scripts/deploy.sh` | Phase-aware deploy pipeline. Source of truth for deploy order |
 
 ***REMOVED******REMOVED*** Secrets (Bitwarden vault: `rodrigo-agent`)
@@ -104,7 +110,7 @@ and say "extract text from this" — Hermes invokes the skill automatically.
 
 - **OVH VPS resource** uses `plan = []` list syntax with `configuration` sub-blocks for datacenter + OS. Not block syntax. IPs are retrieved via `data.ovh_vps` data source, not from the resource directly.
 - **SSH key on VPS** requires also setting `image_id` (OVH API constraint). If you skip both, VPS uses emailed root password.
-- **NO Helmfile, Longhorn, or k8s Ingress** — this repo deliberately avoids them as overengineered for single-node.
+- **NO Longhorn or k8s Ingress** — this repo deliberately avoids them as overengineered for single-node.
 - **Don't run `tofu apply` in CI** — OVH API rate-limits aggressively.
 - **NixOS locale** uses `en_GB.UTF-8` default with `pt_BR.UTF-8` overrides for regional fields. This matches the user's nix-config convention.
 - **Headroom runs in two places**: local machine (wraps opencode via `headroom wrap opencode`) and VPS (k3s deployment that Hermes routes through).

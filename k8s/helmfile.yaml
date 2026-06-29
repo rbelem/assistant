@@ -1,0 +1,32 @@
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+  - name: zitadel
+    url: https://charts.zitadel.com
+
+releases:
+  - name: postgres
+    namespace: n8n
+    chart: bitnami/postgresql
+    version: 16.x
+    values:
+      - helm/postgres-values.yaml
+    hooks:
+      - events: ["post-install", "post-upgrade"]
+        showlog: true
+
+  - name: n8n
+    namespace: n8n
+    chart: 8gears/n8n
+    values:
+      - helm/n8n-values.yaml
+    needs:
+      - postgres
+
+  - name: zitadel
+    namespace: auth
+    chart: zitadel/zitadel
+    values:
+      - helm/zitadel-values.yaml
+    needs:
+      - postgres
