@@ -1,8 +1,10 @@
 global:
   postgresql:
     auth:
-      postgresPassword: ""  ***REMOVED*** set via secret
-      database: postgres    ***REMOVED*** default DB, we'll create n8n+zitadel DBs via hook
+      existingSecret: postgres-secrets
+      secretKeys:
+        adminPasswordKey: postgres-password
+      database: postgres    ***REMOVED*** default DB; n8n + zitadel DBs created via initdbScripts below
 persistence:
   size: 5Gi
   storageClass: local-path
