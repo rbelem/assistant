@@ -217,9 +217,9 @@ phase_kubectl() {
   fi
 
   info "Copying k8s manifests to VPS..."
-  run_ssh "mkdir -p /opt/k8s"
+  run_ssh "mkdir -p /opt/k8s/manifests"
   rsync -avz -e "ssh -i $SSH_KEY" \
-    "$K8S_MANIFESTS/manifests/" "$SSH_USER@$VPS_IP:/opt/k8s/manifests/"
+    "$K8S_MANIFESTS/" "$SSH_USER@$VPS_IP:/opt/k8s/manifests/"
 
   info "Deploying Hermes Agent..."
   run_ssh "kubectl apply -f /opt/k8s/manifests/hermes/"
