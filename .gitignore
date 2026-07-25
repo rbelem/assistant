@@ -1,0 +1,24 @@
+***REMOVED*** IaC state
+terraform.tfstate
+terraform.tfstate.backup
+.tofu/
+.tofu.lock.hcl
+
+***REMOVED*** Ansible
+*.retry
+.ansible/
+*.tmp
+
+***REMOVED*** Ansible vault temp files
+*.vault
+
+***REMOVED*** Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+***REMOVED*** Build artifacts / caches
+graphify-out/
+.codegraph/
+*.log

@@ -5,7 +5,7 @@
   gather_facts: no
 
   vars:
-    k8s_manifests_base: /opt/k8s
+    k8s_manifests_base: /opt/k8s/manifests
     deploy_marker: /var/local/.services_deployed
 
   tasks:
@@ -34,11 +34,7 @@
           kind: Namespace
           metadata:
             name: "{{ item }}"
-      loop:
-        - hermes
-        - headroom
-        - monitoring
-        - infra
+      loop: "{{ namespace_list }}"
 
     ***REMOVED*** ── Ensure manifest directories exist ─────────────────────────
     - name: Ensure manifest directories exist
@@ -120,7 +116,7 @@
     - name: Wait for Hermes pods to be ready
       ansible.builtin.command: >
         kubectl wait --for=condition=ready pod
-        -l app=hermes
+        -l app=hermes-agent
         -n hermes
         --timeout=120s
       register: hermes_ready
@@ -132,7 +128,7 @@
       ansible.builtin.command: >
         kubectl wait --for=condition=ready pod
         -l app=headroom
-        -n headroom
+        -n hermes
         --timeout=120s
       register: headroom_ready
       changed_when: false

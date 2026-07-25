@@ -42,7 +42,7 @@ bw unlock --raw > /root/.bw_session_token
 
 The `secrets.yml` playbook reads from Bitwarden vault `rodrigo-agent` and writes to k8s Secrets + `/etc/restic/env` + `/etc/tailscale/authkey`.
 
-**k8s manifests:** rsync to `/opt/k8s/` on VPS, then `kubectl apply -f /opt/k8s/manifests/namespace.yaml && kubectl apply -f /opt/k8s/manifests/hermes/` etc.
+**k8s manifests:** rsync to `/opt/k8s/` on VPS, then `kubectl apply -f /opt/k8s/manifests/hermes/` etc. Namespaces are managed by Ansible (`namespace_list` in `ansible/inventory/hosts.yml`).
 
 ***REMOVED******REMOVED*** Key files
 
@@ -53,13 +53,13 @@ The `secrets.yml` playbook reads from Bitwarden vault `rodrigo-agent` and writes
 | `nix/host.nix` | NixOS config: imports all modules, SSH hardened, user rodrigo, timezone REDACTED-TZ |
 | `nix/caddy.nix` | Caddy proxies to localhost:NodePort (not k8s DNS). `reverse_proxy localhost:30080` for Hermes |
 | `nix/k3s.nix` | k3s single-node server, traefik and servicelb disabled |
-| `ansible/playbooks/secrets.yml` | Bitwarden → k8s Secret sync. Fetches 10 items, creates 4 secrets |
+| `ansible/playbooks/secrets.yml` | Bitwarden → k8s Secret sync. Fetches 12 items, creates 4 secrets (hermes + n8n + postgres + zitadel; postgres-secrets duplicated to n8n+auth) |
 | `ansible/playbooks/deploy.yml` | kubectl apply from /opt/k8s/. Waits for rollout. Idempotent |
 | `k8s/helmfile.yaml` | Helm releases: PostgreSQL, n8n, Zitadel |
 | `k8s/helm/postgres-values.yaml` | Bitnami PostgreSQL values for shared n8n+Zitadel use |
 | `k8s/helm/n8n-values.yaml` | n8n Helm chart values |
 | `k8s/helm/zitadel-values.yaml` | Zitadel Helm chart values |
-| `k8s/manifests/namespace.yaml` | Namespaces: hermes, monitoring, n8n, auth |
+| `ansible/inventory/hosts.yml` | Ansible inventory with `namespace_list` (source of truth for k8s namespaces) |
 | `k8s/manifests/hermes/deployment.yaml` | Hermes: 1 replica, Recreate strategy (PVC), probes, 2CPU/4Gi limits |
 | `k8s/manifests/hermes/configmap.yaml` | Hermes config: Discord gateway, DeepSeek V4 Flash model, OCR skill |
 | `k8s/manifests/headroom/service.yaml` | ClusterIP in hermes namespace |
@@ -68,7 +68,7 @@ The `secrets.yml` playbook reads from Bitwarden vault `rodrigo-agent` and writes
 
 ***REMOVED******REMOVED*** Secrets (Bitwarden vault: `rodrigo-agent`)
 
-10 items in vault. The `secrets.yml` playbook fetches them by name. See `ansible/vault.yml` for exact field names. Key items: OpenRouter API Key, Hermes Telegram/Discord tokens, Tailscale Auth Key, Restic password, OVH Object Storage keys.
+12 items in vault. The `secrets.yml` playbook fetches them by name. See `ansible/vault.yml` for exact field names. Key items: OpenRouter API Key, Hermes Discord token, Tailscale Auth Key, Restic password, OVH Object Storage keys.
 
 ***REMOVED******REMOVED*** Operations
 

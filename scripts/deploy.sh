@@ -92,13 +92,10 @@ all:
       ansible_user: root
       ansible_python_interpreter: /usr/bin/python3
   vars:
+    namespace_list: [hermes, monitoring, n8n, auth]
     vps_hostname: rodrigo-agent
     domain: REDACTED-DOMAIN
-    hermes_namespace: hermes
-    headroom_namespace: hermes
-    monitoring_namespace: monitoring
-    n8n_namespace: n8n
-    auth_namespace: auth
+    k8s_manifests_base: /opt/k8s
 EOF
   ok "Ansible inventory written."
 }
@@ -223,9 +220,6 @@ phase_kubectl() {
   run_ssh "mkdir -p /opt/k8s"
   rsync -avz -e "ssh -i $SSH_KEY" \
     "$K8S_MANIFESTS/manifests/" "$SSH_USER@$VPS_IP:/opt/k8s/manifests/"
-
-  info "Creating namespaces..."
-  run_ssh "kubectl apply -f /opt/k8s/manifests/namespace.yaml"
 
   info "Deploying Hermes Agent..."
   run_ssh "kubectl apply -f /opt/k8s/manifests/hermes/"

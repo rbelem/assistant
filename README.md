@@ -114,7 +114,6 @@ rodrigo-agent/
 │       ├── deploy.yml     ***REMOVED*** Deploy workloads to k3s
 │       └── update.yml     ***REMOVED*** Rolling update workflow
 ├── k8s/               ***REMOVED*** Kubernetes manifests
-│   ├── namespace.yaml
 │   ├── hermes/
 │   │   ├── deployment.yaml
 │   │   ├── service.yaml
@@ -184,7 +183,6 @@ ansible-playbook -i inventory/hosts.yml playbooks/secrets.yml
 
 ***REMOVED*** Phase 5 — Deploy workloads
 rsync -avz k8s/ root@$VPS_IP:/opt/k8s/
-ssh root@$VPS_IP 'kubectl apply -f /opt/k8s/namespace.yaml'
 ssh root@$VPS_IP 'kubectl apply -f /opt/k8s/hermes/'
 ssh root@$VPS_IP 'kubectl apply -f /opt/k8s/headroom/'
 ssh root@$VPS_IP 'kubectl apply -f /opt/k8s/monitoring/'
@@ -197,11 +195,7 @@ Create a Bitwarden vault named `rodrigo-agent` with these items:
 | Field | Description |
 |-------|-------------|
 | `openrouter_api_key` | OpenRouter API key |
-| `hermes_telegram_token` | Telegram bot token (from @BotFather) |
 | `hermes_discord_token` | Discord bot token |
-| `hermes_signal_number` | Signal phone number (if using Signal) |
-| `hermes_whatsapp_number` | WhatsApp number (if using WhatsApp) |
-| `hermes_webhook_secret` | Webhook secret for inbound messages |
 | `tailscale_auth_key` | Tailscale pre-auth key (one-time use) |
 | `caddy_admin_password` | Caddy admin endpoint password |
 | `restic_password` | Restic backup encryption password |
