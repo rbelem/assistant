@@ -41,6 +41,43 @@ RENDER_VARS='$VPS_HOST $VPS_SSH_USER $VPS_SSH_PORT $DOMAIN $SUBDOMAINS_JSON $PRO
 HELMFILE_DIR="$DIR/k8s"
 HELMFILE_BIN="${HELMFILE_BIN:-helmfile}"
 
+***REMOVED*** ── Source vault environment ────────────────────────────────
+***REMOVED*** Load Bitwarden-derived secrets (SSH_PRIVATE_KEY, VPS_HOST, etc.) if available.
+***REMOVED*** shellcheck disable=SC1091
+[[ -f "$DIR/.rendered/vault.env" ]] && . "$DIR/.rendered/vault.env"
+
+***REMOVED*** === SSH key setup =============================================================
+***REMOVED*** The SSH private key lives in Bitwarden (assistant/vps-ssh-key, SSH key
+***REMOVED*** type 5). fetch_vault.sh exports SSH_PRIVATE_KEY into .rendered/vault.env.
+***REMOVED*** We write it to a temp file and load it into ssh-agent for all SSH operations.
+***REMOVED*** Falls back to ~/.ssh/id_ed25519 if SSH_PRIVATE_KEY is empty.
+
+SSH_KEY_FILE="$(mktemp -t agent_key.XXXXXX)"
+chmod 600 "$SSH_KEY_FILE"
+trap 'rm -f "$SSH_KEY_FILE"' EXIT
+
+if [[ -n "${SSH_PRIVATE_KEY:-}" ]]; then
+  printf '%s\n' "$SSH_PRIVATE_KEY" > "$SSH_KEY_FILE"
+  ssh_add_output=$(ssh-add "$SSH_KEY_FILE" 2>&1 || true)
+  info "Loaded SSH key from Bitwarden into ssh-agent ($(echo "$ssh_add_output" | head -1))"
+elif [[ -f "${HOME}/.ssh/id_ed25519" ]]; then
+  SSH_KEY_FILE="${HOME}/.ssh/id_ed25519"
+  info "Using existing local SSH key ${SSH_KEY_FILE} (no Bitwarden key set)"
+else
+  err "No SSH key available. Either set SSH_PRIVATE_KEY in vault.env or copy a key to ~/.ssh/id_ed25519"
+  exit 1
+fi
+
+***REMOVED*** Update SSH_KEY to point to the resolved key file (used by ssh -i in run_ssh and rsync)
+SSH_KEY="$SSH_KEY_FILE"
+
+***REMOVED*** Export SSH_AUTH_SOCK so ssh-agent is used by all subsequent ssh invocations
+***REMOVED*** (including nixos-rebuild --target-host which uses ssh internally)
+if [[ -n "${SSH_AUTH_SOCK:-}" ]]; then
+  export SSH_AUTH_SOCK SSH_AGENT_PID
+fi
+***REMOVED*** ============================================================================
+
 ***REMOVED*** ── Colors ──────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; NC='\033[0m'
