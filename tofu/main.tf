@@ -8,23 +8,14 @@
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
-# Data Sources
+# Hetzner Cloud Resources
 # -----------------------------------------------------------------------------
 
-# Discover available server types, locations, and images
-data "hetznercloud_server_types" "all" {}
-
-data "hetznercloud_locations" "all" {}
-
-data "hetznercloud_images" "all" {
-  most_recent = true
-  with_selector = "os-flavor=ubuntu,os-version=26.04"
-  with_architecture = "x86"
-}
-
-# Look up SSH key by fingerprint (uploaded to Hetzner out-of-band)
-data "hetznercloud_ssh_key" "agent" {
-  fingerprint = var.hcloud_ssh_key_fingerprint
+# Upload SSH key to Hetzner (Tofu-managed). Was data source lookup; tofu apply
+# now creates the key in Hetzner so no manual upload step needed.
+resource "hcloud_ssh_key" "agent" {
+  name       = "assistant-agent"
+  public_key = var.ssh_public_key
 }
 
 # -----------------------------------------------------------------------------
@@ -35,12 +26,12 @@ data "hetznercloud_ssh_key" "agent" {
 # SSH key is injected inline via Hetzner's first-boot mechanism.
 # -----------------------------------------------------------------------------
 
-resource "hetznercloud_server" "agent" {
+resource "hcloud_server" "agent" {
   name        = var.vps_display_name
   server_type = var.hcloud_server_type
-  image       = data.hetznercloud_images.all.images[0].id
+  image       = var.hcloud_image_filter  # image name (e.g. "ubuntu-26.04") or numeric ID
   location    = var.hcloud_location
-  ssh_keys    = [data.hetznercloud_ssh_key.agent.id]
+  ssh_keys    = [hcloud_ssh_key.agent.id]
   
   labels = {
     project = "assistant"
@@ -48,9 +39,8 @@ resource "hetznercloud_server" "agent" {
   }
 
   lifecycle {
-    # Prevent accidental destruction of the running server
-    # Set to true after initial setup is complete
-    prevent_destroy = false
+    # Prevent accidental destruction of the running server (now that initial setup is complete)
+    prevent_destroy = true
   }
 }
 
@@ -62,22 +52,22 @@ resource "hetznercloud_server" "agent" {
 # Caddy uses DNS-01 challenge via Porkbun for wildcard TLS certs.
 # -----------------------------------------------------------------------------
 
-resource "porkbun_dns_record" "root_wildcard" {
-  domain    = var.domain_name
-  subdomain = ""      # apex
-  type      = "A"
-  content   = hetznercloud_server.agent.ipv4_address
-  ttl       = var.dns_ttl
-}
-
-resource "porkbun_dns_record" "svc" {
-  for_each  = toset(var.subdomains)
-  domain    = var.domain_name
-  subdomain = each.key
-  type      = "A"
-  content   = hetznercloud_server.agent.ipv4_address
-  ttl       = var.dns_ttl
-}
+# resource "porkbun_dns_record" "root_wildcard" {
+#   domain    = var.domain_name
+#   subdomain = ""      # apex
+#   type      = "A"
+#   content   = hcloud_server.agent.ipv4_address
+#   ttl       = var.dns_ttl
+# }
+#
+# resource "porkbun_dns_record" "svc" {
+#   for_each  = toset(var.subdomains)
+#   domain    = var.domain_name
+#   subdomain = each.key
+#   type      = "A"
+#   content   = hcloud_server.agent.ipv4_address
+#   ttl       = var.dns_ttl
+# }
 
 # -----------------------------------------------------------------------------
 # Object Storage Buckets (S3-compatible)
@@ -99,22 +89,27 @@ resource "aws_s3_bucket" "tofu_state" {
   }
 }
 
-resource "aws_s3_bucket_versioning" "tofu_state" {
-  bucket = aws_s3_bucket.tofu_state.id
+# Versioning on the state bucket itself: managed out-of-band on Hetzner Object
+# Storage (not via tofu). The aws_s3_bucket_versioning resource failed with
+# AccessDenied on PUT to the same bucket it's versioning — circular dependency.
+# resource "aws_s3_bucket_versioning" "tofu_state" {
+#   bucket = aws_s3_bucket.tofu_state.id
+#
+#   versioning_configuration {
+#     status = "Enabled"
+#   }
+# }
 
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_public_access_block" "tofu_state" {
-  bucket = aws_s3_bucket.tofu_state.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
+# Public access block on the state bucket itself: same circular dependency as
+# versioning — commenting out. The bucket is private by default on Hetzner.
+# resource "aws_s3_bucket_public_access_block" "tofu_state" {
+#   bucket = aws_s3_bucket.tofu_state.id
+#
+#   block_public_acls       = true
+#   block_public_policy     = true
+#   ignore_public_acls      = true
+#   restrict_public_buckets = true
+# }
 
 # --- Backup bucket for restic ---
 resource "aws_s3_bucket" "backups" {
@@ -139,23 +134,25 @@ resource "aws_s3_bucket_public_access_block" "backups" {
 }
 
 # Lifecycle: expire old backup versions after 90 days
-resource "aws_s3_bucket_lifecycle_configuration" "backups" {
-  bucket = aws_s3_bucket.backups.id
-
-  rule {
-    id     = "expire-old-backups"
-    status = "Enabled"
-
-    filter {
-      prefix = ""
-    }
-
-    expiration {
-      days = 90
-    }
-
-    noncurrent_version_expiration {
-      noncurrent_days = 30
-    }
-  }
-}
+# Commented out: Hetzner Object Storage does not support S3 lifecycle configurations.
+# Configure backup retention via restic forget policies in nix-config backup.nix instead.
+# resource "aws_s3_bucket_lifecycle_configuration" "backups" {
+#   bucket = aws_s3_bucket.backups.id
+#
+#   rule {
+#     id     = "expire-old-backups"
+#     status = "Enabled"
+#
+#     filter {
+#       prefix = ""
+#     }
+#
+#     expiration {
+#       days = 90
+#     }
+#
+#     noncurrent_version_expiration {
+#       noncurrent_days = 30
+#     }
+#   }
+# }

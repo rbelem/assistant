@@ -158,24 +158,33 @@ phase_inventory_render() {
 
 phase_tofu() {
   step "1/6 — Provision VPS with OpenTofu"
-  cd "$DIR/tofu"
+  cd "$DIR"
+
+  # Skip if VPS already exists (state has hcloud_server.agent).
+  if "$DIR/tofu/tofu-wrapper.sh" output -raw vps_ip 2>/dev/null; then
+    VPS_IP="$("$DIR/tofu/tofu-wrapper.sh" output -raw vps_ip 2>/dev/null)"
+    ok "VPS already provisioned (IP: $VPS_IP). Skipping tofu init/plan/apply."
+    export VPS_IP
+    return 0
+  fi
 
   info "Initializing OpenTofu..."
-  tofu init
+  "$DIR/tofu/tofu-wrapper.sh" init -input=false
 
   info "Planning infrastructure..."
-  tofu plan -out=plan.out
+  "$DIR/tofu/tofu-wrapper.sh" plan -input=false -out=/tmp/tofu-plan.out
 
   echo -e "${YELLOW}Review the plan above.${NC}"
   prompt_confirm
 
   info "Applying..."
-  tofu apply plan.out
+  "$DIR/tofu/tofu-wrapper.sh" apply -input=false -auto-approve /tmp/tofu-plan.out
   ok "VPS provisioned."
 
   # Capture VPS IP
-  VPS_IP=$(tofu output -raw vps_ip)
+  VPS_IP="$("$DIR/tofu/tofu-wrapper.sh" output -raw vps_ip)"
   info "VPS IP: $VPS_IP"
+  export VPS_IP
 
   # Inventory is now rendered from Bitwarden vault by phase_inventory_render()
   # before the Ansible phase runs. VPS_IP is captured above for SSH use.
@@ -365,9 +374,9 @@ phase_destroy() {
   read -r confirm
   [[ "$confirm" == "destroy" ]] || { err "Aborted."; exit 1; }
 
-  cd "$DIR/tofu"
-  info "Running tofu destroy..."
-  tofu destroy
+  cd "$DIR"
+  info "Running tofu destroy (via wrapper for backend + tfvars)..."
+  tofu/tofu-wrapper.sh destroy -auto-approve
 
   ok "Infrastructure destroyed."
 }

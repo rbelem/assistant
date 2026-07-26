@@ -2,6 +2,7 @@
 # tofu-wrapper.sh — Run tofu with Bitwarden-driven tfvars + backend config.
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+TOFU_DIR="$REPO_ROOT/tofu"
 cd "$REPO_ROOT"
 
 # Render the vault-driven tfvars (and runtime-config.json etc.) on demand.
@@ -12,10 +13,15 @@ scripts/fetch_vault.sh
 . .rendered/vault.env
 
 # Materialize a -backend-config file from the vault (gitignored).
+# Use TOFU_STATE_* credential pair (the keys that own the state bucket, separate
+# from STORAGE_* which backs the restic data bucket). Region falls back to
+# storage_region in case TOFU_STATE_REGION is missing from the vault.
+mkdir -p .rendered
+BACKEND_REGION="${TOFU_STATE_REGION:-${STORAGE_REGION:-}}"
 cat > .rendered/backend.conf <<EOF
 bucket                      = "${TOFU_STATE_BUCKET}"
 key                         = "infrastructure/terraform.tfstate"
-region                      = "${TOFU_STATE_REGION}"
+region                      = "${BACKEND_REGION}"
 endpoint                    = "${TOFU_STATE_ENDPOINT}"
 access_key                  = "${TOFU_STATE_ACCESS_KEY}"
 secret_key                  = "${TOFU_STATE_SECRET_KEY}"
@@ -35,14 +41,41 @@ done
 
 # Pass everything through. Plan/apply/destroy/validate/refresh get the
 # Bitwarden tfvars; init also gets the backend config so
-# credentials/region/bucket come from Bitwarden.
+# credentials/region/bucket come from Bitwarden. All tofu commands run
+# from TOFU_DIR (where the *.tf files live); -backend-config and
+# -var-file paths are repo-root-relative.
+# Note: -var-file is INCOMPATIBLE with applying a saved plan file (tofu
+# rejects it because the plan already has variables baked in). Skip
+# -var-file when the user passes a positional plan-file arg.
+cd "$TOFU_DIR"
 case "${1:-}" in
   init)
     shift
-    exec tofu init -backend-config=.rendered/backend.conf "$@"
+    exec tofu init -backend-config="$REPO_ROOT/.rendered/backend.conf" "$@"
     ;;
-  plan|apply|destroy|validate|refresh)
-    exec tofu "$@" -var-file=.rendered/terraform.tfvars
+  plan)
+    shift
+    exec tofu plan -var-file="$REPO_ROOT/.rendered/terraform.tfvars" "$@"
+    ;;
+  apply)
+    shift
+    if [[ $# -gt 0 ]]; then
+      # Positional arg present (likely a plan file) — don't inject -var-file.
+      exec tofu apply "$@"
+    fi
+    exec tofu apply -var-file="$REPO_ROOT/.rendered/terraform.tfvars" "$@"
+    ;;
+  destroy)
+    shift
+    exec tofu destroy -var-file="$REPO_ROOT/.rendered/terraform.tfvars" "$@"
+    ;;
+  validate)
+    shift
+    exec tofu validate -var-file="$REPO_ROOT/.rendered/terraform.tfvars" "$@"
+    ;;
+  refresh)
+    shift
+    exec tofu refresh -var-file="$REPO_ROOT/.rendered/terraform.tfvars" "$@"
     ;;
   *)
     exec tofu "$@"
