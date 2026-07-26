@@ -34,6 +34,10 @@ K8S_MANIFESTS="$DIR/k8s/manifests"
 PLAYBOOKS="$DIR/ansible/playbooks"
 INVENTORY="$DIR/ansible/inventory/hosts.yml"
 VERBOSE="${VERBOSE:-0}"
+
+***REMOVED*** Allowlist of variables passed to envsubst when rendering *.tmpl files.
+***REMOVED*** This prevents $HOME, $USER, $PWD, etc. from leaking into committed files.
+RENDER_VARS='$VPS_HOST $VPS_SSH_USER $VPS_SSH_PORT $DOMAIN $SUBDOMAINS_JSON $PROJECT_NAME $VPS_PLAN_CODE $DATACENTER'
 HELMFILE_DIR="$DIR/k8s"
 HELMFILE_BIN="${HELMFILE_BIN:-helmfile}"
 
@@ -61,6 +65,47 @@ run_ssh() {
 
 ***REMOVED*** ── Phases ──────────────────────────────────────────────────
 
+phase_inventory_render() {
+  step "preflight — fetch vault + render templates"
+
+  if ! command -v envsubst &>/dev/null; then
+    err "envsubst (gettext) is required to render *.tmpl files"
+    exit 1
+  fi
+
+  ***REMOVED*** Pull deployment config from Bitwarden into .rendered/vault.env.
+  "$DIR/scripts/fetch_vault.sh"
+
+  ***REMOVED*** Source only the vault-generated exports. set -a auto-exports every variable
+  ***REMOVED*** defined while it is active, so envsubst can see the allowlisted names.
+  set -a
+  ***REMOVED*** shellcheck source=.rendered/vault.env
+  . "$DIR/.rendered/vault.env"
+  set +a
+
+  ***REMOVED*** Export the allowlist explicitly; envsubst uses the current environment.
+  ***REMOVED*** Any new name added to RENDER_VARS above must also be exported here.
+  export VPS_HOST VPS_SSH_USER VPS_SSH_PORT DOMAIN SUBDOMAINS_JSON PROJECT_NAME VPS_PLAN_CODE DATACENTER
+
+  ***REMOVED*** Fall back to vault-derived host when VPS_IP is not already set (e.g.
+  ***REMOVED*** --skip-tofu runs). This keeps run_ssh() working across all phases.
+  VPS_IP="${VPS_IP:-$VPS_HOST}"
+  export VPS_IP
+
+  ***REMOVED*** Also honor vault-derived SSH user unless the caller overrode it.
+  SSH_USER="${SSH_USER:-$VPS_SSH_USER}"
+  export SSH_USER
+
+  ***REMOVED*** Render every *.tmpl outside .rendered/ in-place.
+  local tpl out
+  while IFS= read -r -d '' tpl; do
+    out="${tpl%.tmpl}"
+    envsubst "$RENDER_VARS" < "$tpl" > "$out"
+  done < <(find "$DIR" -name '*.tmpl' -not -path "$DIR/.rendered/*" -print0)
+
+  ok "Ansible inventory rendered from vault."
+}
+
 phase_tofu() {
   step "1/6 — Provision VPS with OpenTofu"
   cd "$DIR/tofu"
@@ -82,22 +127,8 @@ phase_tofu() {
   VPS_IP=$(tofu output -raw vps_ip)
   info "VPS IP: $VPS_IP"
 
-  ***REMOVED*** Write inventory
-  mkdir -p "$DIR/ansible/inventory"
-  cat > "$INVENTORY" <<EOF
-all:
-  hosts:
-    rodrigo-agent:
-      ansible_host: $VPS_IP
-      ansible_user: root
-      ansible_python_interpreter: /usr/bin/python3
-  vars:
-    namespace_list: [hermes, monitoring, n8n, auth]
-    vps_hostname: rodrigo-agent
-    domain: REDACTED-DOMAIN
-    k8s_manifests_base: /opt/k8s
-EOF
-  ok "Ansible inventory written."
+  ***REMOVED*** Inventory is now rendered from Bitwarden vault by phase_inventory_render()
+  ***REMOVED*** before the Ansible phase runs. VPS_IP is captured above for SSH use.
 }
 
 phase_infect() {
@@ -254,7 +285,7 @@ phase_status() {
   if [[ -n "$VPS_IP" ]]; then
     info "VPS IP: $VPS_IP"
     info "SSH: ssh root@$VPS_IP"
-    info "DNS: hermes.REDACTED-DOMAIN, status.REDACTED-DOMAIN, n8n.REDACTED-DOMAIN, auth.REDACTED-DOMAIN"
+    info "DNS: hermes.${DOMAIN}, status.${DOMAIN}, n8n.${DOMAIN}, auth.${DOMAIN}"
 
     if run_ssh "systemctl is-active k3s" 2>/dev/null | grep -q active; then
       ok "k3s: active"
@@ -286,6 +317,13 @@ phase_destroy() {
 ***REMOVED*** ── Main ─────────────────────────────────────────────────────
 main() {
   cd "$DIR"
+
+  ***REMOVED*** Render vault-driven templates for all deployment paths. status/destroy/help
+  ***REMOVED*** do not need the vault, so skip them to avoid unnecessary Bitwarden calls.
+  case "${1:-}" in
+    status|destroy|help|--help|-h) : ;;
+    *) phase_inventory_render ;;
+  esac
 
   case "${1:-}" in
     status)
@@ -347,10 +385,10 @@ main() {
       phase_helmfile
       phase_kubectl
       step "Deployment complete! 🚀"
-      info "Access your agent at https://hermes.REDACTED-DOMAIN"
-      info "Status dashboard at https://status.REDACTED-DOMAIN"
-      info "n8n at https://n8n.REDACTED-DOMAIN (Tailscale-only)"
-      info "Auth at https://auth.REDACTED-DOMAIN (Tailscale-only)"
+      info "Access your agent at https://hermes.${DOMAIN}"
+      info "Status dashboard at https://status.${DOMAIN}"
+      info "n8n at https://n8n.${DOMAIN} (Tailscale-only)"
+      info "Auth at https://auth.${DOMAIN} (Tailscale-only)"
       info "SSH: ssh root@$VPS_IP"
       ;;
   esac

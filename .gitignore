@@ -22,3 +22,10 @@ terraform.tfstate.backup
 graphify-out/
 .codegraph/
 *.log
+
+***REMOVED*** Rendered from *.tmpl — DO NOT COMMIT
+.rendered/
+AGENTS.md
+README.md
+CONTEXT.md
+ansible/inventory/hosts.yml
