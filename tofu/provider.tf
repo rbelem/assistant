@@ -76,3 +76,13 @@ provider "porkbun" {
 provider "hcloud" {
   token = var.hcloud_token
 }
+
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Hetzner Cloud Provider
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Manages the VPS, SSH keys, and DNS-adjacent resources via the Hetzner Cloud API.
+***REMOVED*** Token sourced from var.hcloud_token (Bitwarden assistant/tofu-inputs).
+***REMOVED*** -----------------------------------------------------------------------------
+provider "hetznercloud" {
+  token = var.hcloud_token
+}
