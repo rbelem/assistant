@@ -13,15 +13,15 @@
 #   - Bitwarden CLI installed and logged in
 #
 # Usage:
-#   ./deploy.sh                    ***REMOVED*** full deploy (prompts before destructive steps)
-#   ./deploy.sh --skip-tofu        ***REMOVED*** skip provisioning, go to nixos-infect
-#   ./deploy.sh --skip-infect      ***REMOVED*** skip nixos-infect, go to nixos-rebuild
-#   ./deploy.sh --skip-nixos       ***REMOVED*** skip nixos-rebuild, go to ansible
-#   ./deploy.sh --skip-ansible     ***REMOVED*** skip ansible, go to helmfile
-#   ./deploy.sh --skip-helmfile    ***REMOVED*** skip helmfile, go to kubectl
-#   ./deploy.sh --skip-tofu --skip-infect --skip-nixos --skip-ansible  ***REMOVED*** helmfile + kubectl only
-#   ./deploy.sh status             ***REMOVED*** show deployment status
-#   ./deploy.sh destroy            ***REMOVED*** tear everything down
+#   ./deploy.sh                    # full deploy (prompts before destructive steps)
+#   ./deploy.sh --skip-tofu        # skip provisioning, go to nixos-infect
+#   ./deploy.sh --skip-infect      # skip nixos-infect, go to nixos-rebuild
+#   ./deploy.sh --skip-nixos       # skip nixos-rebuild, go to ansible
+#   ./deploy.sh --skip-ansible     # skip ansible, go to helmfile
+#   ./deploy.sh --skip-helmfile    # skip helmfile, go to kubectl
+#   ./deploy.sh --skip-tofu --skip-infect --skip-nixos --skip-ansible  # helmfile + kubectl only
+#   ./deploy.sh status             # show deployment status
+#   ./deploy.sh destroy            # tear everything down
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -40,6 +40,43 @@ VERBOSE="${VERBOSE:-0}"
 RENDER_VARS='$VPS_HOST $VPS_SSH_USER $VPS_SSH_PORT $DOMAIN $SUBDOMAINS_JSON $PROJECT_NAME $VPS_PLAN_CODE $DATACENTER'
 HELMFILE_DIR="$DIR/k8s"
 HELMFILE_BIN="${HELMFILE_BIN:-helmfile}"
+
+# ── Source vault environment ────────────────────────────────
+# Load Bitwarden-derived secrets (SSH_PRIVATE_KEY, VPS_HOST, etc.) if available.
+# shellcheck disable=SC1091
+[[ -f "$DIR/.rendered/vault.env" ]] && . "$DIR/.rendered/vault.env"
+
+# === SSH key setup =============================================================
+# The SSH private key lives in Bitwarden (assistant/vps-ssh-key, SSH key
+# type 5). fetch_vault.sh exports SSH_PRIVATE_KEY into .rendered/vault.env.
+# We write it to a temp file and load it into ssh-agent for all SSH operations.
+# Falls back to ~/.ssh/id_ed25519 if SSH_PRIVATE_KEY is empty.
+
+SSH_KEY_FILE="$(mktemp -t agent_key.XXXXXX)"
+chmod 600 "$SSH_KEY_FILE"
+trap 'rm -f "$SSH_KEY_FILE"' EXIT
+
+if [[ -n "${SSH_PRIVATE_KEY:-}" ]]; then
+  printf '%s\n' "$SSH_PRIVATE_KEY" > "$SSH_KEY_FILE"
+  ssh_add_output=$(ssh-add "$SSH_KEY_FILE" 2>&1 || true)
+  info "Loaded SSH key from Bitwarden into ssh-agent ($(echo "$ssh_add_output" | head -1))"
+elif [[ -f "${HOME}/.ssh/id_ed25519" ]]; then
+  SSH_KEY_FILE="${HOME}/.ssh/id_ed25519"
+  info "Using existing local SSH key ${SSH_KEY_FILE} (no Bitwarden key set)"
+else
+  err "No SSH key available. Either set SSH_PRIVATE_KEY in vault.env or copy a key to ~/.ssh/id_ed25519"
+  exit 1
+fi
+
+# Update SSH_KEY to point to the resolved key file (used by ssh -i in run_ssh and rsync)
+SSH_KEY="$SSH_KEY_FILE"
+
+# Export SSH_AUTH_SOCK so ssh-agent is used by all subsequent ssh invocations
+# (including nixos-rebuild --target-host which uses ssh internally)
+if [[ -n "${SSH_AUTH_SOCK:-}" ]]; then
+  export SSH_AUTH_SOCK SSH_AGENT_PID
+fi
+# ============================================================================
 
 # ── Colors ──────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -73,30 +110,30 @@ phase_inventory_render() {
     exit 1
   fi
 
-  ***REMOVED*** Pull deployment config from Bitwarden into .rendered/vault.env.
+  # Pull deployment config from Bitwarden into .rendered/vault.env.
   "$DIR/scripts/fetch_vault.sh"
 
-  ***REMOVED*** Source only the vault-generated exports. set -a auto-exports every variable
-  ***REMOVED*** defined while it is active, so envsubst can see the allowlisted names.
+  # Source only the vault-generated exports. set -a auto-exports every variable
+  # defined while it is active, so envsubst can see the allowlisted names.
   set -a
-  ***REMOVED*** shellcheck source=.rendered/vault.env
+  # shellcheck source=.rendered/vault.env
   . "$DIR/.rendered/vault.env"
   set +a
 
-  ***REMOVED*** Export the allowlist explicitly; envsubst uses the current environment.
-  ***REMOVED*** Any new name added to RENDER_VARS above must also be exported here.
+  # Export the allowlist explicitly; envsubst uses the current environment.
+  # Any new name added to RENDER_VARS above must also be exported here.
   export VPS_HOST VPS_SSH_USER VPS_SSH_PORT DOMAIN SUBDOMAINS_JSON PROJECT_NAME VPS_PLAN_CODE DATACENTER
 
-  ***REMOVED*** Fall back to vault-derived host when VPS_IP is not already set (e.g.
-  ***REMOVED*** --skip-tofu runs). This keeps run_ssh() working across all phases.
+  # Fall back to vault-derived host when VPS_IP is not already set (e.g.
+  # --skip-tofu runs). This keeps run_ssh() working across all phases.
   VPS_IP="${VPS_IP:-$VPS_HOST}"
   export VPS_IP
 
-  ***REMOVED*** Also honor vault-derived SSH user unless the caller overrode it.
+  # Also honor vault-derived SSH user unless the caller overrode it.
   SSH_USER="${SSH_USER:-$VPS_SSH_USER}"
   export SSH_USER
 
-  ***REMOVED*** Render every *.tmpl outside .rendered/ in-place.
+  # Render every *.tmpl outside .rendered/ in-place.
   local tpl out
   while IFS= read -r -d '' tpl; do
     out="${tpl%.tmpl}"
@@ -123,12 +160,12 @@ phase_tofu() {
   tofu apply plan.out
   ok "VPS provisioned."
 
-  ***REMOVED*** Capture VPS IP
+  # Capture VPS IP
   VPS_IP=$(tofu output -raw vps_ip)
   info "VPS IP: $VPS_IP"
 
-  ***REMOVED*** Inventory is now rendered from Bitwarden vault by phase_inventory_render()
-  ***REMOVED*** before the Ansible phase runs. VPS_IP is captured above for SSH use.
+  # Inventory is now rendered from Bitwarden vault by phase_inventory_render()
+  # before the Ansible phase runs. VPS_IP is captured above for SSH use.
 }
 
 phase_infect() {
@@ -197,7 +234,7 @@ phase_ansible() {
   step "4/6 — Configure services with Ansible + Bitwarden"
   cd "$DIR/ansible"
 
-  ***REMOVED*** Ensure Bitwarden is logged in
+  # Ensure Bitwarden is logged in
   if ! bw status 2>/dev/null | grep -q '"status":"unlocked"'; then
     info "Bitwarden session required."
     export BW_SESSION=$(bw login --check 2>&1 | grep -o 'BW_SESSION="[^"]*"' | cut -d'"' -f2)
@@ -224,7 +261,7 @@ phase_helmfile() {
   fi
 
   if ! command -v "$HELMFILE_BIN" &>/dev/null; then
-    ***REMOVED*** Helmfile should be installed on the VPS via NixOS packages
+    # Helmfile should be installed on the VPS via NixOS packages
     info "Helmfile not found locally. Using helmfile on VPS..."
     HELMFILE_CMD="run_ssh"
     HELMFILE_DIR_REMOTE="/opt/k8s"
@@ -324,8 +361,8 @@ phase_destroy() {
 main() {
   cd "$DIR"
 
-  ***REMOVED*** Render vault-driven templates for all deployment paths. status/destroy/help
-  ***REMOVED*** do not need the vault, so skip them to avoid unnecessary Bitwarden calls.
+  # Render vault-driven templates for all deployment paths. status/destroy/help
+  # do not need the vault, so skip them to avoid unnecessary Bitwarden calls.
   case "${1:-}" in
     status|destroy|help|--help|-h) : ;;
     *) phase_inventory_render ;;
