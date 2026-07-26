@@ -11,10 +11,10 @@
 ***REMOVED***   - shell-safe quoting via printf %q
 ***REMOVED***
 ***REMOVED*** Bitwarden schema (vault `assistant`, items namespaced under that prefix):
-***REMOVED***   "assistant/vps-access"     — Login, custom fields: host, ssh_user, ssh_port
+***REMOVED***   "assistant/vps-ssh-key"    — SSH key (type 5), .sshKey.privateKey
 ***REMOVED***   "assistant/domain-config"  — Secure Note JSON:
 ***REMOVED***                                     {"domain":"<your-domain>","subdomains":["hermes",...]}
-***REMOVED***   "assistant/tofu-inputs"    — Secure Note JSON (arbitrary TF_VAR_* keys)
+***REMOVED***   "assistant/tofu-inputs"    — Secure Note JSON (arbitrary TF_VAR_* keys + vps_host, vps_ssh_user, vps_ssh_port)
 ***REMOVED***
 ***REMOVED*** Usage:
 ***REMOVED***   scripts/fetch_vault.sh              ***REMOVED*** write all rendered outputs
@@ -127,7 +127,7 @@ assert_non_empty() {
   local label="$1" value="$2"
   if [[ -z "$value" || "$value" == "null" ]]; then
     echo "Bitwarden field empty: $label" >&2
-    echo "  check items 'assistant/vps-access', 'assistant/domain-config', 'assistant/tofu-inputs'" >&2
+    echo "  check items 'assistant/vps-ssh-key', 'assistant/domain-config', 'assistant/tofu-inputs'" >&2
     exit 1
   fi
 }
@@ -150,17 +150,13 @@ to_relpath() {
 }
 
 ***REMOVED***--- main fetch ----------------------------------------------------------------
-ITEM_VPS='assistant/vps-access'
+ITEM_VPS='assistant/vps-ssh-key'
 ITEM_DOMAIN='assistant/domain-config'
 ITEM_TOFU='assistant/tofu-inputs'
 
-***REMOVED*** VPS Access (Login → 3 custom fields)
-VPS_HOST="$(fetch_login_field "$ITEM_VPS" host)"
-VPS_SSH_USER="$(fetch_login_field "$ITEM_VPS" ssh_user)"
-VPS_SSH_PORT="$(fetch_login_field "$ITEM_VPS" ssh_port)"
-assert_non_empty "$ITEM_VPS.host"     "$VPS_HOST"
-assert_non_empty "$ITEM_VPS.ssh_user" "$VPS_SSH_USER"
-assert_non_empty "$ITEM_VPS.ssh_port" "$VPS_SSH_PORT"
+***REMOVED*** VPS SSH Key (SSH key type → .sshKey.privateKey)
+SSH_PRIVATE_KEY="$(bw_sesh get item "$ITEM_VPS" | jq -r '.sshKey.privateKey')"
+assert_non_empty "$ITEM_VPS.sshKey.privateKey" "$SSH_PRIVATE_KEY"
 
 ***REMOVED*** Domain Config (Secure Note → JSON body)
 DOMAIN_JSON="$(fetch_note_payload "$ITEM_DOMAIN")"
@@ -179,6 +175,14 @@ TOFU_JSON="$(fetch_note_payload "$ITEM_TOFU" 2>/dev/null || true)"
 [[ -z "$TOFU_JSON" ]] && TOFU_JSON='{}'
 echo "$TOFU_JSON" | jq -e . >/dev/null 2>&1 \
   || { echo "$ITEM_TOFU body is not valid JSON: $TOFU_JSON" >&2; exit 1; }
+
+***REMOVED*** VPS host/user/port from tofu-inputs JSON (moved from vps-access Login item)
+VPS_HOST="$(echo "$TOFU_JSON" | jq -r '.vps_host // empty')"
+VPS_SSH_USER="$(echo "$TOFU_JSON" | jq -r '.vps_ssh_user // empty')"
+VPS_SSH_PORT="$(echo "$TOFU_JSON" | jq -r '.vps_ssh_port // empty')"
+assert_non_empty "$ITEM_TOFU.vps_host"     "$VPS_HOST"
+assert_non_empty "$ITEM_TOFU.vps_ssh_user" "$VPS_SSH_USER"
+assert_non_empty "$ITEM_TOFU.vps_ssh_port" "$VPS_SSH_PORT"
 
 if [[ "$CHECK_ONLY" == "1" ]]; then
   echo "fetch_vault --check: all items present."
@@ -209,6 +213,7 @@ tmp="$(mktemp)"
   printf 'export %s=%q\n' VPS_SSH_PORT "$VPS_SSH_PORT"
   printf 'export %s=%q\n' DOMAIN       "$DOMAIN"
   printf 'export %s=%q\n' SUBDOMAINS_JSON "$SUBDOMAINS_JSON"
+  printf 'export %s=%q\n' SSH_PRIVATE_KEY "$SSH_PRIVATE_KEY"
 
   ***REMOVED*** Export arbitrary TF_VAR_* from Tofu Inputs JSON.
   echo "$TOFU_JSON" | jq -r '
@@ -273,12 +278,14 @@ jq -n \
   --argjson ssh_port "$VPS_SSH_PORT" \
   --argjson subdomains "$SUBDOMAINS_JSON" \
   --argjson tofu "$TOFU_JSON" \
+  --arg ssh_private_key "$SSH_PRIVATE_KEY" \
   '{
      domain:     $domain,
      subdomains: $subdomains,
      vps_host:   $vps_host,
      ssh_user:   $ssh_user,
      ssh_port:   $ssh_port,
+     ssh_private_key: $ssh_private_key,
      tofu:       $tofu
    }' \
   > "$RUNTIME_JSON"
