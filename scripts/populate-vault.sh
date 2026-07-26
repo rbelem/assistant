@@ -7,8 +7,8 @@
 ***REMOVED***
 ***REMOVED*** Required env vars:
 ***REMOVED***   VPS_HOST          — current VPS public IPv4
-***REMOVED***   DOMAIN            — base domain (e.g. REDACTED-DOMAIN)
-***REMOVED***   SUBDOMAINS_JSON   — JSON array (e.g. '["hermes","status","n8n","auth"]')
+***REMOVED***   DOMAIN            — base domain (e.g. example.com)
+***REMOVED***   SUBDOMAINS_JSON   — JSON array (e.g. '["app","www"]')
 ***REMOVED***   PROJECT_NAME      — project prefix (e.g. rodrigo-agent)
 ***REMOVED***   TOFU_INPUTS_JSON  — JSON object with Tofu vars (plan, datacenter, etc.)
 ***REMOVED***
@@ -17,9 +17,9 @@
 ***REMOVED***   SSH_PORT          — SSH port (default: 22)
 ***REMOVED***
 ***REMOVED*** Usage:
-***REMOVED***   VPS_HOST=203.0.113.42 DOMAIN=REDACTED-DOMAIN \
+***REMOVED***   VPS_HOST=203.0.113.42 DOMAIN=example.com \
 ***REMOVED***     PROJECT_NAME=rodrigo-agent \
-***REMOVED***     SUBDOMAINS_JSON='["hermes","status","n8n","auth"]' \
+***REMOVED***     SUBDOMAINS_JSON='["app","www"]' \
 ***REMOVED***     TOFU_INPUTS_JSON='{"vps_plan_code":"KVM 4","datacenter":"gra","vps_image_id":"...","state_bucket_name":"...-tofu-state","backup_bucket_name":"...-backups","storage_region":"gra","storage_endpoint":"https://s3.gra.io.REDACTED-OVH-DOMAIN","storage_access_key":"...","storage_secret_key":"...","ssh_public_key":"...","vps_os":"debian-12","vps_display_name":"agent"}' \
 ***REMOVED***     scripts/populate-vault.sh
 ***REMOVED***
@@ -29,7 +29,7 @@ set -euo pipefail
 
 ***REMOVED***--- arg validation ------------------------------------------------------------
 : "${VPS_HOST:?must set VPS_HOST (VPS public IPv4)}"
-: "${DOMAIN:?must set DOMAIN (e.g. REDACTED-DOMAIN)}"
+: "${DOMAIN:?must set DOMAIN (e.g. example.com)}"
 : "${SUBDOMAINS_JSON:?must set SUBDOMAINS_JSON (JSON array string)}"
 : "${PROJECT_NAME:?must set PROJECT_NAME (e.g. rodrigo-agent)}"
 : "${TOFU_INPUTS_JSON:?must set TOFU_INPUTS_JSON (JSON object)}"
@@ -171,13 +171,15 @@ echo
 echo "Next step: validate the schema + render end-to-end:"
 echo "  scripts/fetch_vault.sh --check"
 echo
-echo "To update values later, edit the items in hPanel Bitwarden or via bw CLI:"
+echo "To update values later, edit the items in Bitwarden or via bw CLI:"
 echo "  bw get item 'rodrigo-agent/tofu-inputs' | jq -r '.notes | fromjson'"
 echo
 echo "Required TOFU_INPUTS_JSON keys (for full deploy):"
 echo '  vps_plan_code, datacenter, vps_image_id, vps_os, vps_display_name,'
 echo '  ssh_public_key, state_bucket_name, backup_bucket_name, storage_region,'
-echo '  storage_endpoint, storage_access_key, storage_secret_key'
+echo '  storage_endpoint, storage_access_key, storage_secret_key,'
+echo '  tofu_state_bucket, tofu_state_region, tofu_state_endpoint,'
+echo '  tofu_state_access_key, tofu_state_secret_key'
 echo
 echo "If TOFU_INPUTS_JSON is missing keys, tofu will fail at apply with"
 echo "an 'undefined variable' error. Re-run with the missing keys added."

@@ -21,23 +21,25 @@ variable "vps_display_name" {
   }
 }
 
+***REMOVED*** Supported VPS providers: OVH (REDACTED-PLAN / REDACTED-REGION1) and Hostinger
+***REMOVED*** (hostingercom-vps-kvm4-... / curitiba). Validation accepts both patterns.
 variable "vps_datacenter" {
-  description = "OVH datacenter for the VPS (e.g. REDACTED-REGION1, REDACTED-REGION1, REDACTED-REGION1). Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "VPS datacenter/region (e.g. REDACTED-REGION1, REDACTED-REGION1, curitiba). Source: Bitwarden rodrigo-agent/tofu-inputs"
   type        = string
 
   validation {
-    condition     = can(regex("^[A-Z0-9]{3,4}$", var.vps_datacenter))
-    error_message = "Datacenter code must be 3-4 alphanumeric uppercase characters (e.g. REDACTED-REGION1, REDACTED-REGION1)."
+    condition     = can(regex("^[A-Za-z0-9_-]{2,16}$", var.vps_datacenter))
+    error_message = "Datacenter/region must be 2-16 alphanumeric characters, underscores, or hyphens."
   }
 }
 
 variable "vps_plan_code" {
-  description = "OVH VPS plan code (REDACTED-PLAN = 2 vCPU, 2GB RAM, 40GB SSD). Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "VPS plan code (e.g. REDACTED-PLAN). Source: Bitwarden rodrigo-agent/tofu-inputs"
   type        = string
 
   validation {
-    condition     = can(regex("^vps-[a-z0-9-]+$", var.vps_plan_code))
-    error_message = "VPS plan code must match the OVH format (e.g. REDACTED-PLAN)."
+    condition     = can(regex("^[a-z][a-z0-9-]+$", var.vps_plan_code))
+    error_message = "VPS plan code must be lowercase letters, digits, and hyphens."
   }
 }
 
@@ -176,12 +178,12 @@ variable "storage_region" {
 }
 
 variable "storage_endpoint" {
-  description = "S3-compatible Object Storage endpoint URL (e.g. https://s3.gra.io.REDACTED-OVH-DOMAIN). Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "S3-compatible Object Storage HTTPS endpoint URL. Source: Bitwarden rodrigo-agent/tofu-inputs"
   type        = string
 
   validation {
-    condition     = can(regex("^https?://", var.storage_endpoint))
-    error_message = "Storage endpoint must be a valid HTTP(S) URL."
+    condition     = can(regex("^https://[a-z0-9.-]+$", var.storage_endpoint))
+    error_message = "Storage endpoint must be an HTTPS URL with lowercase letters, digits, dots, and hyphens."
   }
 }
 

@@ -2,7 +2,14 @@
 terraform.tfstate
 terraform.tfstate.backup
 .tofu/
-.tofu.lock.hcl
+.terraform.lock.hcl
+
+***REMOVED*** Tofu variables — built from Bitwarden at deploy time. NEVER commit real values.
+*.tfvars
+!*.tfvars.example
+
+***REMOVED*** Bitwarden scrub map — build-time only, contains literal env-specific patterns.
+replacements.txt
 
 ***REMOVED*** Ansible
 *.retry

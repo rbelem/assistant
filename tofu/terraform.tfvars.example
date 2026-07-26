@@ -1,12 +1,12 @@
 ***REMOVED*** ─────────────────────────────────────────────────────────────
-***REMOVED*** Variable overrides — copy to terraform.tfvars and customize
+***REMOVED*** terraform.tfvars.example — committed example file
 ***REMOVED*** ─────────────────────────────────────────────────────────────
-***REMOVED*** Not committed. Set your actual values here.
-***REMOVED*** Sensitive values can also be set via TF_VAR_* env vars.
-***REMOVED*** All values are normally rendered from Bitwarden by scripts/fetch_vault.sh.
+***REMOVED*** Copy this file to terraform.tfvars (which is gitignored) and set your actual
+***REMOVED*** values there. Sensitive values can also be exported as TF_VAR_* env vars.
+***REMOVED*** In normal use, scripts/fetch_vault.sh renders terraform.tfvars from Bitwarden.
 ***REMOVED*** ─────────────────────────────────────────────────────────────
 
-***REMOVED*** Base domain name (managed by Porkbun DNS)
+***REMOVED*** Base domain name (managed by your DNS provider)
 domain_name = "your-domain.example.com"
 
 ***REMOVED*** SSH connection metadata for the VPS
@@ -17,14 +17,14 @@ ssh_port = 22
 vps_ip = "203.0.113.1"
 
 ***REMOVED*** Subdomains to create as A records under domain_name
-subdomains = ["hermes", "status", "n8n", "auth"]
+subdomains = ["app", "www"]
 
-***REMOVED*** VPS configuration in OVH Manager
+***REMOVED*** VPS configuration in your provider's control panel
 vps_display_name = "my-agent"
-vps_plan_code    = "REDACTED-PLAN"
+vps_plan_code    = "<your-plan-code>"
 vps_os           = "Debian 12"
 
-***REMOVED*** SSH key and image ID must both be set together (OVH API requirement)
+***REMOVED*** SSH key and image ID must both be set together (some providers require this)
 ssh_public_key = "ssh-ed25519 AAAA..."
 vps_image_id   = "00000000-0000-0000-0000-000000000000"
 
@@ -33,7 +33,7 @@ state_bucket_name  = "my-agent-tofu-state"
 backup_bucket_name = "my-agent-backups"
 
 ***REMOVED*** S3-compatible Object Storage connection settings
-storage_region     = "gra"
-storage_endpoint   = "https://s3.gra.io.REDACTED-OVH-DOMAIN"
+storage_region     = "<your-region>"
+storage_endpoint   = "<your-storage-endpoint>"
 storage_access_key = "my-access-key"
 storage_secret_key = "my-secret-key"

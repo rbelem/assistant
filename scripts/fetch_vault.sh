@@ -218,13 +218,17 @@ tmp="$(mktemp)"
 
   ***REMOVED*** Export selected non-TF vars from Tofu Inputs for envsubst / deploy scripts.
   ***REMOVED*** These are also written to terraform.tfvars below as Tofu variables.
+  ***REMOVED*** Includes TOFU_STATE_* keys consumed by tofu/tofu-wrapper.sh for the S3 backend.
   echo "$TOFU_JSON" | jq -r '
     to_entries[]
     | select(.key == "project_name" or .key == "vps_plan_code" or .key == "datacenter"
              or .key == "storage_access_key" or .key == "storage_secret_key"
              or .key == "storage_endpoint" or .key == "storage_region"
              or .key == "vps_image_id" or .key == "vps_os"
-             or .key == "vps_display_name" or .key == "ssh_public_key")
+             or .key == "vps_display_name" or .key == "ssh_public_key"
+             or .key == "tofu_state_bucket" or .key == "tofu_state_region"
+             or .key == "tofu_state_endpoint" or .key == "tofu_state_access_key"
+             or .key == "tofu_state_secret_key")
     | "export \(.key | ascii_upcase)=\(.value | tostring)"
   '
 } > "$tmp"
@@ -245,10 +249,15 @@ tmp="$(mktemp)"
 
   ***REMOVED*** Append any extra Tofu Inputs as tfvars — keys map verbatim (caller has
   ***REMOVED*** already declared matching variables in tofu/variables.tf).
+  ***REMOVED*** Exclude TOFU_STATE_* keys; those are consumed by tofu-wrapper.sh from env vars,
+  ***REMOVED*** not passed as Tofu input variables.
   echo "$TOFU_JSON" | jq -r '
     to_entries[]
     | select(.key != "domain_name" and .key != "ssh_user" and .key != "vps_ip"
-             and .key != "ssh_port" and .key != "subdomains")
+             and .key != "ssh_port" and .key != "subdomains"
+             and .key != "tofu_state_bucket" and .key != "tofu_state_region"
+             and .key != "tofu_state_endpoint" and .key != "tofu_state_access_key"
+             and .key != "tofu_state_secret_key")
     | "\(.key) = \(.value | tostring)"
   '
 } > "$tmp"
