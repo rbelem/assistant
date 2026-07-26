@@ -64,3 +64,13 @@ provider "aws" {
 provider "porkbun" {
   ***REMOVED*** Credentials from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY env vars
 }
+
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Hetzner Cloud Provider
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Manages the VPS, SSH keys, and DNS-adjacent resources via the Hetzner Cloud API.
+***REMOVED*** Token sourced from var.hcloud_token (Bitwarden assistant/tofu-inputs).
+***REMOVED*** -----------------------------------------------------------------------------
+provider "hetznercloud" {
+  token = var.hcloud_token
+}

@@ -2,7 +2,7 @@
 ***REMOVED*** Main Infrastructure — Hetzner Cloud VPS + Porkbun DNS + Object Storage
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** Resources:
-***REMOVED***   1. Hetzner Cloud server (Ubuntu 22.04 → converted to NixOS via nixos-infect)
+***REMOVED***   1. Hetzner Cloud server (Ubuntu 26.04 → converted to NixOS via nixos-infect)
 ***REMOVED***   2. Porkbun DNS A records: wildcard + subdomains → VPS public IP
 ***REMOVED***   3. S3 buckets for OpenTofu state and restic backups
 ***REMOVED*** -----------------------------------------------------------------------------
@@ -18,7 +18,7 @@ data "hetznercloud_locations" "all" {}
 
 data "hetznercloud_images" "all" {
   most_recent = true
-  with_selector = "os-flavor=ubuntu"
+  with_selector = "os-flavor=ubuntu,os-version=26.04"
   with_architecture = "x86"
 }
 
@@ -31,7 +31,7 @@ data "hetznercloud_ssh_key" "agent" {
 ***REMOVED*** Hetzner Cloud Server
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** Provisions a server through the Hetzner Cloud API.
-***REMOVED*** Ubuntu 22.04 is installed first, then converted to NixOS via nixos-infect.
+***REMOVED*** Ubuntu 26.04 is installed first, then converted to NixOS via nixos-infect.
 ***REMOVED*** SSH key is injected inline via Hetzner's first-boot mechanism.
 ***REMOVED*** -----------------------------------------------------------------------------
 
@@ -88,6 +88,8 @@ resource "porkbun_dns_record" "svc" {
 ***REMOVED*** -----------------------------------------------------------------------------
 
 ***REMOVED*** --- State bucket (must exist before `tofu init`, import if pre-existing) ---
+***REMOVED*** First apply needs: tofu import aws_s3_bucket.tofu_state REDACTED-BUCKET
+***REMOVED*** (run this manually before `tofu apply` if the bucket already exists)
 resource "aws_s3_bucket" "tofu_state" {
   bucket = var.state_bucket_name
 

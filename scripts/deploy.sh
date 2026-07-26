@@ -46,6 +46,15 @@ HELMFILE_BIN="${HELMFILE_BIN:-helmfile}"
 ***REMOVED*** shellcheck disable=SC1091
 [[ -f "$DIR/.rendered/vault.env" ]] && . "$DIR/.rendered/vault.env"
 
+***REMOVED*** ── Colors ──────────────────────────────────────────────────
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+BLUE='\033[0;34m'; NC='\033[0m'
+info()  { echo -e "${BLUE}[INFO]${NC}  $*"; }
+ok()    { echo -e "${GREEN}[OK]${NC}    $*"; }
+warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
+err()   { echo -e "${RED}[ERR]${NC}   $*"; }
+step()  { echo; echo -e "${BLUE}═══ $* ═══${NC}"; }
+
 ***REMOVED*** === SSH key setup =============================================================
 ***REMOVED*** The SSH private key lives in Bitwarden (assistant/vps-ssh-key, SSH key
 ***REMOVED*** type 5). fetch_vault.sh exports SSH_PRIVATE_KEY into .rendered/vault.env.
@@ -76,7 +85,7 @@ SSH_KEY="$SSH_KEY_FILE"
 if [[ -n "${SSH_AUTH_SOCK:-}" ]]; then
   export SSH_AUTH_SOCK SSH_AGENT_PID
 fi
-***REMOVED*** ============================================================================
+***REMOVED*** =============================================================================
 
 ***REMOVED*** === Effective SSH user =========================================================
 ***REMOVED*** For the very first deploy (when no nix-config is applied yet), set
@@ -90,15 +99,6 @@ fi
 ***REMOVED*** the configured admin user (rodrigo).
 EFFECTIVE_SSH_USER="${INITIAL_SSH_USER:-$VPS_SSH_USER}"
 export EFFECTIVE_SSH_USER
-
-***REMOVED*** ── Colors ──────────────────────────────────────────────────
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
-BLUE='\033[0;34m'; NC='\033[0m'
-info()  { echo -e "${BLUE}[INFO]${NC}  $*"; }
-ok()    { echo -e "${GREEN}[OK]${NC}    $*"; }
-warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
-err()   { echo -e "${RED}[ERR]${NC}   $*"; }
-step()  { echo; echo -e "${BLUE}═══ $* ═══${NC}"; }
 
 ***REMOVED*** ── Helpers ─────────────────────────────────────────────────
 prompt_confirm() {

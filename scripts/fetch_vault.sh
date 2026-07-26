@@ -277,6 +277,10 @@ chmod 600 "$TFVARS_FILE"
 
 ***REMOVED*** runtime-config.json: read by Nix modules via builtins.fromJSON
 ***REMOVED*** (Option A per prior Oracle review — gitignored file visible via `path:` flakeref).
+***REMOVED*** Extract backup S3 config from tofu-inputs (consumed by nix-config backup.nix)
+BACKUP_S3_ENDPOINT="$(echo "$TOFU_JSON" | jq -r '.storage_endpoint // empty')"
+BACKUP_S3_BUCKET="$(echo "$TOFU_JSON" | jq -r '.backup_bucket_name // empty')"
+
 jq -n \
   --arg domain "$DOMAIN" \
   --arg vps_host "$VPS_HOST" \
@@ -285,6 +289,8 @@ jq -n \
   --argjson subdomains "$SUBDOMAINS_JSON" \
   --argjson tofu "$TOFU_JSON" \
   --arg ssh_private_key "$SSH_PRIVATE_KEY" \
+  --arg backup_s3_endpoint "$BACKUP_S3_ENDPOINT" \
+  --arg backup_s3_bucket "$BACKUP_S3_BUCKET" \
   '{
      domain:     $domain,
      subdomains: $subdomains,
@@ -292,7 +298,13 @@ jq -n \
      ssh_user:   $ssh_user,
      ssh_port:   $ssh_port,
      ssh_private_key: $ssh_private_key,
-     tofu:       $tofu
+     tofu:       $tofu,
+     backup: {
+       s3: {
+         endpoint: $backup_s3_endpoint,
+         bucket:   $backup_s3_bucket
+       }
+     }
    }' \
   > "$RUNTIME_JSON"
 chmod 600 "$RUNTIME_JSON"

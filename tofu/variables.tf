@@ -45,9 +45,9 @@ variable "hcloud_location" {
 }
 
 variable "hcloud_image_filter" {
-  description = "Image name filter. Ubuntu 22.04 (because Hetzner has no native NixOS). nixos-infect runs after first boot via Ansible"
+  description = "Image name filter. Ubuntu 26.04 (because Hetzner has no native NixOS). nixos-infect runs after first boot via Ansible"
   type        = string
-  default     = "ubuntu-22.04"
+  default     = "ubuntu-26.04"
 }
 
 variable "hcloud_ssh_key_fingerprint" {
