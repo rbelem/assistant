@@ -1,8 +1,8 @@
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Provider Configuration — Hostinger VPS + AWS S3 + Porkbun DNS
+***REMOVED*** Provider Configuration — Hetzner Cloud + AWS S3 + Porkbun DNS
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Hostinger credentials are sourced from environment variables:
-***REMOVED***   HOSTINGER_API_TOKEN
+***REMOVED*** Hetzner Cloud credentials are sourced from environment variables:
+***REMOVED***   HCLOUD_TOKEN
 ***REMOVED***
 ***REMOVED*** AWS/S3 credentials for Object Storage:
 ***REMOVED***   Passed via tofu-inputs variables: storage_access_key, storage_secret_key,
@@ -16,9 +16,9 @@ terraform {
   required_version = ">= 1.6.0"
 
   required_providers {
-    hostinger = {
-      source  = "hostinger/hostinger"
-      version = "~> 0.1.22"
+    hetznercloud = {
+      source  = "hetznercloud/hcloud"
+      version = "~> 1.45"  ***REMOVED*** Pinned to 1.45.x line (Q1 2026 stable)
     }
 
     aws = {
@@ -34,20 +34,13 @@ terraform {
 }
 
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Hostinger Provider
-***REMOVED*** -----------------------------------------------------------------------------
-provider "hostinger" {
-  ***REMOVED*** Credentials sourced from HOSTINGER_API_TOKEN environment variable
-}
-
-***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** AWS S3 Provider — configured for S3-compatible Object Storage
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Manages S3 buckets on an S3-compatible Object Storage backend (e.g. OVH).
+***REMOVED*** Manages S3 buckets on an S3-compatible Object Storage backend (e.g. Hetzner, Backblaze B2, Wasabi).
 ***REMOVED*** Region, endpoint, and credentials are sourced from tofu-inputs variables.
 ***REMOVED*** -----------------------------------------------------------------------------
 provider "aws" {
-  region     = var.vps_datacenter
+  region     = var.storage_region
   access_key = var.storage_access_key
   secret_key = var.storage_secret_key
 

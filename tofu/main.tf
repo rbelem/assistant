@@ -1,8 +1,8 @@
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Main Infrastructure — Hostinger VPS + Porkbun DNS + Object Storage
+***REMOVED*** Main Infrastructure — Hetzner Cloud VPS + Porkbun DNS + Object Storage
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** Resources:
-***REMOVED***   1. Hostinger VPS instance (NixOS template)
+***REMOVED***   1. Hetzner Cloud server (Ubuntu 22.04 → converted to NixOS via nixos-infect)
 ***REMOVED***   2. Porkbun DNS A records: wildcard + subdomains → VPS public IP
 ***REMOVED***   3. S3 buckets for OpenTofu state and restic backups
 ***REMOVED*** -----------------------------------------------------------------------------
@@ -11,30 +11,44 @@
 ***REMOVED*** Data Sources
 ***REMOVED*** -----------------------------------------------------------------------------
 
-***REMOVED*** Discover available VPS plans, data centers, and templates
-data "hostinger_vps_plans" "all" {}
+***REMOVED*** Discover available server types, locations, and images
+data "hetznercloud_server_types" "all" {}
 
-data "hostinger_vps_data_centers" "all" {}
+data "hetznercloud_locations" "all" {}
 
-data "hostinger_vps_templates" "all" {}
+data "hetznercloud_images" "all" {
+  most_recent = true
+  with_selector = "os-flavor=ubuntu"
+  with_architecture = "x86"
+}
+
+***REMOVED*** Look up SSH key by fingerprint (uploaded to Hetzner out-of-band)
+data "hetznercloud_ssh_key" "agent" {
+  fingerprint = var.hcloud_ssh_key_fingerprint
+}
 
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Hostinger VPS Instance
+***REMOVED*** Hetzner Cloud Server
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Provisions a VPS through the Hostinger API.
-***REMOVED*** The VPS is created with a NixOS template and SSH key access.
+***REMOVED*** Provisions a server through the Hetzner Cloud API.
+***REMOVED*** Ubuntu 22.04 is installed first, then converted to NixOS via nixos-infect.
+***REMOVED*** SSH key is injected inline via Hetzner's first-boot mechanism.
 ***REMOVED*** -----------------------------------------------------------------------------
 
-resource "hostinger_vps" "agent" {
-  name             = var.vps_display_name
-  plan             = var.hostinger_vps_plan
-  data_center_id   = var.hostinger_data_center_id
-  template_id      = var.hostinger_template_id
-  os               = "NixOS"
-  hostname         = "assistant"
+resource "hetznercloud_server" "agent" {
+  name        = var.vps_display_name
+  server_type = var.hcloud_server_type
+  image       = data.hetznercloud_images.all.images[0].id
+  location    = var.hcloud_location
+  ssh_keys    = [data.hetznercloud_ssh_key.agent.id]
+  
+  labels = {
+    project = "assistant"
+    env     = "production"
+  }
 
   lifecycle {
-    ***REMOVED*** Prevent accidental destruction of the running VPS
+    ***REMOVED*** Prevent accidental destruction of the running server
     ***REMOVED*** Set to true after initial setup is complete
     prevent_destroy = false
   }
@@ -43,8 +57,8 @@ resource "hostinger_vps" "agent" {
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** DNS Records — Porkbun
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Wildcard A record uses the Hostinger VPS IP; per-subdomain A records are
-***REMOVED*** driven by var.subdomains / var.vps_ip and rendered from Bitwarden.
+***REMOVED*** Wildcard A record uses the Hetzner server IP; per-subdomain A records are
+***REMOVED*** driven by var.subdomains and rendered from Bitwarden.
 ***REMOVED*** Caddy uses DNS-01 challenge via Porkbun for wildcard TLS certs.
 ***REMOVED*** -----------------------------------------------------------------------------
 
@@ -52,7 +66,7 @@ resource "porkbun_dns_record" "root_wildcard" {
   domain    = var.domain_name
   subdomain = ""      ***REMOVED*** apex
   type      = "A"
-  content   = hostinger_vps.agent.ipv4
+  content   = hetznercloud_server.agent.ipv4_address
   ttl       = var.dns_ttl
 }
 
@@ -61,12 +75,12 @@ resource "porkbun_dns_record" "svc" {
   domain    = var.domain_name
   subdomain = each.key
   type      = "A"
-  content   = hostinger_vps.agent.ipv4
+  content   = hetznercloud_server.agent.ipv4_address
   ttl       = var.dns_ttl
 }
 
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Object Storage Buckets (OVH S3-compatible)
+***REMOVED*** Object Storage Buckets (S3-compatible)
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** Two buckets:
 ***REMOVED***   1. State storage — OpenTofu remote backend
