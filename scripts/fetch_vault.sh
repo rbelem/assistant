@@ -1,38 +1,38 @@
-***REMOVED***!/usr/bin/env bash
-***REMOVED*** fetch_vault.sh — Pull deployment config from Bitwarden and render to:
-***REMOVED***   1. .rendered/vault.env        — sourceable shell env vars (envsubst input)
-***REMOVED***   2. .rendered/terraform.tfvars — tofu apply -var-file=
-***REMOVED***   3. .rendered/runtime-config.json — Nix modules via builtins.fromJSON
-***REMOVED***
-***REMOVED*** Pattern inspired by ~/.local/share/devbox/global/default/bin/secrets-refresh:
-***REMOVED***   - bw_sesh() wrapper (--session arg, env-var unreliable for auth)
-***REMOVED***   - keyring auto-unlock via secret-tool (libsecret)
-***REMOVED***   - atomic cache write (mktemp + mv) with chmod 600
-***REMOVED***   - shell-safe quoting via printf %q
-***REMOVED***
-***REMOVED*** Bitwarden schema (vault `assistant`, items namespaced under that prefix):
-***REMOVED***   "assistant/vps-access"     — Login, custom fields: host, ssh_user, ssh_port
-***REMOVED***   "assistant/domain-config"  — Secure Note JSON:
-***REMOVED***                                     {"domain":"<your-domain>","subdomains":["hermes",...]}
-***REMOVED***   "assistant/tofu-inputs"    — Secure Note JSON (arbitrary TF_VAR_* keys)
-***REMOVED***
-***REMOVED*** Usage:
-***REMOVED***   scripts/fetch_vault.sh              ***REMOVED*** write all rendered outputs
-***REMOVED***   scripts/fetch_vault.sh --check      ***REMOVED*** verify items exist; don't write
-***REMOVED***   scripts/fetch_vault.sh --out-dir DIR  ***REMOVED*** custom output directory
-***REMOVED***
-***REMOVED*** Auto-unlock: if secret-tool (libsecret) is available and a Bitwarden master
-***REMOVED*** password is stored in the keyring under "bitwarden master-password", this
-***REMOVED*** script unlocks bw transparently and exports BW_SESSION. Otherwise set
-***REMOVED*** BW_SESSION manually (`bw unlock --raw > ~/.bw_session_token`).
-***REMOVED***
-***REMOVED*** The fetched values flow through three sinks (vault.env, terraform.tfvars,
-***REMOVED*** runtime-config.json). All three are gitignored and rebuilt on every run.
-***REMOVED*** Bitwarden is the only place environment-specific values live.
+#!/usr/bin/env bash
+# fetch_vault.sh — Pull deployment config from Bitwarden and render to:
+#   1. .rendered/vault.env        — sourceable shell env vars (envsubst input)
+#   2. .rendered/terraform.tfvars — tofu apply -var-file=
+#   3. .rendered/runtime-config.json — Nix modules via builtins.fromJSON
+#
+# Pattern inspired by ~/.local/share/devbox/global/default/bin/secrets-refresh:
+#   - bw_sesh() wrapper (--session arg, env-var unreliable for auth)
+#   - keyring auto-unlock via secret-tool (libsecret)
+#   - atomic cache write (mktemp + mv) with chmod 600
+#   - shell-safe quoting via printf %q
+#
+# Bitwarden schema (vault `assistant`, items namespaced under that prefix):
+#   "assistant/vps-access"     — Login, custom fields: host, ssh_user, ssh_port
+#   "assistant/domain-config"  — Secure Note JSON:
+#                                     {"domain":"<your-domain>","subdomains":["hermes",...]}
+#   "assistant/tofu-inputs"    — Secure Note JSON (arbitrary TF_VAR_* keys)
+#
+# Usage:
+#   scripts/fetch_vault.sh              ***REMOVED*** write all rendered outputs
+#   scripts/fetch_vault.sh --check      ***REMOVED*** verify items exist; don't write
+#   scripts/fetch_vault.sh --out-dir DIR  ***REMOVED*** custom output directory
+#
+# Auto-unlock: if secret-tool (libsecret) is available and a Bitwarden master
+# password is stored in the keyring under "bitwarden master-password", this
+# script unlocks bw transparently and exports BW_SESSION. Otherwise set
+# BW_SESSION manually (`bw unlock --raw > ~/.bw_session_token`).
+#
+# The fetched values flow through three sinks (vault.env, terraform.tfvars,
+# runtime-config.json). All three are gitignored and rebuilt on every run.
+# Bitwarden is the only place environment-specific values live.
 
 set -euo pipefail
 
-***REMOVED***--- arg parsing ----------------------------------------------------------------
+#--- arg parsing ----------------------------------------------------------------
 CHECK_ONLY=0
 OUT_DIR="${OUT_DIR:-.rendered}"
 BW_SESSION="${BW_SESSION:-}"
@@ -50,7 +50,7 @@ while [[ $***REMOVED*** -gt 0 ]]; do
   shift
 done
 
-***REMOVED***--- preflight -----------------------------------------------------------------
+#--- preflight -----------------------------------------------------------------
 need() {
   command -v "$1" >/dev/null 2>&1 \
     || { echo "missing required binary: $1" >&2; exit 1; }
@@ -62,7 +62,7 @@ need grep
 need mktemp
 need mv
 
-***REMOVED***--- BW_SESSION resolution: keyring first, then env fallback --------------------
+#--- BW_SESSION resolution: keyring first, then env fallback --------------------
 if [[ -z "${BW_SESSION:-}" ]] && command -v secret-tool >/dev/null 2>&1; then
   if master_pw="$(secret-tool lookup bitwarden master-password 2>/dev/null)" \
      && [[ -n "$master_pw" ]]; then
@@ -88,12 +88,12 @@ EOF
     exit 1
   }
 
-***REMOVED*** bw_sesh wrapper. bw's daemon ignores BW_SESSION env for auth-state checks; every
-***REMOVED*** call must pass --session explicitly. (Same lesson as devbox secrets-refresh.)
+# bw_sesh wrapper. bw's daemon ignores BW_SESSION env for auth-state checks; every
+# call must pass --session explicitly. (Same lesson as devbox secrets-refresh.)
 bw_sesh() { bw --session "$BW_SESSION" "$@"; }
 
-***REMOVED***--- helpers -------------------------------------------------------------------
-***REMOVED*** Pull a single custom-field value from a Login item by name.
+#--- helpers -------------------------------------------------------------------
+# Pull a single custom-field value from a Login item by name.
 fetch_login_field() {
   local item_name="$1" field_name="$2"
   if [[ -n "$BW_ORG_ID" ]]; then
@@ -109,7 +109,7 @@ fetch_login_field() {
   fi
 }
 
-***REMOVED*** Pull the JSON payload of a Secure Note item by name.
+# Pull the JSON payload of a Secure Note item by name.
 fetch_note_payload() {
   local item_name="$1"
   if [[ -n "$BW_ORG_ID" ]]; then
@@ -149,12 +149,12 @@ to_relpath() {
   fi
 }
 
-***REMOVED***--- main fetch ----------------------------------------------------------------
+#--- main fetch ----------------------------------------------------------------
 ITEM_VPS='assistant/vps-access'
 ITEM_DOMAIN='assistant/domain-config'
 ITEM_TOFU='assistant/tofu-inputs'
 
-***REMOVED*** VPS Access (Login → 3 custom fields)
+# VPS Access (Login → 3 custom fields)
 VPS_HOST="$(fetch_login_field "$ITEM_VPS" host)"
 VPS_SSH_USER="$(fetch_login_field "$ITEM_VPS" ssh_user)"
 VPS_SSH_PORT="$(fetch_login_field "$ITEM_VPS" ssh_port)"
@@ -162,7 +162,7 @@ assert_non_empty "$ITEM_VPS.host"     "$VPS_HOST"
 assert_non_empty "$ITEM_VPS.ssh_user" "$VPS_SSH_USER"
 assert_non_empty "$ITEM_VPS.ssh_port" "$VPS_SSH_PORT"
 
-***REMOVED*** Domain Config (Secure Note → JSON body)
+# Domain Config (Secure Note → JSON body)
 DOMAIN_JSON="$(fetch_note_payload "$ITEM_DOMAIN")"
 [[ -n "$DOMAIN_JSON" ]] || { echo "$ITEM_DOMAIN note body empty" >&2; exit 1; }
 echo "$DOMAIN_JSON" | jq -e . >/dev/null 2>&1 \
@@ -174,7 +174,7 @@ SUBDOMAINS_CSV="$(echo "$DOMAIN_JSON" | jq -r '.subdomains | join(",")')"
 assert_non_empty "$ITEM_DOMAIN.domain"     "$DOMAIN"
 assert_non_empty "$ITEM_DOMAIN.subdomains" "$SUBDOMAINS_JSON"
 
-***REMOVED*** Tofu Inputs (Secure Note → JSON body, optional)
+# Tofu Inputs (Secure Note → JSON body, optional)
 TOFU_JSON="$(fetch_note_payload "$ITEM_TOFU" 2>/dev/null || true)"
 [[ -z "$TOFU_JSON" ]] && TOFU_JSON='{}'
 echo "$TOFU_JSON" | jq -e . >/dev/null 2>&1 \
@@ -187,19 +187,19 @@ if [[ "$CHECK_ONLY" == "1" ]]; then
   exit 0
 fi
 
-***REMOVED***--- render --------------------------------------------------------------------
+#--- render --------------------------------------------------------------------
 mkdir -p "$OUT_DIR"
 
 ENV_FILE="$OUT_DIR/vault.env"
 TFVARS_FILE="$OUT_DIR/terraform.tfvars"
 RUNTIME_JSON="$OUT_DIR/runtime-config.json"
 
-***REMOVED*** Pre-register outputs in .gitignore (idempotent, fail-closed).
+# Pre-register outputs in .gitignore (idempotent, fail-closed).
 for f in "$ENV_FILE" "$TFVARS_FILE" "$RUNTIME_JSON"; do
   ensure_gitignored "$(to_relpath "$f")"
 done
 
-***REMOVED*** vault.env: sourceable shell exports. %q handles shell quoting for free.
+# vault.env: sourceable shell exports. %q handles shell quoting for free.
 tmp="$(mktemp)"
 {
   printf '***REMOVED*** GENERATED by scripts/fetch_vault.sh — DO NOT EDIT OR COMMIT\n'
@@ -235,7 +235,7 @@ tmp="$(mktemp)"
 mv "$tmp" "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 
-***REMOVED*** terraform.tfvars: passed to tofu via -var-file=.rendered/terraform.tfvars.
+# terraform.tfvars: passed to tofu via -var-file=.rendered/terraform.tfvars.
 tmp="$(mktemp)"
 {
   printf '***REMOVED*** GENERATED by scripts/fetch_vault.sh — DO NOT EDIT OR COMMIT\n'
@@ -264,8 +264,8 @@ tmp="$(mktemp)"
 mv "$tmp" "$TFVARS_FILE"
 chmod 600 "$TFVARS_FILE"
 
-***REMOVED*** runtime-config.json: read by Nix modules via builtins.fromJSON
-***REMOVED*** (Option A per prior Oracle review — gitignored file visible via `path:` flakeref).
+# runtime-config.json: read by Nix modules via builtins.fromJSON
+# (Option A per prior Oracle review — gitignored file visible via `path:` flakeref).
 jq -n \
   --arg domain "$DOMAIN" \
   --arg vps_host "$VPS_HOST" \
@@ -284,7 +284,7 @@ jq -n \
   > "$RUNTIME_JSON"
 chmod 600 "$RUNTIME_JSON"
 
-***REMOVED***--- summary -------------------------------------------------------------------
+#--- summary -------------------------------------------------------------------
 echo
 echo "fetch_vault: rendered."
 echo "  VPS:    $VPS_SSH_USER@$VPS_HOST:$VPS_SSH_PORT"

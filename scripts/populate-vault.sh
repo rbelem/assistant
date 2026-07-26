@@ -1,33 +1,33 @@
-***REMOVED***!/usr/bin/env bash
-***REMOVED*** populate-vault.sh — Create the 3 Bitwarden items needed for the
-***REMOVED*** Bitwarden+template externalization architecture. Idempotent: skips items
-***REMOVED*** that already exist.
-***REMOVED***
-***REMOVED*** Pattern from devbox secrets-add: bw_sesh wrapper, keyring auto-unlock.
-***REMOVED***
-***REMOVED*** Required env vars:
-***REMOVED***   VPS_HOST          — current VPS public IPv4
-***REMOVED***   DOMAIN            — base domain (e.g. example.com)
-***REMOVED***   SUBDOMAINS_JSON   — JSON array (e.g. '["app","www"]')
-***REMOVED***   PROJECT_NAME      — project prefix (e.g. assistant)
-***REMOVED***   TOFU_INPUTS_JSON  — JSON object with Tofu vars (plan, datacenter, etc.)
-***REMOVED***
-***REMOVED*** Optional env vars (with defaults):
-***REMOVED***   SSH_USER          — SSH user (default: root)
-***REMOVED***   SSH_PORT          — SSH port (default: 22)
-***REMOVED***
-***REMOVED*** Usage:
-***REMOVED***   VPS_HOST=203.0.113.42 DOMAIN=example.com \
-***REMOVED***     PROJECT_NAME=assistant \
-***REMOVED***     SUBDOMAINS_JSON='["app","www"]' \
-***REMOVED***     TOFU_INPUTS_JSON='{"vps_plan_code":"KVM 4","datacenter":"gra","vps_image_id":"...","state_bucket_name":"...-tofu-state","backup_bucket_name":"...-backups","storage_region":"gra","storage_endpoint":"https://s3.gra.io.REDACTED-OVH-DOMAIN","storage_access_key":"...","storage_secret_key":"...","ssh_public_key":"...","vps_os":"debian-12","vps_display_name":"agent"}' \
-***REMOVED***     scripts/populate-vault.sh
-***REMOVED***
-***REMOVED*** After successful run: scripts/fetch_vault.sh --check  ***REMOVED*** validate schema
+#!/usr/bin/env bash
+# populate-vault.sh — Create the 3 Bitwarden items needed for the
+# Bitwarden+template externalization architecture. Idempotent: skips items
+# that already exist.
+#
+# Pattern from devbox secrets-add: bw_sesh wrapper, keyring auto-unlock.
+#
+# Required env vars:
+#   VPS_HOST          — current VPS public IPv4
+#   DOMAIN            — base domain (e.g. example.com)
+#   SUBDOMAINS_JSON   — JSON array (e.g. '["app","www"]')
+#   PROJECT_NAME      — project prefix (e.g. assistant)
+#   TOFU_INPUTS_JSON  — JSON object with Tofu vars (plan, datacenter, etc.)
+#
+# Optional env vars (with defaults):
+#   SSH_USER          — SSH user (default: root)
+#   SSH_PORT          — SSH port (default: 22)
+#
+# Usage:
+#   VPS_HOST=203.0.113.42 DOMAIN=example.com \
+#     PROJECT_NAME=assistant \
+#     SUBDOMAINS_JSON='["app","www"]' \
+#     TOFU_INPUTS_JSON='{"vps_plan_code":"KVM 4","datacenter":"gra","vps_image_id":"...","state_bucket_name":"...-tofu-state","backup_bucket_name":"...-backups","storage_region":"gra","storage_endpoint":"https://s3.gra.io.REDACTED-OVH-DOMAIN","storage_access_key":"...","storage_secret_key":"...","ssh_public_key":"...","vps_os":"debian-12","vps_display_name":"agent"}' \
+#     scripts/populate-vault.sh
+#
+# After successful run: scripts/fetch_vault.sh --check  ***REMOVED*** validate schema
 
 set -euo pipefail
 
-***REMOVED***--- arg validation ------------------------------------------------------------
+#--- arg validation ------------------------------------------------------------
 : "${VPS_HOST:?must set VPS_HOST (VPS public IPv4)}"
 : "${DOMAIN:?must set DOMAIN (e.g. example.com)}"
 : "${SUBDOMAINS_JSON:?must set SUBDOMAINS_JSON (JSON array string)}"
@@ -37,7 +37,7 @@ set -euo pipefail
 SSH_USER="${SSH_USER:-root}"
 SSH_PORT="${SSH_PORT:-22}"
 
-***REMOVED***--- preflight ----------------------------------------------------------------
+#--- preflight ----------------------------------------------------------------
 need() {
   command -v "$1" >/dev/null 2>&1 \
     || { echo "missing required binary: $1" >&2; exit 1; }
@@ -45,13 +45,13 @@ need() {
 need bw
 need jq
 
-***REMOVED*** Validate JSON payloads up front
+# Validate JSON payloads up front
 echo "$SUBDOMAINS_JSON" | jq -e . >/dev/null 2>&1 \
   || { echo "SUBDOMAINS_JSON is not valid JSON: $SUBDOMAINS_JSON" >&2; exit 1; }
 echo "$TOFU_INPUTS_JSON" | jq -e . >/dev/null 2>&1 \
   || { echo "TOFU_INPUTS_JSON is not valid JSON: $TOFU_INPUTS_JSON" >&2; exit 1; }
 
-***REMOVED***--- BW_SESSION resolution: keyring first, then env fallback -------------------
+#--- BW_SESSION resolution: keyring first, then env fallback -------------------
 if [[ -z "${BW_SESSION:-}" ]] && command -v secret-tool >/dev/null 2>&1; then
   if master_pw="$(secret-tool lookup bitwarden master-password 2>/dev/null)" \
      && [[ -n "$master_pw" ]]; then
@@ -79,7 +79,7 @@ EOF
 
 bw_sesh() { bw --session "$BW_SESSION" "$@"; }
 
-***REMOVED***--- helpers -------------------------------------------------------------------
+#--- helpers -------------------------------------------------------------------
 create_if_missing() {
   local name="$1" item_json="$2"
   if bw_sesh get item "$name" >/dev/null 2>&1; then
@@ -96,7 +96,7 @@ create_if_missing() {
   echo "  ✓ $name (created)"
 }
 
-***REMOVED***--- item 1: assistant/vps-access (Login + 3 custom fields) -----------------
+#--- item 1: assistant/vps-access (Login + 3 custom fields) -----------------
 echo
 echo "Creating assistant/vps-access (Login + custom fields)..."
 vps_item="$(jq -n \
@@ -116,7 +116,7 @@ vps_item="$(jq -n \
    }')"
 create_if_missing "assistant/vps-access" "$vps_item"
 
-***REMOVED***--- item 2: assistant/domain-config (Secure Note + JSON) ------------------
+#--- item 2: assistant/domain-config (Secure Note + JSON) ------------------
 echo
 echo "Creating assistant/domain-config (Secure Note)..."
 domain_item="$(jq -n \
@@ -130,7 +130,7 @@ domain_item="$(jq -n \
    }')"
 create_if_missing "assistant/domain-config" "$domain_item"
 
-***REMOVED***--- item 3: assistant/tofu-inputs (Secure Note + JSON) --------------------
+#--- item 3: assistant/tofu-inputs (Secure Note + JSON) --------------------
 echo
 echo "Creating assistant/tofu-inputs (Secure Note)..."
 tofu_item="$(jq -n \
@@ -149,7 +149,7 @@ tofu_item="$(jq -n \
    }')"
 create_if_missing "assistant/tofu-inputs" "$tofu_item"
 
-***REMOVED***--- verify -------------------------------------------------------------------
+#--- verify -------------------------------------------------------------------
 echo
 echo "Verifying items are retrievable..."
 all_ok=1
@@ -164,7 +164,7 @@ done
 
 [[ "$all_ok" == "1" ]] || { echo "Verification failed." >&2; exit 1; }
 
-***REMOVED***--- summary ------------------------------------------------------------------
+#--- summary ------------------------------------------------------------------
 echo
 echo "All 3 items created/verified."
 echo

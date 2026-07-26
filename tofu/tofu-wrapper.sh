@@ -1,17 +1,17 @@
-***REMOVED***!/usr/bin/env bash
-***REMOVED*** tofu-wrapper.sh — Run tofu with Bitwarden-driven tfvars + backend config.
+#!/usr/bin/env bash
+# tofu-wrapper.sh — Run tofu with Bitwarden-driven tfvars + backend config.
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
-***REMOVED*** Render the vault-driven tfvars (and runtime-config.json etc.) on demand.
+# Render the vault-driven tfvars (and runtime-config.json etc.) on demand.
 scripts/fetch_vault.sh
 
-***REMOVED*** Source the env so TF_VAR_* are exported.
-***REMOVED*** shellcheck disable=SC1091
+# Source the env so TF_VAR_* are exported.
+# shellcheck disable=SC1091
 . .rendered/vault.env
 
-***REMOVED*** Materialize a -backend-config file from the vault (gitignored).
+# Materialize a -backend-config file from the vault (gitignored).
 cat > .rendered/backend.conf <<EOF
 bucket                      = "${TOFU_STATE_BUCKET}"
 key                         = "infrastructure/terraform.tfstate"
@@ -27,15 +27,15 @@ force_path_style            = true
 EOF
 chmod 600 .rendered/backend.conf
 
-***REMOVED*** Pre-add rendered files to .gitignore if they are not already ignored.
+# Pre-add rendered files to .gitignore if they are not already ignored.
 touch .gitignore
 for f in .rendered/terraform.tfvars .rendered/vault.env .rendered/backend.conf .rendered/runtime-config.json; do
   grep -qxF "$f" .gitignore || echo "$f" >> .gitignore
 done
 
-***REMOVED*** Pass everything through. Plan/apply/destroy/validate/refresh get the
-***REMOVED*** Bitwarden tfvars; init also gets the backend config so
-***REMOVED*** credentials/region/bucket come from Bitwarden.
+# Pass everything through. Plan/apply/destroy/validate/refresh get the
+# Bitwarden tfvars; init also gets the backend config so
+# credentials/region/bucket come from Bitwarden.
 case "${1:-}" in
   init)
     shift

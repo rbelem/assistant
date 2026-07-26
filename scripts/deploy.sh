@@ -1,32 +1,32 @@
-***REMOVED***!/usr/bin/env bash
-***REMOVED*** ─────────────────────────────────────────────────────────────
-***REMOVED*** assistant deployment pipeline
-***REMOVED*** ─────────────────────────────────────────────────────────────
-***REMOVED*** Order: tofu → nixos-infect → nixos-rebuild → ansible → helmfile → kubectl
-***REMOVED***
-***REMOVED*** Prerequisites:
-***REMOVED***   - OVH API credentials (OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY)
-***REMOVED***   - OVH Object Storage credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
-***REMOVED***   - Porkbun API credentials (PORKBUN_API_KEY, PORKBUN_SECRET_API_KEY)
-***REMOVED***   - Lambda Cloud API key (LAMBDA_CLOUD_API_KEY) for OCR GPU instances
-***REMOVED***   - SSH key uploaded to OVH account & Lambda Cloud
-***REMOVED***   - Bitwarden CLI installed and logged in
-***REMOVED***
-***REMOVED*** Usage:
-***REMOVED***   ./deploy.sh                    ***REMOVED*** full deploy (prompts before destructive steps)
-***REMOVED***   ./deploy.sh --skip-tofu        ***REMOVED*** skip provisioning, go to nixos-infect
-***REMOVED***   ./deploy.sh --skip-infect      ***REMOVED*** skip nixos-infect, go to nixos-rebuild
-***REMOVED***   ./deploy.sh --skip-nixos       ***REMOVED*** skip nixos-rebuild, go to ansible
-***REMOVED***   ./deploy.sh --skip-ansible     ***REMOVED*** skip ansible, go to helmfile
-***REMOVED***   ./deploy.sh --skip-helmfile    ***REMOVED*** skip helmfile, go to kubectl
-***REMOVED***   ./deploy.sh --skip-tofu --skip-infect --skip-nixos --skip-ansible  ***REMOVED*** helmfile + kubectl only
-***REMOVED***   ./deploy.sh status             ***REMOVED*** show deployment status
-***REMOVED***   ./deploy.sh destroy            ***REMOVED*** tear everything down
-***REMOVED*** ─────────────────────────────────────────────────────────────
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────
+# assistant deployment pipeline
+# ─────────────────────────────────────────────────────────────
+# Order: tofu → nixos-infect → nixos-rebuild → ansible → helmfile → kubectl
+#
+# Prerequisites:
+#   - OVH API credentials (OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY)
+#   - OVH Object Storage credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+#   - Porkbun API credentials (PORKBUN_API_KEY, PORKBUN_SECRET_API_KEY)
+#   - Lambda Cloud API key (LAMBDA_CLOUD_API_KEY) for OCR GPU instances
+#   - SSH key uploaded to OVH account & Lambda Cloud
+#   - Bitwarden CLI installed and logged in
+#
+# Usage:
+#   ./deploy.sh                    ***REMOVED*** full deploy (prompts before destructive steps)
+#   ./deploy.sh --skip-tofu        ***REMOVED*** skip provisioning, go to nixos-infect
+#   ./deploy.sh --skip-infect      ***REMOVED*** skip nixos-infect, go to nixos-rebuild
+#   ./deploy.sh --skip-nixos       ***REMOVED*** skip nixos-rebuild, go to ansible
+#   ./deploy.sh --skip-ansible     ***REMOVED*** skip ansible, go to helmfile
+#   ./deploy.sh --skip-helmfile    ***REMOVED*** skip helmfile, go to kubectl
+#   ./deploy.sh --skip-tofu --skip-infect --skip-nixos --skip-ansible  ***REMOVED*** helmfile + kubectl only
+#   ./deploy.sh status             ***REMOVED*** show deployment status
+#   ./deploy.sh destroy            ***REMOVED*** tear everything down
+# ─────────────────────────────────────────────────────────────
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
-***REMOVED*** ── Config ──────────────────────────────────────────────────
+# ── Config ──────────────────────────────────────────────────
 VPS_IP="${VPS_IP:-}"
 SSH_USER="${SSH_USER:-root}"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519}"
@@ -35,13 +35,13 @@ PLAYBOOKS="$DIR/ansible/playbooks"
 INVENTORY="$DIR/ansible/inventory/hosts.yml"
 VERBOSE="${VERBOSE:-0}"
 
-***REMOVED*** Allowlist of variables passed to envsubst when rendering *.tmpl files.
-***REMOVED*** This prevents $HOME, $USER, $PWD, etc. from leaking into committed files.
+# Allowlist of variables passed to envsubst when rendering *.tmpl files.
+# This prevents $HOME, $USER, $PWD, etc. from leaking into committed files.
 RENDER_VARS='$VPS_HOST $VPS_SSH_USER $VPS_SSH_PORT $DOMAIN $SUBDOMAINS_JSON $PROJECT_NAME $VPS_PLAN_CODE $DATACENTER'
 HELMFILE_DIR="$DIR/k8s"
 HELMFILE_BIN="${HELMFILE_BIN:-helmfile}"
 
-***REMOVED*** ── Colors ──────────────────────────────────────────────────
+# ── Colors ──────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; NC='\033[0m'
 info()  { echo -e "${BLUE}[INFO]${NC}  $*"; }
@@ -50,7 +50,7 @@ warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 err()   { echo -e "${RED}[ERR]${NC}   $*"; }
 step()  { echo; echo -e "${BLUE}═══ $* ═══${NC}"; }
 
-***REMOVED*** ── Helpers ─────────────────────────────────────────────────
+# ── Helpers ─────────────────────────────────────────────────
 prompt_confirm() {
   echo -en "${YELLOW}Continue? [y/N]${NC} "
   read -r reply
@@ -63,7 +63,7 @@ run_ssh() {
       "$SSH_USER@$VPS_IP" "$@"
 }
 
-***REMOVED*** ── Phases ──────────────────────────────────────────────────
+# ── Phases ──────────────────────────────────────────────────
 
 phase_inventory_render() {
   step "preflight — fetch vault + render templates"
@@ -314,7 +314,7 @@ phase_destroy() {
   ok "Infrastructure destroyed."
 }
 
-***REMOVED*** ── Main ─────────────────────────────────────────────────────
+# ── Main ─────────────────────────────────────────────────────
 main() {
   cd "$DIR"
 
