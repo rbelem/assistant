@@ -11,6 +11,8 @@
 #   SUBDOMAINS_JSON   — JSON array (e.g. '["app","www"]')
 #   PROJECT_NAME      — project prefix (e.g. assistant)
 #   TOFU_INPUTS_JSON  — JSON object with Tofu vars (plan, datacenter, etc.)
+#   SSH_PRIVATE_KEY   — SSH private key (PEM format)
+#   SSH_PUBLIC_KEY    — SSH public key (e.g. ssh-ed25519 AAAA...)
 #
 # Optional env vars (with defaults):
 #   SSH_USER          — SSH user (default: root)
@@ -23,7 +25,7 @@
 #     TOFU_INPUTS_JSON='{"vps_plan_code":"KVM 4","datacenter":"gra","vps_image_id":"...","state_bucket_name":"...-tofu-state","backup_bucket_name":"...-backups","storage_region":"gra","storage_endpoint":"https://s3.gra.io.REDACTED-OVH-DOMAIN","storage_access_key":"...","storage_secret_key":"...","ssh_public_key":"...","vps_os":"debian-12","vps_display_name":"agent"}' \
 #     scripts/populate-vault.sh
 #
-# After successful run: scripts/fetch_vault.sh --check  ***REMOVED*** validate schema
+# After successful run: scripts/fetch_vault.sh --check  # validate schema
 
 set -euo pipefail
 
@@ -33,6 +35,8 @@ set -euo pipefail
 : "${SUBDOMAINS_JSON:?must set SUBDOMAINS_JSON (JSON array string)}"
 : "${PROJECT_NAME:?must set PROJECT_NAME (e.g. assistant)}"
 : "${TOFU_INPUTS_JSON:?must set TOFU_INPUTS_JSON (JSON object)}"
+: "${SSH_PRIVATE_KEY:?must set SSH_PRIVATE_KEY (PEM format)}"
+: "${SSH_PUBLIC_KEY:?must set SSH_PUBLIC_KEY (e.g. ssh-ed25519 AAAA...)}"
 
 SSH_USER="${SSH_USER:-root}"
 SSH_PORT="${SSH_PORT:-22}"
@@ -96,25 +100,22 @@ create_if_missing() {
   echo "  ✓ $name (created)"
 }
 
-#--- item 1: assistant/vps-access (Login + 3 custom fields) -----------------
+#--- item 1: assistant/vps-ssh-key (SSH key type) -----------------------------
 echo
-echo "Creating assistant/vps-access (Login + custom fields)..."
-vps_item="$(jq -n \
-  --arg name "assistant/vps-access" \
-  --arg host "$VPS_HOST" \
-  --arg user "$SSH_USER" \
-  --argjson port "$SSH_PORT" \
+echo "Creating assistant/vps-ssh-key (SSH key type)..."
+ssh_key_item="$(jq -n \
+  --arg name "assistant/vps-ssh-key" \
+  --arg private_key "$SSH_PRIVATE_KEY" \
+  --arg public_key "$SSH_PUBLIC_KEY" \
   '{
-     type: 1,
+     type: 5,
      name: $name,
-     login: { username: null, password: "see custom fields" },
-     fields: [
-       { type: 0, name: "host",     value: $host },
-       { type: 0, name: "ssh_user", value: $user },
-       { type: 0, name: "ssh_port", value: ($port | tostring) }
-     ]
+     sshKey: {
+       privateKey: $private_key,
+       publicKey: $public_key
+     }
    }')"
-create_if_missing "assistant/vps-access" "$vps_item"
+create_if_missing "assistant/vps-ssh-key" "$ssh_key_item"
 
 #--- item 2: assistant/domain-config (Secure Note + JSON) ------------------
 echo
@@ -139,11 +140,13 @@ tofu_item="$(jq -n \
   --arg project "$PROJECT_NAME" \
   --arg domain "$DOMAIN" \
   --arg host "$VPS_HOST" \
+  --arg user "$SSH_USER" \
+  --argjson port "$SSH_PORT" \
   '{
      type: 2,
      name: $name,
      notes: (
-       { project_name: $project, domain: $domain, vps_host: $host } + $inputs
+       { project_name: $project, domain: $domain, vps_host: $host, vps_ssh_user: $user, vps_ssh_port: $port } + $inputs
        | tojson
      )
    }')"
@@ -153,7 +156,7 @@ create_if_missing "assistant/tofu-inputs" "$tofu_item"
 echo
 echo "Verifying items are retrievable..."
 all_ok=1
-for name in assistant/vps-access assistant/domain-config assistant/tofu-inputs; do
+for name in assistant/vps-ssh-key assistant/domain-config assistant/tofu-inputs; do
   if bw_sesh get item "$name" >/dev/null 2>&1; then
     echo "  ✓ $name retrievable"
   else
