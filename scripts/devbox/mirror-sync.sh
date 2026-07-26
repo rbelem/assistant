@@ -1,8 +1,13 @@
 ***REMOVED***!/usr/bin/env bash
-***REMOVED*** mirror-sync.sh — re-scrub the mirror with the post-scrub fix and push to public-origin.
+***REMOVED*** mirror-sync.sh — re-scrub the mirror with the post-scrub fix and push to the target remote.
 ***REMOVED*** This is the work the pre-push hook runs before `git push` to the public mirror.
 ***REMOVED*** Idempotent. Re-runnable.
+***REMOVED***
+***REMOVED*** Usage: mirror-sync.sh [REMOTE]
+***REMOVED***   REMOTE defaults to "origin" if not specified.
 set -euo pipefail
+
+REMOTE="${1:-origin}"
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
@@ -11,7 +16,7 @@ echo "[mirror-sync] clone worktree → /tmp/assistant-scrub"
 rm -rf /tmp/assistant-scrub
 git clone "$REPO_ROOT" /tmp/assistant-scrub
 cd /tmp/assistant-scrub
-git remote add public-origin https://github.com/rbelem/assistant.git
+git remote add target "https://github.com/rbelem/assistant.git" 2>/dev/null || git remote set-url target "https://github.com/rbelem/assistant.git"
 
 echo "[mirror-sync] git filter-repo (apply replacements.txt)"
 nix shell 'nixpkgs***REMOVED***git-filter-repo' --command bash -c '
@@ -31,10 +36,10 @@ done
 echo "[mirror-sync] chmod +x on deploy scripts"
 chmod +x scripts/*.sh scripts/devbox/*.sh tofu/tofu-wrapper.sh
 
-echo "[mirror-sync] commit in mirror + push to public-origin"
+echo "[mirror-sync] commit in mirror + push to $REMOTE"
 git add -A
 git commit -m "fix: post-scrub + chmod +x" --allow-empty
-git push public-origin --mirror --force
+git push "$REMOTE" --mirror --force
 
 echo
 echo "[mirror-sync] done. The push triggered gitleaks in CI."

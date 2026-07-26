@@ -14,6 +14,11 @@
 ***REMOVED*** All destructive operations (tofu apply, push) are gated behind user
 ***REMOVED*** confirmation. dcg blocks the AI from running them, but the user
 ***REMOVED*** (with their master password and ssh-agent) can proceed.
+***REMOVED***
+***REMOVED*** NOTE: The pre-push hook at .git/hooks/pre-push automatically triggers
+***REMOVED*** the mirror sync when you run `git push` to main. This hook is
+***REMOVED*** worktree-local (not in git), so after a fresh clone you need to
+***REMOVED*** re-apply it from scripts/devbox/pre-push-hook (or copy manually).
 
 set -euo pipefail
 
@@ -31,7 +36,7 @@ fi
 
 git clone "$REPO_ROOT" "$MIRROR_DIR"
 cd "$MIRROR_DIR"
-git remote add public-origin https://github.com/rbelem/assistant.git 2>/dev/null || true
+git remote set-url origin https://github.com/rbelem/assistant.git 2>/dev/null || true
 
 echo "  Running git filter-repo..."
 nix shell 'nixpkgs***REMOVED***git-filter-repo' --command git-filter-repo \
@@ -67,10 +72,10 @@ fi
 cd "$REPO_ROOT"
 
 ***REMOVED*** ---- Phase 3: print the push command ----
-echo "==> Phase 3: push the mirror to public"
+echo "==> Phase 3: push the scrubbed mirror to your remote"
 echo
 echo "Run these yourself (dcg blocks the AI from force-pushing):"
-echo "  cd $MIRROR_DIR && git push public-origin --mirror --force"
+echo "  cd $MIRROR_DIR && git push origin --mirror --force"
 echo
 read -p "Press Enter when the push is done..."
 
@@ -165,6 +170,11 @@ echo "  3. Check the services:"
 echo "     curl -I https://hermes.\$(jq -r .domain .rendered/runtime-config.json)"
 echo
 echo "Deploy complete! 🚀"
+echo
+echo "To sync to the public repo, run from the worktree:"
+echo "  git push"
+echo
+echo "The pre-push hook will automatically scrub and push to public."
 echo
 echo "Subsequent deploys (no INITIAL_SSH_USER needed):"
 echo "  scripts/deploy.sh"
