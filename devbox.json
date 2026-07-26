@@ -1,15 +1,20 @@
 {
-    "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.17.3/.schema/devbox.schema.json",
-    "packages": [],
-    "shell": {
-      "init_hook": [
-        "echo 'Welcome to devbox!' > /dev/null"
-      ],
-      "scripts": {
-        "test": [
-          "echo \"Error: no test specified\" && exit 1"
-        ]
-      }
-    }
+  "$schema": "https://raw.githubusercontent.com/jetpack-io/devbox/main/.schema/devbox.schema.json",
+  "packages": [
+    "opentofu@latest",
+    "gh@latest",
+    "git@latest",
+    "jq@latest",
+    "bitwarden-cli@latest",
+    "nix@latest",
+    "gnused@latest",
+    "coreutils@latest",
+    "git-filter-repo@latest"
+  ],
+  "env": {
+    "NIX_CONFIG_DIR": "/home/rodrigo/Workspace/github.com/rbelem/nix-config"
+  },
+  "scripts": {
+    "deploy": "bash scripts/devbox/deploy.sh"
   }
-  
+}
