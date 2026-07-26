@@ -44,6 +44,7 @@ HELMFILE_BIN="${HELMFILE_BIN:-helmfile}"
 # shellcheck disable=SC1091
 [[ -f "$DIR/.rendered/vault.env" ]] && . "$DIR/.rendered/vault.env"
 
+<<<<<<< HEAD
 # ── Colors ──────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; NC='\033[0m'
@@ -58,6 +59,28 @@ step()  { echo; echo -e "${BLUE}═══ $* ═══${NC}"; }
 # type 5). fetch_vault.sh exports SSH_PRIVATE_KEY into .rendered/vault.env.
 # We write it to a temp file and load it into ssh-agent for all SSH operations.
 # Falls back to ~/.ssh/id_ed25519 if SSH_PRIVATE_KEY is empty.
+||||||| parent of 28e82a5 (fix(deploy): address oracle review blockers)
+***REMOVED*** === SSH key setup =============================================================
+***REMOVED*** The SSH private key lives in Bitwarden (assistant/vps-ssh-key, SSH key
+***REMOVED*** type 5). fetch_vault.sh exports SSH_PRIVATE_KEY into .rendered/vault.env.
+***REMOVED*** We write it to a temp file and load it into ssh-agent for all SSH operations.
+***REMOVED*** Falls back to ~/.ssh/id_ed25519 if SSH_PRIVATE_KEY is empty.
+=======
+***REMOVED*** ── Colors ──────────────────────────────────────────────────
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+BLUE='\033[0;34m'; NC='\033[0m'
+info()  { echo -e "${BLUE}[INFO]${NC}  $*"; }
+ok()    { echo -e "${GREEN}[OK]${NC}    $*"; }
+warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
+err()   { echo -e "${RED}[ERR]${NC}   $*"; }
+step()  { echo; echo -e "${BLUE}═══ $* ═══${NC}"; }
+
+***REMOVED*** === SSH key setup =============================================================
+***REMOVED*** The SSH private key lives in Bitwarden (assistant/vps-ssh-key, SSH key
+***REMOVED*** type 5). fetch_vault.sh exports SSH_PRIVATE_KEY into .rendered/vault.env.
+***REMOVED*** We write it to a temp file and load it into ssh-agent for all SSH operations.
+***REMOVED*** Falls back to ~/.ssh/id_ed25519 if SSH_PRIVATE_KEY is empty.
+>>>>>>> 28e82a5 (fix(deploy): address oracle review blockers)
 
 SSH_KEY_FILE="$(mktemp -t agent_key.XXXXXX)"
 chmod 600 "$SSH_KEY_FILE"
@@ -83,7 +106,13 @@ SSH_KEY="$SSH_KEY_FILE"
 if [[ -n "${SSH_AUTH_SOCK:-}" ]]; then
   export SSH_AUTH_SOCK SSH_AGENT_PID
 fi
+<<<<<<< HEAD
 # =============================================================================
+||||||| parent of 28e82a5 (fix(deploy): address oracle review blockers)
+***REMOVED*** ============================================================================
+=======
+***REMOVED*** =============================================================================
+>>>>>>> 28e82a5 (fix(deploy): address oracle review blockers)
 
 # === Effective SSH user =========================================================
 # For the very first deploy (when no nix-config is applied yet), set
@@ -98,7 +127,22 @@ fi
 EFFECTIVE_SSH_USER="${INITIAL_SSH_USER:-$VPS_SSH_USER}"
 export EFFECTIVE_SSH_USER
 
+<<<<<<< HEAD
 # ── Helpers ─────────────────────────────────────────────────
+||||||| parent of 28e82a5 (fix(deploy): address oracle review blockers)
+***REMOVED*** ── Colors ──────────────────────────────────────────────────
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+BLUE='\033[0;34m'; NC='\033[0m'
+info()  { echo -e "${BLUE}[INFO]${NC}  $*"; }
+ok()    { echo -e "${GREEN}[OK]${NC}    $*"; }
+warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
+err()   { echo -e "${RED}[ERR]${NC}   $*"; }
+step()  { echo; echo -e "${BLUE}═══ $* ═══${NC}"; }
+
+***REMOVED*** ── Helpers ─────────────────────────────────────────────────
+=======
+***REMOVED*** ── Helpers ─────────────────────────────────────────────────
+>>>>>>> 28e82a5 (fix(deploy): address oracle review blockers)
 prompt_confirm() {
   echo -en "${YELLOW}Continue? [y/N]${NC} "
   read -r reply

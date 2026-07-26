@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # -----------------------------------------------------------------------------
 # Main Infrastructure — Hetzner Cloud VPS + Porkbun DNS + Object Storage
 # -----------------------------------------------------------------------------
@@ -6,16 +7,57 @@
 #   2. Porkbun DNS A records: wildcard + subdomains → VPS public IP
 #   3. S3 buckets for OpenTofu state and restic backups
 # -----------------------------------------------------------------------------
+||||||| parent of 28e82a5 (fix(deploy): address oracle review blockers)
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Main Infrastructure — Hetzner Cloud VPS + Porkbun DNS + Object Storage
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Resources:
+***REMOVED***   1. Hetzner Cloud server (Ubuntu 22.04 → converted to NixOS via nixos-infect)
+***REMOVED***   2. Porkbun DNS A records: wildcard + subdomains → VPS public IP
+***REMOVED***   3. S3 buckets for OpenTofu state and restic backups
+***REMOVED*** -----------------------------------------------------------------------------
+=======
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Main Infrastructure — Hetzner Cloud VPS + Porkbun DNS + Object Storage
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Resources:
+***REMOVED***   1. Hetzner Cloud server (Ubuntu 26.04 → converted to NixOS via nixos-infect)
+***REMOVED***   2. Porkbun DNS A records: wildcard + subdomains → VPS public IP
+***REMOVED***   3. S3 buckets for OpenTofu state and restic backups
+***REMOVED*** -----------------------------------------------------------------------------
+>>>>>>> 28e82a5 (fix(deploy): address oracle review blockers)
 
 # -----------------------------------------------------------------------------
 # Hetzner Cloud Resources
 # -----------------------------------------------------------------------------
 
+<<<<<<< HEAD
 # Upload SSH key to Hetzner (Tofu-managed). Was data source lookup; tofu apply
 # now creates the key in Hetzner so no manual upload step needed.
 resource "hcloud_ssh_key" "agent" {
   name       = "assistant-agent"
   public_key = var.ssh_public_key
+||||||| parent of 28e82a5 (fix(deploy): address oracle review blockers)
+***REMOVED*** Discover available server types, locations, and images
+data "hetznercloud_server_types" "all" {}
+
+data "hetznercloud_locations" "all" {}
+
+data "hetznercloud_images" "all" {
+  most_recent = true
+  with_selector = "os-flavor=ubuntu"
+  with_architecture = "x86"
+=======
+***REMOVED*** Discover available server types, locations, and images
+data "hetznercloud_server_types" "all" {}
+
+data "hetznercloud_locations" "all" {}
+
+data "hetznercloud_images" "all" {
+  most_recent = true
+  with_selector = "os-flavor=ubuntu,os-version=26.04"
+  with_architecture = "x86"
+>>>>>>> 28e82a5 (fix(deploy): address oracle review blockers)
 }
 
 # -----------------------------------------------------------------------------
@@ -26,7 +68,29 @@ resource "hcloud_ssh_key" "agent" {
 # SSH key is injected inline via Hetzner's first-boot mechanism.
 # -----------------------------------------------------------------------------
 
+<<<<<<< HEAD
 resource "hcloud_server" "agent" {
+||||||| parent of 28e82a5 (fix(deploy): address oracle review blockers)
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Hetzner Cloud Server
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Provisions a server through the Hetzner Cloud API.
+***REMOVED*** Ubuntu 22.04 is installed first, then converted to NixOS via nixos-infect.
+***REMOVED*** SSH key is injected inline via Hetzner's first-boot mechanism.
+***REMOVED*** -----------------------------------------------------------------------------
+
+resource "hetznercloud_server" "agent" {
+=======
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Hetzner Cloud Server
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Provisions a server through the Hetzner Cloud API.
+***REMOVED*** Ubuntu 26.04 is installed first, then converted to NixOS via nixos-infect.
+***REMOVED*** SSH key is injected inline via Hetzner's first-boot mechanism.
+***REMOVED*** -----------------------------------------------------------------------------
+
+resource "hetznercloud_server" "agent" {
+>>>>>>> 28e82a5 (fix(deploy): address oracle review blockers)
   name        = var.vps_display_name
   server_type = var.hcloud_server_type
   image       = var.hcloud_image_filter  # image name (e.g. "ubuntu-26.04") or numeric ID
@@ -76,9 +140,17 @@ resource "porkbun_dns_record" "svc" {
 # Only the tofu state bucket remains.
 # -----------------------------------------------------------------------------
 
+<<<<<<< HEAD
 # --- State bucket (must exist before `tofu init`, import if pre-existing) ---
 # First apply needs: tofu import aws_s3_bucket.tofu_state assistant-tofu-state
 # (run this manually before `tofu apply` if the bucket already exists)
+||||||| parent of 28e82a5 (fix(deploy): address oracle review blockers)
+***REMOVED*** --- State bucket (must exist before `tofu init`, import if pre-existing) ---
+=======
+***REMOVED*** --- State bucket (must exist before `tofu init`, import if pre-existing) ---
+***REMOVED*** First apply needs: tofu import aws_s3_bucket.tofu_state REDACTED-BUCKET
+***REMOVED*** (run this manually before `tofu apply` if the bucket already exists)
+>>>>>>> 28e82a5 (fix(deploy): address oracle review blockers)
 resource "aws_s3_bucket" "tofu_state" {
   bucket = var.state_bucket_name
 

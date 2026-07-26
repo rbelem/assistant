@@ -1,9 +1,14 @@
 ***REMOVED*** IaC state
 terraform.tfstate
 terraform.tfstate.backup
+<<<<<<< HEAD
 *.tfstate
 errored.tfstate
 .terraform/
+||||||| parent of 28e82a5 (fix(deploy): address oracle review blockers)
+=======
+.terraform/
+>>>>>>> 28e82a5 (fix(deploy): address oracle review blockers)
 .tofu/
 # .terraform.lock.hcl intentionally NOT gitignored — commit it to pin provider versions.
 
