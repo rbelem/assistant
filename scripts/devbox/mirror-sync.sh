@@ -4,10 +4,13 @@
 # Idempotent. Re-runnable.
 #
 # Usage: mirror-sync.sh [REMOTE]
-#   REMOTE defaults to "origin" if not specified.
+#   REMOTE defaults to "target" (the public github URL added on line 19+).
+#   NOTE: do NOT default to "origin" — `git filter-repo` strips the origin remote,
+#   so pushing to "origin" fails. Use "target" or pass an explicit remote name
+#   that survives filter-repo (e.g. a remote pointing to the public URL).
 set -euo pipefail
 
-REMOTE="${1:-origin}"
+REMOTE="${1:-target}"
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
