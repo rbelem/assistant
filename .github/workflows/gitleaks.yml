@@ -28,5 +28,5 @@ jobs:
             detect
             --no-banner
             --redact
-            --config-path /github/workspace/.gitleaks.toml
+            --config /github/workspace/.gitleaks.toml
             --source /github/workspace
