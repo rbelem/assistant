@@ -28,6 +28,7 @@ replacements.txt
 ***REMOVED*** Build artifacts / caches
 graphify-out/
 .codegraph/
+.gitleaks/
 *.log
 
 ***REMOVED*** Rendered from *.tmpl — DO NOT COMMIT

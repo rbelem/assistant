@@ -1,0 +1,54 @@
+***REMOVED*** gitleaks config for the rodrigo-agent public release.
+***REMOVED*** Catches re-leaks of patterns the filter-repo scrub already removed.
+***REMOVED*** See scripts/fetch_vault.sh for the Bitwarden-driven secret store.
+
+[extend]
+useDefault = true
+
+***REMOVED*** === Domain leakage (OVH-era REDACTED-DOMAIN zone) ===
+[[rules]]
+id = "rclb-dev-leak"
+description = "OVH-era domain leakage"
+regex = '''\brclb\.dev\b'''
+keywords = ["REDACTED-DOMAIN"]
+tags = ["domain", "ovh-era"]
+
+***REMOVED*** === OVH plan codes (e.g. REDACTED-PLAN) ===
+[[rules]]
+id = "ovh-plan-code"
+description = "OVH plan code (vps-le-N-N-N)"
+regex = '''\bvps-le-\d+-\d+-\d+\b'''
+keywords = ["vps-le"]
+tags = ["plan-code", "ovh-era"]
+
+***REMOVED*** === OVH S3 endpoints ===
+[[rules]]
+id = "ovh-s3-endpoint"
+description = "OVH Object Storage endpoint"
+regex = '''s3\.[a-z]+\.io\.cloud\.ovh\.net'''
+keywords = ["s3", "ovh"]
+tags = ["endpoint", "ovh-era"]
+
+***REMOVED*** === OVH region codes ===
+[[rules]]
+id = "ovh-region"
+description = "OVH region code (REDACTED-REGION1, REDACTED-REGION1, REDACTED-REGION1, REDACTED-REGION1, REDACTED-REGION1, REDACTED-REGION1, REDACTED-REGION1)"
+regex = '''\b(REDACTED-REGION|REDACTED-REGION|REDACTED-REGION|REDACTED-REGION|REDACTED-REGION|REDACTED-REGION|REDACTED-REGION)([0-9]|-1)?\b'''
+keywords = ["REDACTED-REGION", "REDACTED-REGION", "REDACTED-REGION", "REDACTED-REGION", "REDACTED-REGION", "REDACTED-REGION", "REDACTED-REGION"]
+tags = ["region", "ovh-era"]
+
+***REMOVED*** === City-level geolocation ===
+[[rules]]
+id = "manaus-tz-leak"
+description = "City-level timezone leak"
+regex = '''REDACTED-TZ'''
+keywords = ["Manaus"]
+tags = ["geolocation"]
+
+***REMOVED*** === OVH API endpoint pattern (any *.ovh.net service) ===
+[[rules]]
+id = "ovh-domain-leak"
+description = "OVH infrastructure domain"
+regex = '''\b[a-z0-9-]+\.ovh\.(net|com)\b'''
+keywords = ["ovh.net", "ovh.com"]
+tags = ["ovh-era"]
