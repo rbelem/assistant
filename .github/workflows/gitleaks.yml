@@ -31,6 +31,8 @@ jobs:
           wget -qO gitleaks.tar.gz \
             "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
           tar xzf gitleaks.tar.gz
+          chmod +x gitleaks
+          ls -la gitleaks
           ./gitleaks detect --no-banner --redact \
             --config-path .gitleaks.toml \
             --source .
