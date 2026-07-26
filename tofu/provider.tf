@@ -1,8 +1,8 @@
 # -----------------------------------------------------------------------------
-# Provider Configuration — Hostinger VPS + AWS S3 + Porkbun DNS
+# Provider Configuration — Hetzner Cloud + AWS S3 + Porkbun DNS
 # -----------------------------------------------------------------------------
-# Hostinger credentials are sourced from environment variables:
-#   HOSTINGER_API_TOKEN
+# Hetzner Cloud credentials are sourced from environment variables:
+#   HCLOUD_TOKEN
 #
 # AWS/S3 credentials for Object Storage:
 #   Passed via tofu-inputs variables: storage_access_key, storage_secret_key,
@@ -16,9 +16,9 @@ terraform {
   required_version = ">= 1.6.0"
 
   required_providers {
-    hostinger = {
-      source  = "hostinger/hostinger"
-      version = "~> 0.1.22"
+    hetznercloud = {
+      source  = "hetznercloud/hcloud"
+      version = "~> 1.45"  # Pinned to 1.45.x line (Q1 2026 stable)
     }
 
     aws = {
@@ -34,20 +34,13 @@ terraform {
 }
 
 # -----------------------------------------------------------------------------
-# Hostinger Provider
-# -----------------------------------------------------------------------------
-provider "hostinger" {
-  # Credentials sourced from HOSTINGER_API_TOKEN environment variable
-}
-
-# -----------------------------------------------------------------------------
 # AWS S3 Provider — configured for S3-compatible Object Storage
 # -----------------------------------------------------------------------------
-# Manages S3 buckets on an S3-compatible Object Storage backend (e.g. OVH).
+# Manages S3 buckets on an S3-compatible Object Storage backend (e.g. Hetzner, Backblaze B2, Wasabi).
 # Region, endpoint, and credentials are sourced from tofu-inputs variables.
 # -----------------------------------------------------------------------------
 provider "aws" {
-  region     = var.vps_datacenter
+  region     = var.storage_region
   access_key = var.storage_access_key
   secret_key = var.storage_secret_key
 

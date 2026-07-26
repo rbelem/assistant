@@ -6,28 +6,28 @@
 # -----------------------------------------------------------------------------
 
 output "vps_id" {
-  description = "Hostinger VPS ID"
-  value       = hostinger_vps.agent.id
+  description = "Hetzner Cloud server ID"
+  value       = hetznercloud_server.agent.id
 }
 
 output "vps_name" {
   description = "Display name of the VPS"
-  value       = hostinger_vps.agent.name
+  value       = hetznercloud_server.agent.name
 }
 
 output "vps_ip" {
   description = "Primary public IPv4 address of the VPS"
-  value       = hostinger_vps.agent.ipv4
+  value       = hetznercloud_server.agent.ipv4_address
 }
 
 output "vps_ipv6" {
   description = "Primary public IPv6 address of the VPS"
-  value       = hostinger_vps.agent.ipv6
+  value       = hetznercloud_server.agent.ipv6_address
 }
 
 output "vps_status" {
   description = "Current status of the VPS"
-  value       = hostinger_vps.agent.status
+  value       = hetznercloud_server.agent.status
 }
 
 output "dns_fqdn" {
@@ -62,7 +62,7 @@ output "storage_endpoint" {
 
 output "ssh_command" {
   description = "SSH command to access the provisioned VPS"
-  value       = "ssh -p ${var.ssh_port} ${var.ssh_user}@${hostinger_vps.agent.ipv4}"
+  value       = "ssh -p ${var.ssh_port} ${var.ssh_user}@${hetznercloud_server.agent.ipv4_address}"
 }
 
 # -----------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# Input Variables — Hostinger VPS + Infrastructure Configuration
+# Input Variables — Hetzner Cloud VPS + Infrastructure Configuration
 # -----------------------------------------------------------------------------
 # Values are sourced from Bitwarden via scripts/fetch_vault.sh, which renders:
 #   .rendered/terraform.tfvars   (tfvars passed via tofu-wrapper.sh)
@@ -8,17 +8,55 @@
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
-# Hostinger API Configuration
+# Hetzner Cloud Configuration
 # -----------------------------------------------------------------------------
 
-variable "hostinger_api_token" {
-  description = "Hostinger API token for VPS provisioning. Source: Bitwarden assistant/tofu-inputs"
+variable "hcloud_token" {
+  description = "Hetzner Cloud API token. Source: Bitwarden assistant/tofu-inputs (hcloud_token key)"
   type        = string
   sensitive   = true
 
   validation {
-    condition     = length(var.hostinger_api_token) > 0
-    error_message = "hostinger_api_token must not be empty."
+    condition     = length(var.hcloud_token) > 0
+    error_message = "hcloud_token must not be empty."
+  }
+}
+
+variable "hcloud_server_type" {
+  description = "Hetzner Cloud server type. CX31 = 4 vCPU / 8 GB / 80 GB / €17/mo. Source: Bitwarden assistant/tofu-inputs"
+  type        = string
+  default     = "cx31"
+
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]*$", var.hcloud_server_type))
+    error_message = "Server type must be lowercase letters, digits, and hyphens."
+  }
+}
+
+variable "hcloud_location" {
+  description = "Hetzner Cloud location. fsn1 = Falkenstein. (nbg1, hel1, ash, hil also available)"
+  type        = string
+  default     = "fsn1"
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.hcloud_location))
+    error_message = "Location must be lowercase letters, digits, and hyphens."
+  }
+}
+
+variable "hcloud_image_filter" {
+  description = "Image name filter. Ubuntu 22.04 (because Hetzner has no native NixOS). nixos-infect runs after first boot via Ansible"
+  type        = string
+  default     = "ubuntu-22.04"
+}
+
+variable "hcloud_ssh_key_fingerprint" {
+  description = "SSH public key fingerprint registered in Hetzner Cloud. Source: Bitwarden assistant/tofu-inputs (hcloud_ssh_key_fingerprint key). Format: SHA256:..."
+  type        = string
+
+  validation {
+    condition     = can(regex("^(SHA256:|MD5:)?[a-zA-Z0-9+/=:-]+$", var.hcloud_ssh_key_fingerprint))
+    error_message = "SSH key fingerprint must be a valid format (e.g., SHA256:..., MD5:..., or legacy format)."
   }
 }
 
@@ -27,42 +65,12 @@ variable "hostinger_api_token" {
 # -----------------------------------------------------------------------------
 
 variable "vps_display_name" {
-  description = "Display name for the VPS in Hostinger control panel. Source: Bitwarden assistant/tofu-inputs"
+  description = "Display name for the VPS in Hetzner Cloud console. Source: Bitwarden assistant/tofu-inputs"
   type        = string
 
   validation {
     condition     = length(var.vps_display_name) > 0
     error_message = "VPS display name must not be empty."
-  }
-}
-
-variable "hostinger_vps_plan" {
-  description = "Hostinger VPS plan code (e.g. hostingercom-vps-kvm4-2-4). Source: Bitwarden assistant/tofu-inputs"
-  type        = string
-
-  validation {
-    condition     = can(regex("^[a-z][a-z0-9-]+$", var.hostinger_vps_plan))
-    error_message = "VPS plan code must be lowercase letters, digits, and hyphens."
-  }
-}
-
-variable "hostinger_data_center_id" {
-  description = "Hostinger data center ID (numeric). Source: Bitwarden assistant/tofu-inputs"
-  type        = number
-
-  validation {
-    condition     = var.hostinger_data_center_id > 0
-    error_message = "Data center ID must be a positive integer."
-  }
-}
-
-variable "hostinger_template_id" {
-  description = "Hostinger OS template ID (numeric, e.g. NixOS template). Source: Bitwarden assistant/tofu-inputs"
-  type        = number
-
-  validation {
-    condition     = var.hostinger_template_id > 0
-    error_message = "Template ID must be a positive integer."
   }
 }
 

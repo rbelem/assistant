@@ -1,8 +1,8 @@
 # -----------------------------------------------------------------------------
-# Main Infrastructure — Hostinger VPS + Porkbun DNS + Object Storage
+# Main Infrastructure — Hetzner Cloud VPS + Porkbun DNS + Object Storage
 # -----------------------------------------------------------------------------
 # Resources:
-#   1. Hostinger VPS instance (NixOS template)
+#   1. Hetzner Cloud server (Ubuntu 22.04 → converted to NixOS via nixos-infect)
 #   2. Porkbun DNS A records: wildcard + subdomains → VPS public IP
 #   3. S3 buckets for OpenTofu state and restic backups
 # -----------------------------------------------------------------------------
@@ -11,30 +11,44 @@
 # Data Sources
 # -----------------------------------------------------------------------------
 
-# Discover available VPS plans, data centers, and templates
-data "hostinger_vps_plans" "all" {}
+# Discover available server types, locations, and images
+data "hetznercloud_server_types" "all" {}
 
-data "hostinger_vps_data_centers" "all" {}
+data "hetznercloud_locations" "all" {}
 
-data "hostinger_vps_templates" "all" {}
+data "hetznercloud_images" "all" {
+  most_recent = true
+  with_selector = "os-flavor=ubuntu"
+  with_architecture = "x86"
+}
+
+# Look up SSH key by fingerprint (uploaded to Hetzner out-of-band)
+data "hetznercloud_ssh_key" "agent" {
+  fingerprint = var.hcloud_ssh_key_fingerprint
+}
 
 # -----------------------------------------------------------------------------
-# Hostinger VPS Instance
+# Hetzner Cloud Server
 # -----------------------------------------------------------------------------
-# Provisions a VPS through the Hostinger API.
-# The VPS is created with a NixOS template and SSH key access.
+# Provisions a server through the Hetzner Cloud API.
+# Ubuntu 22.04 is installed first, then converted to NixOS via nixos-infect.
+# SSH key is injected inline via Hetzner's first-boot mechanism.
 # -----------------------------------------------------------------------------
 
-resource "hostinger_vps" "agent" {
-  name             = var.vps_display_name
-  plan             = var.hostinger_vps_plan
-  data_center_id   = var.hostinger_data_center_id
-  template_id      = var.hostinger_template_id
-  os               = "NixOS"
-  hostname         = "assistant"
+resource "hetznercloud_server" "agent" {
+  name        = var.vps_display_name
+  server_type = var.hcloud_server_type
+  image       = data.hetznercloud_images.all.images[0].id
+  location    = var.hcloud_location
+  ssh_keys    = [data.hetznercloud_ssh_key.agent.id]
+  
+  labels = {
+    project = "assistant"
+    env     = "production"
+  }
 
   lifecycle {
-    # Prevent accidental destruction of the running VPS
+    # Prevent accidental destruction of the running server
     # Set to true after initial setup is complete
     prevent_destroy = false
   }
@@ -43,8 +57,8 @@ resource "hostinger_vps" "agent" {
 # -----------------------------------------------------------------------------
 # DNS Records — Porkbun
 # -----------------------------------------------------------------------------
-# Wildcard A record uses the Hostinger VPS IP; per-subdomain A records are
-# driven by var.subdomains / var.vps_ip and rendered from Bitwarden.
+# Wildcard A record uses the Hetzner server IP; per-subdomain A records are
+# driven by var.subdomains and rendered from Bitwarden.
 # Caddy uses DNS-01 challenge via Porkbun for wildcard TLS certs.
 # -----------------------------------------------------------------------------
 
@@ -52,7 +66,7 @@ resource "porkbun_dns_record" "root_wildcard" {
   domain    = var.domain_name
   subdomain = ""      # apex
   type      = "A"
-  content   = hostinger_vps.agent.ipv4
+  content   = hetznercloud_server.agent.ipv4_address
   ttl       = var.dns_ttl
 }
 
@@ -61,12 +75,12 @@ resource "porkbun_dns_record" "svc" {
   domain    = var.domain_name
   subdomain = each.key
   type      = "A"
-  content   = hostinger_vps.agent.ipv4
+  content   = hetznercloud_server.agent.ipv4_address
   ttl       = var.dns_ttl
 }
 
 # -----------------------------------------------------------------------------
-# Object Storage Buckets (OVH S3-compatible)
+# Object Storage Buckets (S3-compatible)
 # -----------------------------------------------------------------------------
 # Two buckets:
 #   1. State storage — OpenTofu remote backend
