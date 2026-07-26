@@ -1,25 +1,24 @@
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Provider Configuration — OVH Cloud + AWS S3 + Porkbun DNS
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** OVH credentials are sourced from environment variables:
-***REMOVED***   OVH_ENDPOINT, OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET,
-***REMOVED***   OVH_CONSUMER_KEY
-***REMOVED***
-***REMOVED*** AWS/S3 credentials for Object Storage:
-***REMOVED***   Passed via tofu-inputs variables: storage_access_key, storage_secret_key,
-***REMOVED***   storage_endpoint, storage_region (and vps_datacenter for AWS region).
-***REMOVED***
-***REMOVED*** Porkbun DNS credentials:
-***REMOVED***   PORKBUN_API_KEY, PORKBUN_SECRET_API_KEY
-***REMOVED*** -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Provider Configuration — Hostinger VPS + AWS S3 + Porkbun DNS
+# -----------------------------------------------------------------------------
+# Hostinger credentials are sourced from environment variables:
+#   HOSTINGER_API_TOKEN
+#
+# AWS/S3 credentials for Object Storage:
+#   Passed via tofu-inputs variables: storage_access_key, storage_secret_key,
+#   storage_endpoint, storage_region (and vps_datacenter for AWS region).
+#
+# Porkbun DNS credentials:
+#   PORKBUN_API_KEY, PORKBUN_SECRET_API_KEY
+# -----------------------------------------------------------------------------
 
 terraform {
   required_version = ">= 1.6.0"
 
   required_providers {
-    ovh = {
-      source  = "ovh/ovh"
-      version = "~> 1.6"
+    hostinger = {
+      source  = "hostinger/hostinger"
+      version = "~> 0.1.22"
     }
 
     aws = {
@@ -34,20 +33,19 @@ terraform {
   }
 }
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** OVH Provider
-***REMOVED*** -----------------------------------------------------------------------------
-provider "ovh" {
-  ***REMOVED*** Credentials sourced from OVH_* environment variables
-  ***REMOVED*** endpoint = "ovh-eu"  ***REMOVED*** Set via OVH_ENDPOINT env var
+# -----------------------------------------------------------------------------
+# Hostinger Provider
+# -----------------------------------------------------------------------------
+provider "hostinger" {
+  # Credentials sourced from HOSTINGER_API_TOKEN environment variable
 }
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** AWS S3 Provider — configured for S3-compatible Object Storage
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Manages S3 buckets on an S3-compatible Object Storage backend (e.g. OVH).
-***REMOVED*** Region, endpoint, and credentials are sourced from tofu-inputs variables.
-***REMOVED*** -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# AWS S3 Provider — configured for S3-compatible Object Storage
+# -----------------------------------------------------------------------------
+# Manages S3 buckets on an S3-compatible Object Storage backend (e.g. OVH).
+# Region, endpoint, and credentials are sourced from tofu-inputs variables.
+# -----------------------------------------------------------------------------
 provider "aws" {
   region     = var.vps_datacenter
   access_key = var.storage_access_key
@@ -64,12 +62,12 @@ provider "aws" {
   s3_use_path_style           = true
 }
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Porkbun DNS Provider
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Manages DNS records for the configured domain (registered at Porkbun).
-***REMOVED*** Credentials sourced from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY env vars.
-***REMOVED*** -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Porkbun DNS Provider
+# -----------------------------------------------------------------------------
+# Manages DNS records for the configured domain (registered at Porkbun).
+# Credentials sourced from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY env vars.
+# -----------------------------------------------------------------------------
 provider "porkbun" {
-  ***REMOVED*** Credentials from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY env vars
+  # Credentials from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY env vars
 }

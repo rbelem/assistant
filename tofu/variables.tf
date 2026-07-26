@@ -1,18 +1,33 @@
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Input Variables — OVH VPS + Infrastructure Configuration
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Values are sourced from Bitwarden via scripts/fetch_vault.sh, which renders:
-***REMOVED***   .rendered/terraform.tfvars   (tfvars passed via tofu-wrapper.sh)
-***REMOVED***   .rendered/vault.env          (TF_VAR_* env vars)
-***REMOVED*** No environment-specific defaults are committed in this public repo.
-***REMOVED*** -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Input Variables — Hostinger VPS + Infrastructure Configuration
+# -----------------------------------------------------------------------------
+# Values are sourced from Bitwarden via scripts/fetch_vault.sh, which renders:
+#   .rendered/terraform.tfvars   (tfvars passed via tofu-wrapper.sh)
+#   .rendered/vault.env          (TF_VAR_* env vars)
+# No environment-specific defaults are committed in this public repo.
+# -----------------------------------------------------------------------------
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** VPS Configuration
-***REMOVED*** -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Hostinger API Configuration
+# -----------------------------------------------------------------------------
+
+variable "hostinger_api_token" {
+  description = "Hostinger API token for VPS provisioning. Source: Bitwarden assistant/tofu-inputs"
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.hostinger_api_token) > 0
+    error_message = "hostinger_api_token must not be empty."
+  }
+}
+
+# -----------------------------------------------------------------------------
+# VPS Configuration
+# -----------------------------------------------------------------------------
 
 variable "vps_display_name" {
-  description = "Display name for the VPS in OVH Manager. Source: Bitwarden assistant/tofu-inputs"
+  description = "Display name for the VPS in Hostinger control panel. Source: Bitwarden assistant/tofu-inputs"
   type        = string
 
   validation {
@@ -21,35 +36,33 @@ variable "vps_display_name" {
   }
 }
 
-***REMOVED*** Supported VPS providers: OVH (REDACTED-PLAN / REDACTED-REGION1) and Hostinger
-***REMOVED*** (hostingercom-vps-kvm4-... / curitiba). Validation accepts both patterns.
-variable "vps_datacenter" {
-  description = "VPS datacenter/region (e.g. REDACTED-REGION1, REDACTED-REGION1, curitiba). Source: Bitwarden assistant/tofu-inputs"
+variable "hostinger_vps_plan" {
+  description = "Hostinger VPS plan code (e.g. hostingercom-vps-kvm4-2-4). Source: Bitwarden assistant/tofu-inputs"
   type        = string
 
   validation {
-    condition     = can(regex("^[A-Za-z0-9_-]{2,16}$", var.vps_datacenter))
-    error_message = "Datacenter/region must be 2-16 alphanumeric characters, underscores, or hyphens."
-  }
-}
-
-variable "vps_plan_code" {
-  description = "VPS plan code (e.g. REDACTED-PLAN). Source: Bitwarden assistant/tofu-inputs"
-  type        = string
-
-  validation {
-    condition     = can(regex("^[a-z][a-z0-9-]+$", var.vps_plan_code))
+    condition     = can(regex("^[a-z][a-z0-9-]+$", var.hostinger_vps_plan))
     error_message = "VPS plan code must be lowercase letters, digits, and hyphens."
   }
 }
 
-variable "vps_os" {
-  description = "Operating system for the VPS (configured via plan.configuration). Source: Bitwarden assistant/tofu-inputs"
-  type        = string
+variable "hostinger_data_center_id" {
+  description = "Hostinger data center ID (numeric). Source: Bitwarden assistant/tofu-inputs"
+  type        = number
 
   validation {
-    condition     = length(var.vps_os) > 0
-    error_message = "VPS OS must not be empty."
+    condition     = var.hostinger_data_center_id > 0
+    error_message = "Data center ID must be a positive integer."
+  }
+}
+
+variable "hostinger_template_id" {
+  description = "Hostinger OS template ID (numeric, e.g. NixOS template). Source: Bitwarden assistant/tofu-inputs"
+  type        = number
+
+  validation {
+    condition     = var.hostinger_template_id > 0
+    error_message = "Template ID must be a positive integer."
   }
 }
 
@@ -60,23 +73,13 @@ variable "ssh_public_key" {
 
   validation {
     condition     = var.ssh_public_key == "" || can(regex("^ssh-(rsa|ed25519|dss|ecdsa) ", var.ssh_public_key))
-    error_message = "SSH public key must be empty (OVH emailed credentials) or a valid ssh-rsa/ed25519/dss/ecdsa public key."
+    error_message = "SSH public key must be empty or a valid ssh-rsa/ed25519/dss/ecdsa public key."
   }
 }
 
-variable "vps_image_id" {
-  description = "Image ID to install on the VPS (required if ssh_public_key is set). Source: Bitwarden assistant/tofu-inputs"
-  type        = string
-
-  validation {
-    condition     = var.vps_image_id == "" || can(regex("^[0-9a-fA-F-]{36}$", var.vps_image_id))
-    error_message = "Image ID must be empty or a valid UUID."
-  }
-}
-
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** DNS Configuration
-***REMOVED*** -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# DNS Configuration
+# -----------------------------------------------------------------------------
 
 variable "domain_name" {
   description = "Base domain name (managed by Porkbun DNS). Source: Bitwarden assistant/domain-config"
@@ -119,9 +122,9 @@ variable "vps_ip" {
   }
 }
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Connection metadata (used by deploy scripts)
-***REMOVED*** -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Connection metadata (used by deploy scripts)
+# -----------------------------------------------------------------------------
 
 variable "ssh_user" {
   description = "SSH user for the VPS (used by deploy scripts). Source: Bitwarden assistant/tofu-inputs"
@@ -143,9 +146,9 @@ variable "ssh_port" {
   }
 }
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Object Storage Configuration
-***REMOVED*** -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Object Storage Configuration
+# -----------------------------------------------------------------------------
 
 variable "state_bucket_name" {
   description = "S3 bucket name for OpenTofu remote state. Source: Bitwarden assistant/tofu-inputs"
@@ -168,7 +171,7 @@ variable "backup_bucket_name" {
 }
 
 variable "storage_region" {
-  description = "S3-compatible Object Storage region identifier (e.g. gra, sbg). Source: Bitwarden assistant/tofu-inputs"
+  description = "S3-compatible Object Storage region identifier (e.g. eu-central-1). Source: Bitwarden assistant/tofu-inputs"
   type        = string
 
   validation {
@@ -209,9 +212,9 @@ variable "storage_secret_key" {
   }
 }
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Lambda Cloud (OCR GPU Instance)
-***REMOVED*** -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Lambda Cloud (OCR GPU Instance)
+# -----------------------------------------------------------------------------
 
 variable "ocr_enabled" {
   description = "Enable the OCR GPU instance in Tofu (set to true when OCR is needed)"

@@ -1,96 +1,58 @@
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Main Infrastructure — OVH VPS + Porkbun DNS + Object Storage
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Resources:
-***REMOVED***   1. OVH VPS instance (Debian 12 → converted to NixOS via nixos-infect)
-***REMOVED***   2. Porkbun DNS A records: wildcard + subdomains → VPS public IP
-***REMOVED***   3. S3 buckets for OpenTofu state and restic backups
-***REMOVED*** -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Main Infrastructure — Hostinger VPS + Porkbun DNS + Object Storage
+# -----------------------------------------------------------------------------
+# Resources:
+#   1. Hostinger VPS instance (NixOS template)
+#   2. Porkbun DNS A records: wildcard + subdomains → VPS public IP
+#   3. S3 buckets for OpenTofu state and restic backups
+# -----------------------------------------------------------------------------
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Data Sources
-***REMOVED*** -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Data Sources
+# -----------------------------------------------------------------------------
 
-***REMOVED*** Fetch OVH account info (needed for ovh_subsidiary on VPS order)
-data "ovh_me" "account" {}
+# Discover available VPS plans, data centers, and templates
+data "hostinger_vps_plans" "all" {}
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** OVH VPS Instance
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Orders a VPS through the OVH API using the order-based model.
-***REMOVED*** After provisioning, convert to NixOS with nixos-infect:
-***REMOVED***   1. ssh debian@<vps_ip>
-***REMOVED***   2. curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | sudo bash
-***REMOVED***   3. Reboot into NixOS
-***REMOVED***
-***REMOVED*** NOTE: To use public_ssh_key, image_id must also be set.
-***REMOVED*** The image_id can be found via the OVH API:
-***REMOVED***   GET /vps/{serviceName}/images/available
-***REMOVED*** Or use a known Debian 12 image ID for your region.
-***REMOVED*** -----------------------------------------------------------------------------
+data "hostinger_vps_data_centers" "all" {}
 
-resource "ovh_vps" "agent" {
-  display_name    = var.vps_display_name
-  ovh_subsidiary  = data.ovh_me.account.ovh_subsidiary
-  netboot_mode    = "local"
+data "hostinger_vps_templates" "all" {}
 
-  ***REMOVED*** SSH key and image_id must both be set together (OVH API requirement)
-  ***REMOVED*** If not provided, the VPS is created with default credentials (sent by email)
-  public_ssh_key = var.ssh_public_key != "" ? var.ssh_public_key : null
-  image_id       = var.vps_image_id != "" ? var.vps_image_id : null
+# -----------------------------------------------------------------------------
+# Hostinger VPS Instance
+# -----------------------------------------------------------------------------
+# Provisions a VPS through the Hostinger API.
+# The VPS is created with a NixOS template and SSH key access.
+# -----------------------------------------------------------------------------
 
-  ***REMOVED*** VPS plan configuration
-  plan = [
-    {
-      duration     = "P1M"
-      plan_code    = var.vps_plan_code
-      pricing_mode = "default"
-
-      configuration = [
-        {
-          label = "vps_datacenter"
-          value = var.vps_datacenter
-        },
-        {
-          label = "vps_os"
-          value = var.vps_os
-        }
-      ]
-    }
-  ]
+resource "hostinger_vps" "agent" {
+  name             = var.vps_display_name
+  plan             = var.hostinger_vps_plan
+  data_center_id   = var.hostinger_data_center_id
+  template_id      = var.hostinger_template_id
+  os               = "NixOS"
+  hostname         = "assistant"
 
   lifecycle {
-    ***REMOVED*** Prevent accidental destruction of the running VPS
-    ***REMOVED*** Set to true after initial setup is complete
+    # Prevent accidental destruction of the running VPS
+    # Set to true after initial setup is complete
     prevent_destroy = false
   }
 }
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Data Source — Fetch VPS details (including IPs)
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** The ovh_vps resource doesn't expose IPs directly as computed attributes.
-***REMOVED*** We use a data source to retrieve them after the VPS is provisioned.
-***REMOVED*** This creates an implicit dependency on the resource.
-***REMOVED*** -----------------------------------------------------------------------------
-
-data "ovh_vps" "agent_details" {
-  service_name = ovh_vps.agent.service_name
-}
-
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** DNS Records — Porkbun
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Wildcard A record uses the data source IP; per-subdomain A records are
-***REMOVED*** driven by var.subdomains / var.vps_ip and rendered from Bitwarden.
-***REMOVED*** Caddy uses DNS-01 challenge via Porkbun for wildcard TLS certs.
-***REMOVED*** -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# DNS Records — Porkbun
+# -----------------------------------------------------------------------------
+# Wildcard A record uses the Hostinger VPS IP; per-subdomain A records are
+# driven by var.subdomains / var.vps_ip and rendered from Bitwarden.
+# Caddy uses DNS-01 challenge via Porkbun for wildcard TLS certs.
+# -----------------------------------------------------------------------------
 
 resource "porkbun_dns_record" "root_wildcard" {
   domain    = var.domain_name
-  subdomain = ""      ***REMOVED*** apex
+  subdomain = ""      # apex
   type      = "A"
-  content   = var.vps_ip
+  content   = hostinger_vps.agent.ipv4
   ttl       = var.dns_ttl
 }
 
@@ -99,23 +61,23 @@ resource "porkbun_dns_record" "svc" {
   domain    = var.domain_name
   subdomain = each.key
   type      = "A"
-  content   = var.vps_ip
+  content   = hostinger_vps.agent.ipv4
   ttl       = var.dns_ttl
 }
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Object Storage Buckets (OVH S3-compatible)
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Two buckets:
-***REMOVED***   1. State storage — OpenTofu remote backend
-***REMOVED***   2. Backup storage — restic encrypted backups
-***REMOVED*** -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Object Storage Buckets (OVH S3-compatible)
+# -----------------------------------------------------------------------------
+# Two buckets:
+#   1. State storage — OpenTofu remote backend
+#   2. Backup storage — restic encrypted backups
+# -----------------------------------------------------------------------------
 
-***REMOVED*** --- State bucket (must exist before `tofu init`, import if pre-existing) ---
+# --- State bucket (must exist before `tofu init`, import if pre-existing) ---
 resource "aws_s3_bucket" "tofu_state" {
   bucket = var.state_bucket_name
 
-  ***REMOVED*** Prevent accidental deletion of the state bucket
+  # Prevent accidental deletion of the state bucket
   lifecycle {
     prevent_destroy = true
   }
@@ -138,7 +100,7 @@ resource "aws_s3_bucket_public_access_block" "tofu_state" {
   restrict_public_buckets = true
 }
 
-***REMOVED*** --- Backup bucket for restic ---
+# --- Backup bucket for restic ---
 resource "aws_s3_bucket" "backups" {
   bucket = var.backup_bucket_name
 }
@@ -160,7 +122,7 @@ resource "aws_s3_bucket_public_access_block" "backups" {
   restrict_public_buckets = true
 }
 
-***REMOVED*** Lifecycle: expire old backup versions after 90 days
+# Lifecycle: expire old backup versions after 90 days
 resource "aws_s3_bucket_lifecycle_configuration" "backups" {
   bucket = aws_s3_bucket.backups.id
 
