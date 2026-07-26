@@ -78,6 +78,19 @@ if [[ -n "${SSH_AUTH_SOCK:-}" ]]; then
 fi
 ***REMOVED*** ============================================================================
 
+***REMOVED*** === Effective SSH user =========================================================
+***REMOVED*** For the very first deploy (when no nix-config is applied yet), set
+***REMOVED*** INITIAL_SSH_USER=root in the env. After the first nixos-rebuild
+***REMOVED*** applies the nix-config (which creates the 'rodrigo' user and disables
+***REMOVED*** root SSH), unset INITIAL_SSH_USER and subsequent deploys use the
+***REMOVED*** VPS_SSH_USER from the vault (default: rodrigo).
+***REMOVED***
+***REMOVED*** This is a security trade-off: the first deploy needs root to run
+***REMOVED*** nixos-infect and bootstrap the system. Every deploy after that uses
+***REMOVED*** the configured admin user (rodrigo).
+EFFECTIVE_SSH_USER="${INITIAL_SSH_USER:-$VPS_SSH_USER}"
+export EFFECTIVE_SSH_USER
+
 ***REMOVED*** ── Colors ──────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; NC='\033[0m'
@@ -97,7 +110,7 @@ prompt_confirm() {
 run_ssh() {
   ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no \
       -o UserKnownHostsFile=/dev/null \
-      "$SSH_USER@$VPS_IP" "$@"
+      "$EFFECTIVE_SSH_USER@$VPS_IP" "$@"
 }
 
 ***REMOVED*** ── Phases ──────────────────────────────────────────────────
@@ -175,10 +188,12 @@ phase_infect() {
     exit 1
   fi
 
+  info "phase_infect: SSH as $EFFECTIVE_SSH_USER@$VPS_IP (use INITIAL_SSH_USER=root for the first deploy)"
+
   info "Waiting for SSH to be available..."
   for i in $(seq 1 30); do
     if ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no \
-         -o ConnectTimeout=5 "$SSH_USER@$VPS_IP" "echo ready" 2>/dev/null; then
+         -o ConnectTimeout=5 "$EFFECTIVE_SSH_USER@$VPS_IP" "echo ready" 2>/dev/null; then
       ok "SSH available."
       break
     fi
@@ -190,7 +205,7 @@ phase_infect() {
   prompt_confirm
 
   info "Running nixos-infect..."
-  ssh -i "$SSH_KEY" "$SSH_USER@$VPS_IP" \
+  ssh -i "$SSH_KEY" "$EFFECTIVE_SSH_USER@$VPS_IP" \
     'curl -sL https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect \
     | NIX_CHANNEL=nixos-unstable bash'
 
@@ -199,7 +214,7 @@ phase_infect() {
   sleep 30
   for i in $(seq 1 30); do
     if ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no \
-         -o ConnectTimeout=5 "$SSH_USER@$VPS_IP" "echo ready" 2>/dev/null; then
+         -o ConnectTimeout=5 "$EFFECTIVE_SSH_USER@$VPS_IP" "echo ready" 2>/dev/null; then
       ok "VPS back online with NixOS."
       break
     fi
@@ -224,7 +239,7 @@ phase_nixos() {
   info "Building and switching NixOS configuration from $NIX_CONFIG_DIR..."
   nixos-rebuild switch \
     --flake "path:$NIX_CONFIG_DIR***REMOVED***agent" \
-    --target-host "$SSH_USER@$VPS_IP" \
+    --target-host "$EFFECTIVE_SSH_USER@$VPS_IP" \
     --use-substitutes
 
   ok "NixOS configuration applied (k3s, Caddy, Tailscale, firewall)."
@@ -273,9 +288,9 @@ phase_helmfile() {
   info "Copying Helm values to VPS..."
   run_ssh "mkdir -p $HELMFILE_DIR_REMOTE/helm"
   rsync -avz -e "ssh -i $SSH_KEY" \
-    "$HELMFILE_DIR/helmfile.yaml" "$SSH_USER@$VPS_IP:$HELMFILE_DIR_REMOTE/"
+    "$HELMFILE_DIR/helmfile.yaml" "$EFFECTIVE_SSH_USER@$VPS_IP:$HELMFILE_DIR_REMOTE/"
   rsync -avz -e "ssh -i $SSH_KEY" \
-    "$HELMFILE_DIR/helm/" "$SSH_USER@$VPS_IP:$HELMFILE_DIR_REMOTE/helm/"
+    "$HELMFILE_DIR/helm/" "$EFFECTIVE_SSH_USER@$VPS_IP:$HELMFILE_DIR_REMOTE/helm/"
 
   info "Running helmfile sync..."
   run_ssh "cd $HELMFILE_DIR_REMOTE && helmfile sync"
@@ -293,7 +308,7 @@ phase_kubectl() {
   info "Copying k8s manifests to VPS..."
   run_ssh "mkdir -p /opt/k8s/manifests"
   rsync -avz -e "ssh -i $SSH_KEY" \
-    "$K8S_MANIFESTS/" "$SSH_USER@$VPS_IP:/opt/k8s/manifests/"
+    "$K8S_MANIFESTS/" "$EFFECTIVE_SSH_USER@$VPS_IP:/opt/k8s/manifests/"
 
   info "Deploying Hermes Agent..."
   run_ssh "kubectl apply -f /opt/k8s/manifests/hermes/"
@@ -327,7 +342,7 @@ phase_status() {
 
   if [[ -n "$VPS_IP" ]]; then
     info "VPS IP: $VPS_IP"
-    info "SSH: ssh root@$VPS_IP"
+    info "SSH: ssh $EFFECTIVE_SSH_USER@$VPS_IP"
     info "DNS: hermes.${DOMAIN}, status.${DOMAIN}, n8n.${DOMAIN}, auth.${DOMAIN}"
 
     if run_ssh "systemctl is-active k3s" 2>/dev/null | grep -q active; then
@@ -432,7 +447,7 @@ main() {
       info "Status dashboard at https://status.${DOMAIN}"
       info "n8n at https://n8n.${DOMAIN} (Tailscale-only)"
       info "Auth at https://auth.${DOMAIN} (Tailscale-only)"
-      info "SSH: ssh root@$VPS_IP"
+      info "SSH: ssh $EFFECTIVE_SSH_USER@$VPS_IP"
       ;;
   esac
 }
