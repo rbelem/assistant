@@ -23,9 +23,9 @@ variable "hcloud_token" {
 }
 
 variable "hcloud_server_type" {
-  description = "Hetzner Cloud server type. CX31 = 4 vCPU / 8 GB / 80 GB / €17/mo. Source: Bitwarden assistant/tofu-inputs"
+  description = "Hetzner Cloud server type. CX33 = 8 vCPU / 16 GB / 160 GB / ~€34/mo. Source: Bitwarden assistant/tofu-inputs"
   type        = string
-  default     = "cx31"
+  default     = "cx33"
 
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]*$", var.hcloud_server_type))
@@ -34,9 +34,9 @@ variable "hcloud_server_type" {
 }
 
 variable "hcloud_location" {
-  description = "Hetzner Cloud location. fsn1 = Falkenstein. (nbg1, hel1, ash, hil also available)"
+  description = "Hetzner Cloud location. hel1 = Helsinki, Finland. (fsn1 Falkenstein, nbg1 Nuremberg, ash/hil US also available)"
   type        = string
-  default     = "fsn1"
+  default     = "hel1"
 
   validation {
     condition     = can(regex("^[a-z0-9-]+$", var.hcloud_location))
