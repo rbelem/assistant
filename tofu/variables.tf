@@ -12,7 +12,7 @@
 ***REMOVED*** -----------------------------------------------------------------------------
 
 variable "vps_display_name" {
-  description = "Display name for the VPS in OVH Manager. Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "Display name for the VPS in OVH Manager. Source: Bitwarden assistant/tofu-inputs"
   type        = string
 
   validation {
@@ -24,7 +24,7 @@ variable "vps_display_name" {
 ***REMOVED*** Supported VPS providers: OVH (REDACTED-PLAN / REDACTED-REGION1) and Hostinger
 ***REMOVED*** (hostingercom-vps-kvm4-... / curitiba). Validation accepts both patterns.
 variable "vps_datacenter" {
-  description = "VPS datacenter/region (e.g. REDACTED-REGION1, REDACTED-REGION1, curitiba). Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "VPS datacenter/region (e.g. REDACTED-REGION1, REDACTED-REGION1, curitiba). Source: Bitwarden assistant/tofu-inputs"
   type        = string
 
   validation {
@@ -34,7 +34,7 @@ variable "vps_datacenter" {
 }
 
 variable "vps_plan_code" {
-  description = "VPS plan code (e.g. REDACTED-PLAN). Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "VPS plan code (e.g. REDACTED-PLAN). Source: Bitwarden assistant/tofu-inputs"
   type        = string
 
   validation {
@@ -44,7 +44,7 @@ variable "vps_plan_code" {
 }
 
 variable "vps_os" {
-  description = "Operating system for the VPS (configured via plan.configuration). Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "Operating system for the VPS (configured via plan.configuration). Source: Bitwarden assistant/tofu-inputs"
   type        = string
 
   validation {
@@ -54,7 +54,7 @@ variable "vps_os" {
 }
 
 variable "ssh_public_key" {
-  description = "SSH public key to pre-install on the VPS (full key string, e.g. 'ssh-ed25519 AAAA...'). Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "SSH public key to pre-install on the VPS (full key string, e.g. 'ssh-ed25519 AAAA...'). Source: Bitwarden assistant/tofu-inputs"
   type        = string
   sensitive   = true
 
@@ -65,7 +65,7 @@ variable "ssh_public_key" {
 }
 
 variable "vps_image_id" {
-  description = "Image ID to install on the VPS (required if ssh_public_key is set). Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "Image ID to install on the VPS (required if ssh_public_key is set). Source: Bitwarden assistant/tofu-inputs"
   type        = string
 
   validation {
@@ -79,7 +79,7 @@ variable "vps_image_id" {
 ***REMOVED*** -----------------------------------------------------------------------------
 
 variable "domain_name" {
-  description = "Base domain name (managed by Porkbun DNS). Source: Bitwarden rodrigo-agent/domain-config"
+  description = "Base domain name (managed by Porkbun DNS). Source: Bitwarden assistant/domain-config"
   type        = string
 
   validation {
@@ -101,7 +101,7 @@ variable "dns_ttl" {
 
 variable "subdomains" {
   type        = list(string)
-  description = "Subdomain list (per-service A records). Source: Bitwarden rodrigo-agent/domain-config"
+  description = "Subdomain list (per-service A records). Source: Bitwarden assistant/domain-config"
 
   validation {
     condition     = length(var.subdomains) > 0 && alltrue([for s in var.subdomains : length(s) > 0 && !can(regex("\\.", s))])
@@ -110,7 +110,7 @@ variable "subdomains" {
 }
 
 variable "vps_ip" {
-  description = "Primary public IPv4 address of the VPS (used for DNS A records). Source: Bitwarden rodrigo-agent/domain-config"
+  description = "Primary public IPv4 address of the VPS (used for DNS A records). Source: Bitwarden assistant/domain-config"
   type        = string
 
   validation {
@@ -124,7 +124,7 @@ variable "vps_ip" {
 ***REMOVED*** -----------------------------------------------------------------------------
 
 variable "ssh_user" {
-  description = "SSH user for the VPS (used by deploy scripts). Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "SSH user for the VPS (used by deploy scripts). Source: Bitwarden assistant/tofu-inputs"
   type        = string
 
   validation {
@@ -134,7 +134,7 @@ variable "ssh_user" {
 }
 
 variable "ssh_port" {
-  description = "SSH port for the VPS (used by deploy scripts). Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "SSH port for the VPS (used by deploy scripts). Source: Bitwarden assistant/tofu-inputs"
   type        = number
 
   validation {
@@ -148,7 +148,7 @@ variable "ssh_port" {
 ***REMOVED*** -----------------------------------------------------------------------------
 
 variable "state_bucket_name" {
-  description = "S3 bucket name for OpenTofu remote state. Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "S3 bucket name for OpenTofu remote state. Source: Bitwarden assistant/tofu-inputs"
   type        = string
 
   validation {
@@ -158,7 +158,7 @@ variable "state_bucket_name" {
 }
 
 variable "backup_bucket_name" {
-  description = "S3 bucket name for restic backups. Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "S3 bucket name for restic backups. Source: Bitwarden assistant/tofu-inputs"
   type        = string
 
   validation {
@@ -168,7 +168,7 @@ variable "backup_bucket_name" {
 }
 
 variable "storage_region" {
-  description = "S3-compatible Object Storage region identifier (e.g. gra, sbg). Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "S3-compatible Object Storage region identifier (e.g. gra, sbg). Source: Bitwarden assistant/tofu-inputs"
   type        = string
 
   validation {
@@ -178,7 +178,7 @@ variable "storage_region" {
 }
 
 variable "storage_endpoint" {
-  description = "S3-compatible Object Storage HTTPS endpoint URL. Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "S3-compatible Object Storage HTTPS endpoint URL. Source: Bitwarden assistant/tofu-inputs"
   type        = string
 
   validation {
@@ -188,7 +188,7 @@ variable "storage_endpoint" {
 }
 
 variable "storage_access_key" {
-  description = "Access key for S3-compatible Object Storage. Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "Access key for S3-compatible Object Storage. Source: Bitwarden assistant/tofu-inputs"
   type        = string
   sensitive   = true
 
@@ -199,7 +199,7 @@ variable "storage_access_key" {
 }
 
 variable "storage_secret_key" {
-  description = "Secret key for S3-compatible Object Storage. Source: Bitwarden rodrigo-agent/tofu-inputs"
+  description = "Secret key for S3-compatible Object Storage. Source: Bitwarden assistant/tofu-inputs"
   type        = string
   sensitive   = true
 

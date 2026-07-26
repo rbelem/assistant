@@ -1,6 +1,6 @@
 ---
 - name: Deploy services to k3s
-  hosts: rodrigo-agent
+  hosts: assistant
   become: yes
   gather_facts: no
 

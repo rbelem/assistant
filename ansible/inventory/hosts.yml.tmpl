@@ -5,7 +5,7 @@
 ***REMOVED*** ansible_user, ansible_port, domain, and subdomains are envsubst'd.
 all:
   hosts:
-    rodrigo-agent:
+    assistant:
       ansible_host: ${VPS_HOST}
       ansible_user: ${VPS_SSH_USER}
       ansible_port: ${VPS_SSH_PORT}
@@ -16,7 +16,7 @@ all:
       - monitoring
       - n8n
       - auth
-    vps_hostname: rodrigo-agent
+    vps_hostname: assistant
     domain: ${DOMAIN}
     subdomains: ${SUBDOMAINS_JSON}
     k8s_manifests_base: /opt/k8s

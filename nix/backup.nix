@@ -6,7 +6,7 @@
       paths = [
         "/var/lib/rancher/k3s"
       ];
-      repository = "s3:https://s3.eu-west-par.io.REDACTED-OVH-DOMAIN/rodrigo-agent-backups";
+      repository = "s3:https://s3.eu-west-par.io.REDACTED-OVH-DOMAIN/REDACTED-BUCKET";
       environmentFile = "/etc/restic/env";
       passwordFile = "/etc/restic/password";
       timerConfig = {

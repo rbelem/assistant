@@ -4,7 +4,7 @@
     enable = true;
     openFirewall = true;
     extraUpFlags = [
-      "--hostname=rodrigo-agent"
+      "--hostname=agent"
       "--accept-routes"
     ];
   };

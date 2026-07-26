@@ -21,7 +21,7 @@ png, jpg, jpeg, webp, bmp, tiff, tif, pdf
 ***REMOVED******REMOVED*** CLI
 
 ```bash
-cd rodrigo-agent
+cd assistant
 ./scripts/ocr.sh document.pdf
 ./scripts/ocr.sh image.png --keep
 ./scripts/ocr.sh --status

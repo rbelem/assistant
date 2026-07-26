@@ -9,7 +9,7 @@
 ***REMOVED***   VPS_HOST          — current VPS public IPv4
 ***REMOVED***   DOMAIN            — base domain (e.g. example.com)
 ***REMOVED***   SUBDOMAINS_JSON   — JSON array (e.g. '["app","www"]')
-***REMOVED***   PROJECT_NAME      — project prefix (e.g. rodrigo-agent)
+***REMOVED***   PROJECT_NAME      — project prefix (e.g. assistant)
 ***REMOVED***   TOFU_INPUTS_JSON  — JSON object with Tofu vars (plan, datacenter, etc.)
 ***REMOVED***
 ***REMOVED*** Optional env vars (with defaults):
@@ -18,7 +18,7 @@
 ***REMOVED***
 ***REMOVED*** Usage:
 ***REMOVED***   VPS_HOST=203.0.113.42 DOMAIN=example.com \
-***REMOVED***     PROJECT_NAME=rodrigo-agent \
+***REMOVED***     PROJECT_NAME=assistant \
 ***REMOVED***     SUBDOMAINS_JSON='["app","www"]' \
 ***REMOVED***     TOFU_INPUTS_JSON='{"vps_plan_code":"KVM 4","datacenter":"gra","vps_image_id":"...","state_bucket_name":"...-tofu-state","backup_bucket_name":"...-backups","storage_region":"gra","storage_endpoint":"https://s3.gra.io.REDACTED-OVH-DOMAIN","storage_access_key":"...","storage_secret_key":"...","ssh_public_key":"...","vps_os":"debian-12","vps_display_name":"agent"}' \
 ***REMOVED***     scripts/populate-vault.sh
@@ -31,7 +31,7 @@ set -euo pipefail
 : "${VPS_HOST:?must set VPS_HOST (VPS public IPv4)}"
 : "${DOMAIN:?must set DOMAIN (e.g. example.com)}"
 : "${SUBDOMAINS_JSON:?must set SUBDOMAINS_JSON (JSON array string)}"
-: "${PROJECT_NAME:?must set PROJECT_NAME (e.g. rodrigo-agent)}"
+: "${PROJECT_NAME:?must set PROJECT_NAME (e.g. assistant)}"
 : "${TOFU_INPUTS_JSON:?must set TOFU_INPUTS_JSON (JSON object)}"
 
 SSH_USER="${SSH_USER:-root}"
@@ -96,11 +96,11 @@ create_if_missing() {
   echo "  ✓ $name (created)"
 }
 
-***REMOVED***--- item 1: rodrigo-agent/vps-access (Login + 3 custom fields) -----------------
+***REMOVED***--- item 1: assistant/vps-access (Login + 3 custom fields) -----------------
 echo
-echo "Creating rodrigo-agent/vps-access (Login + custom fields)..."
+echo "Creating assistant/vps-access (Login + custom fields)..."
 vps_item="$(jq -n \
-  --arg name "rodrigo-agent/vps-access" \
+  --arg name "assistant/vps-access" \
   --arg host "$VPS_HOST" \
   --arg user "$SSH_USER" \
   --argjson port "$SSH_PORT" \
@@ -114,13 +114,13 @@ vps_item="$(jq -n \
        { type: 0, name: "ssh_port", value: ($port | tostring) }
      ]
    }')"
-create_if_missing "rodrigo-agent/vps-access" "$vps_item"
+create_if_missing "assistant/vps-access" "$vps_item"
 
-***REMOVED***--- item 2: rodrigo-agent/domain-config (Secure Note + JSON) ------------------
+***REMOVED***--- item 2: assistant/domain-config (Secure Note + JSON) ------------------
 echo
-echo "Creating rodrigo-agent/domain-config (Secure Note)..."
+echo "Creating assistant/domain-config (Secure Note)..."
 domain_item="$(jq -n \
-  --arg name "rodrigo-agent/domain-config" \
+  --arg name "assistant/domain-config" \
   --arg domain "$DOMAIN" \
   --argjson subdomains "$SUBDOMAINS_JSON" \
   '{
@@ -128,13 +128,13 @@ domain_item="$(jq -n \
      name: $name,
      notes: ({ domain: $domain, subdomains: $subdomains } | tojson)
    }')"
-create_if_missing "rodrigo-agent/domain-config" "$domain_item"
+create_if_missing "assistant/domain-config" "$domain_item"
 
-***REMOVED***--- item 3: rodrigo-agent/tofu-inputs (Secure Note + JSON) --------------------
+***REMOVED***--- item 3: assistant/tofu-inputs (Secure Note + JSON) --------------------
 echo
-echo "Creating rodrigo-agent/tofu-inputs (Secure Note)..."
+echo "Creating assistant/tofu-inputs (Secure Note)..."
 tofu_item="$(jq -n \
-  --arg name "rodrigo-agent/tofu-inputs" \
+  --arg name "assistant/tofu-inputs" \
   --argjson inputs "$TOFU_INPUTS_JSON" \
   --arg project "$PROJECT_NAME" \
   --arg domain "$DOMAIN" \
@@ -147,13 +147,13 @@ tofu_item="$(jq -n \
        | tojson
      )
    }')"
-create_if_missing "rodrigo-agent/tofu-inputs" "$tofu_item"
+create_if_missing "assistant/tofu-inputs" "$tofu_item"
 
 ***REMOVED***--- verify -------------------------------------------------------------------
 echo
 echo "Verifying items are retrievable..."
 all_ok=1
-for name in rodrigo-agent/vps-access rodrigo-agent/domain-config rodrigo-agent/tofu-inputs; do
+for name in assistant/vps-access assistant/domain-config assistant/tofu-inputs; do
   if bw_sesh get item "$name" >/dev/null 2>&1; then
     echo "  ✓ $name retrievable"
   else
@@ -172,7 +172,7 @@ echo "Next step: validate the schema + render end-to-end:"
 echo "  scripts/fetch_vault.sh --check"
 echo
 echo "To update values later, edit the items in Bitwarden or via bw CLI:"
-echo "  bw get item 'rodrigo-agent/tofu-inputs' | jq -r '.notes | fromjson'"
+echo "  bw get item 'assistant/tofu-inputs' | jq -r '.notes | fromjson'"
 echo
 echo "Required TOFU_INPUTS_JSON keys (for full deploy):"
 echo '  vps_plan_code, datacenter, vps_image_id, vps_os, vps_display_name,'

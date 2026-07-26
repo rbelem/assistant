@@ -10,11 +10,11 @@
 ***REMOVED***   - atomic cache write (mktemp + mv) with chmod 600
 ***REMOVED***   - shell-safe quoting via printf %q
 ***REMOVED***
-***REMOVED*** Bitwarden schema (vault `rodrigo-agent`, items namespaced under that prefix):
-***REMOVED***   "rodrigo-agent/vps-access"     — Login, custom fields: host, ssh_user, ssh_port
-***REMOVED***   "rodrigo-agent/domain-config"  — Secure Note JSON:
+***REMOVED*** Bitwarden schema (vault `assistant`, items namespaced under that prefix):
+***REMOVED***   "assistant/vps-access"     — Login, custom fields: host, ssh_user, ssh_port
+***REMOVED***   "assistant/domain-config"  — Secure Note JSON:
 ***REMOVED***                                     {"domain":"<your-domain>","subdomains":["hermes",...]}
-***REMOVED***   "rodrigo-agent/tofu-inputs"    — Secure Note JSON (arbitrary TF_VAR_* keys)
+***REMOVED***   "assistant/tofu-inputs"    — Secure Note JSON (arbitrary TF_VAR_* keys)
 ***REMOVED***
 ***REMOVED*** Usage:
 ***REMOVED***   scripts/fetch_vault.sh              ***REMOVED*** write all rendered outputs
@@ -127,7 +127,7 @@ assert_non_empty() {
   local label="$1" value="$2"
   if [[ -z "$value" || "$value" == "null" ]]; then
     echo "Bitwarden field empty: $label" >&2
-    echo "  check items 'rodrigo-agent/vps-access', 'rodrigo-agent/domain-config', 'rodrigo-agent/tofu-inputs'" >&2
+    echo "  check items 'assistant/vps-access', 'assistant/domain-config', 'assistant/tofu-inputs'" >&2
     exit 1
   fi
 }
@@ -150,9 +150,9 @@ to_relpath() {
 }
 
 ***REMOVED***--- main fetch ----------------------------------------------------------------
-ITEM_VPS='rodrigo-agent/vps-access'
-ITEM_DOMAIN='rodrigo-agent/domain-config'
-ITEM_TOFU='rodrigo-agent/tofu-inputs'
+ITEM_VPS='assistant/vps-access'
+ITEM_DOMAIN='assistant/domain-config'
+ITEM_TOFU='assistant/tofu-inputs'
 
 ***REMOVED*** VPS Access (Login → 3 custom fields)
 VPS_HOST="$(fetch_login_field "$ITEM_VPS" host)"

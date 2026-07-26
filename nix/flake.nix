@@ -1,5 +1,5 @@
 {
-  description = "rodrigo-agent NixOS config";
+  description = "assistant NixOS config";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";

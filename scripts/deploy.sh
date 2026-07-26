@@ -1,6 +1,6 @@
 ***REMOVED***!/usr/bin/env bash
 ***REMOVED*** ─────────────────────────────────────────────────────────────
-***REMOVED*** rodrigo-agent deployment pipeline
+***REMOVED*** assistant deployment pipeline
 ***REMOVED*** ─────────────────────────────────────────────────────────────
 ***REMOVED*** Order: tofu → nixos-infect → nixos-rebuild → ansible → helmfile → kubectl
 ***REMOVED***
