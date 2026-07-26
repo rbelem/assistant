@@ -1,0 +1,22 @@
+***REMOVED*** Generated from hosts.yml.tmpl via envsubst in scripts/deploy.sh.
+***REMOVED*** Bitwarden is the source of truth; do not edit the rendered hosts.yml.
+***REMOVED*** VPS hostname is environment-agnostic for this repo, so it is hardcoded
+***REMOVED*** (Option A per the vault-driven inventory design). Only ansible_host,
+***REMOVED*** ansible_user, ansible_port, domain, and subdomains are envsubst'd.
+all:
+  hosts:
+    rodrigo-agent:
+      ansible_host: ${VPS_HOST}
+      ansible_user: ${VPS_SSH_USER}
+      ansible_port: ${VPS_SSH_PORT}
+      ansible_python_interpreter: /usr/bin/python3
+  vars:
+    namespace_list:
+      - hermes
+      - monitoring
+      - n8n
+      - auth
+    vps_hostname: rodrigo-agent
+    domain: ${DOMAIN}
+    subdomains: ${SUBDOMAINS_JSON}
+    k8s_manifests_base: /opt/k8s
