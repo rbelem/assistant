@@ -1,6 +1,7 @@
 ***REMOVED*** IaC state
 terraform.tfstate
 terraform.tfstate.backup
+.terraform/
 .tofu/
 .terraform.lock.hcl
 

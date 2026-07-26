@@ -14,13 +14,16 @@ provider "lambda" {
 #Data Sources
 #-----------------------------------------------------------------------------
 
-data "lambda_instance_types" "available" {}
+data "lambda_instance_types" "available" {
+  count = var.ocr_enabled ? 1 : 0
+}
 
 #-----------------------------------------------------------------------------
 #SSH Key — registered with Lambda, referenced when launching instances
 #-----------------------------------------------------------------------------
 
 resource "lambda_ssh_key" "default" {
+  count      = var.ocr_enabled ? 1 : 0
   public_key = var.lambda_ssh_public_key
 }
 
@@ -38,7 +41,7 @@ resource "lambda_instance" "ocr" {
   name          = var.ocr_instance_name
   instance_type = var.ocr_instance_type
   region        = var.ocr_region
-  ssh_key_names = [lambda_ssh_key.default.name]
+  ssh_key_names = [lambda_ssh_key.default[0].name]
   quantity      = 1
 }
 
