@@ -34,7 +34,7 @@ cd "$MIRROR_DIR"
 git remote add public-origin https://github.com/rbelem/assistant.git 2>/dev/null || true
 
 echo "  Running git filter-repo..."
-devbox run -- git-filter-repo \
+nix shell 'nixpkgs***REMOVED***git-filter-repo' --command git-filter-repo \
   --replace-text "$REPO_ROOT/replacements.txt" \
   --force
 
@@ -77,10 +77,10 @@ read -p "Press Enter when the push is done..."
 ***REMOVED*** ---- Phase 4: wait for gitleaks to pass ----
 echo "==> Phase 4: watch gitleaks"
 echo "  Watching GitHub Actions for gitleaks to pass..."
-if ! devbox run -- gh run watch --repo rbelem/assistant; then
+if ! nix shell 'nixpkgs***REMOVED***gh' --command gh run watch --repo rbelem/assistant; then
   echo
   echo "  ! gitleaks failed — check the run log:"
-  echo "    devbox run -- gh run list --repo rbelem/assistant --workflow gitleaks --limit=1"
+  echo "    nix shell 'nixpkgs***REMOVED***gh' --command gh run list --repo rbelem/assistant --workflow gitleaks --limit=1"
   echo "  Fix the leak, re-run this script, and try again."
   exit 1
 fi
@@ -155,7 +155,7 @@ echo "==> Phase 8: verify"
 echo
 echo "Verify the deployment:"
 echo "  1. Check the public repo:"
-echo "     devbox run -- gh api repos/rbelem/assistant/contents/AGENTS.md --jq .content | head -50"
+echo "     nix shell 'nixpkgs***REMOVED***gh' --command gh api repos/rbelem/assistant/contents/AGENTS.md --jq .content | head -50"
 echo
 echo "  2. SSH into the VPS and check k3s:"
 VPS_IP=$(tofu output -raw vps_ip 2>/dev/null || echo "<vps-ip>")
