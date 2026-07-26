@@ -6,10 +6,6 @@
 ***REMOVED***so the OCR script can query instance status via tofus output.
 ***REMOVED***-----------------------------------------------------------------------------
 
-terraform {
-  }
-}
-
 provider "lambda" {
   ***REMOVED***Credentials from LAMBDA_CLOUD_API_KEY env var
 }
