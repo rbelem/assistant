@@ -41,7 +41,7 @@ output "vps_ips" {
 }
 
 output "dns_fqdn" {
-  description = "Base domain name (REDACTED-DOMAIN)"
+  description = "Base domain name"
   value       = var.domain_name
 }
 
@@ -66,13 +66,13 @@ output "backup_bucket_arn" {
 }
 
 output "storage_endpoint" {
-  description = "OVH S3-compatible Object Storage endpoint URL"
-  value       = "https://s3.${var.storage_region}.io.REDACTED-OVH-DOMAIN"
+  description = "S3-compatible Object Storage endpoint URL (sourced from vault)"
+  value       = var.storage_endpoint
 }
 
 output "ssh_command" {
-  description = "SSH command to connect to the VPS (after nixos-infect, use root@)"
-  value       = "ssh root@hermes.${var.domain_name}"
+  description = "SSH command to access the provisioned VPS"
+  value       = "ssh -p ${var.ssh_port} ${var.ssh_user}@${var.vps_ip}"
 }
 
 output "ovh_subsidiary" {

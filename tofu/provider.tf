@@ -6,7 +6,8 @@
 ***REMOVED***   OVH_CONSUMER_KEY
 ***REMOVED***
 ***REMOVED*** AWS/S3 credentials for Object Storage:
-***REMOVED***   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+***REMOVED***   Passed via tofu-inputs variables: storage_access_key, storage_secret_key,
+***REMOVED***   storage_endpoint, storage_region (and vps_datacenter for AWS region).
 ***REMOVED***
 ***REMOVED*** Porkbun DNS credentials:
 ***REMOVED***   PORKBUN_API_KEY, PORKBUN_SECRET_API_KEY
@@ -42,16 +43,18 @@ provider "ovh" {
 }
 
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** AWS S3 Provider — configured for OVH Object Storage
+***REMOVED*** AWS S3 Provider — configured for S3-compatible Object Storage
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Manages S3 buckets on OVH's S3-compatible Object Storage.
-***REMOVED*** Uses the REDACTED-REGION (Gravelines) endpoint by default.
+***REMOVED*** Manages S3 buckets on an S3-compatible Object Storage backend (e.g. OVH).
+***REMOVED*** Region, endpoint, and credentials are sourced from tofu-inputs variables.
 ***REMOVED*** -----------------------------------------------------------------------------
 provider "aws" {
-  region = "gra"
+  region     = var.vps_datacenter
+  access_key = var.storage_access_key
+  secret_key = var.storage_secret_key
 
   endpoints {
-    s3 = "https://s3.gra.io.REDACTED-OVH-DOMAIN"
+    s3 = var.storage_endpoint
   }
 
   skip_credentials_validation = true
@@ -64,7 +67,7 @@ provider "aws" {
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** Porkbun DNS Provider
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Manages DNS records for REDACTED-DOMAIN (domain registered at Porkbun).
+***REMOVED*** Manages DNS records for the configured domain (registered at Porkbun).
 ***REMOVED*** Credentials sourced from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY env vars.
 ***REMOVED*** -----------------------------------------------------------------------------
 provider "porkbun" {

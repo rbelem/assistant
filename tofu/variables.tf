@@ -1,59 +1,75 @@
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** Input Variables — OVH VPS + Infrastructure Configuration
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Override defaults via terraform.tfvars, -var flags, or TF_VAR_* env vars.
-***REMOVED*** Sensitive values (API keys) should be set via environment variables.
+***REMOVED*** Values are sourced from Bitwarden via scripts/fetch_vault.sh, which renders:
+***REMOVED***   .rendered/terraform.tfvars   (tfvars passed via tofu-wrapper.sh)
+***REMOVED***   .rendered/vault.env          (TF_VAR_* env vars)
+***REMOVED*** No environment-specific defaults are committed in this public repo.
 ***REMOVED*** -----------------------------------------------------------------------------
-
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** OVH Account
-***REMOVED*** -----------------------------------------------------------------------------
-
-variable "ovh_subsidiary" {
-  description = "OVHcloud subsidiary (country code for billing: FR, DE, GB, etc.)"
-  type        = string
-  default     = "FR"
-}
 
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** VPS Configuration
 ***REMOVED*** -----------------------------------------------------------------------------
 
 variable "vps_display_name" {
-  description = "Display name for the VPS in OVH Manager"
+  description = "Display name for the VPS in OVH Manager. Source: Bitwarden rodrigo-agent/tofu-inputs"
   type        = string
-  default     = "rodrigo-agent"
+
+  validation {
+    condition     = length(var.vps_display_name) > 0
+    error_message = "VPS display name must not be empty."
+  }
 }
 
 variable "vps_datacenter" {
-  description = "OVH datacenter for the VPS (e.g. REDACTED-REGION1, REDACTED-REGION1, REDACTED-REGION1)"
+  description = "OVH datacenter for the VPS (e.g. REDACTED-REGION1, REDACTED-REGION1, REDACTED-REGION1). Source: Bitwarden rodrigo-agent/tofu-inputs"
   type        = string
-  default     = "REDACTED-REGION1"
+
+  validation {
+    condition     = can(regex("^[A-Z0-9]{3,4}$", var.vps_datacenter))
+    error_message = "Datacenter code must be 3-4 alphanumeric uppercase characters (e.g. REDACTED-REGION1, REDACTED-REGION1)."
+  }
 }
 
 variable "vps_plan_code" {
-  description = "OVH VPS plan code (REDACTED-PLAN = 2 vCPU, 2GB RAM, 40GB SSD)"
+  description = "OVH VPS plan code (REDACTED-PLAN = 2 vCPU, 2GB RAM, 40GB SSD). Source: Bitwarden rodrigo-agent/tofu-inputs"
   type        = string
-  default     = "REDACTED-PLAN"
+
+  validation {
+    condition     = can(regex("^vps-[a-z0-9-]+$", var.vps_plan_code))
+    error_message = "VPS plan code must match the OVH format (e.g. REDACTED-PLAN)."
+  }
 }
 
 variable "vps_os" {
-  description = "Operating system for the VPS (configured via plan.configuration)"
+  description = "Operating system for the VPS (configured via plan.configuration). Source: Bitwarden rodrigo-agent/tofu-inputs"
   type        = string
-  default     = "Debian 12"
+
+  validation {
+    condition     = length(var.vps_os) > 0
+    error_message = "VPS OS must not be empty."
+  }
 }
 
 variable "ssh_public_key" {
-  description = "SSH public key to pre-install on the VPS (full key string, e.g. 'ssh-ed25519 AAAA...')"
+  description = "SSH public key to pre-install on the VPS (full key string, e.g. 'ssh-ed25519 AAAA...'). Source: Bitwarden rodrigo-agent/tofu-inputs"
   type        = string
   sensitive   = true
-  default     = ""
+
+  validation {
+    condition     = var.ssh_public_key == "" || can(regex("^ssh-(rsa|ed25519|dss|ecdsa) ", var.ssh_public_key))
+    error_message = "SSH public key must be empty (OVH emailed credentials) or a valid ssh-rsa/ed25519/dss/ecdsa public key."
+  }
 }
 
 variable "vps_image_id" {
-  description = "Image ID to install on the VPS (required if ssh_public_key is set). Find available IDs via: GET /vps/{serviceName}/images/available"
+  description = "Image ID to install on the VPS (required if ssh_public_key is set). Source: Bitwarden rodrigo-agent/tofu-inputs"
   type        = string
-  default     = ""
+
+  validation {
+    condition     = var.vps_image_id == "" || can(regex("^[0-9a-fA-F-]{36}$", var.vps_image_id))
+    error_message = "Image ID must be empty or a valid UUID."
+  }
 }
 
 ***REMOVED*** -----------------------------------------------------------------------------
@@ -61,9 +77,13 @@ variable "vps_image_id" {
 ***REMOVED*** -----------------------------------------------------------------------------
 
 variable "domain_name" {
-  description = "Base domain name (managed by Porkbun DNS)"
+  description = "Base domain name (managed by Porkbun DNS). Source: Bitwarden rodrigo-agent/domain-config"
   type        = string
-  default     = "REDACTED-DOMAIN"
+
+  validation {
+    condition     = length(regexall("\\.", var.domain_name)) > 0
+    error_message = "Domain name must contain at least one dot (e.g. example.com)."
+  }
 }
 
 variable "dns_ttl" {
@@ -77,26 +97,114 @@ variable "dns_ttl" {
   }
 }
 
+variable "subdomains" {
+  type        = list(string)
+  description = "Subdomain list (per-service A records). Source: Bitwarden rodrigo-agent/domain-config"
+
+  validation {
+    condition     = length(var.subdomains) > 0 && alltrue([for s in var.subdomains : length(s) > 0 && !can(regex("\\.", s))])
+    error_message = "subdomains must be a non-empty list of single-label hostnames (no dots)."
+  }
+}
+
+variable "vps_ip" {
+  description = "Primary public IPv4 address of the VPS (used for DNS A records). Source: Bitwarden rodrigo-agent/domain-config"
+  type        = string
+
+  validation {
+    condition     = can(regex("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$", var.vps_ip))
+    error_message = "vps_ip must be a valid IPv4 address."
+  }
+}
+
+***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED*** Connection metadata (used by deploy scripts)
+***REMOVED*** -----------------------------------------------------------------------------
+
+variable "ssh_user" {
+  description = "SSH user for the VPS (used by deploy scripts). Source: Bitwarden rodrigo-agent/tofu-inputs"
+  type        = string
+
+  validation {
+    condition     = length(var.ssh_user) > 0
+    error_message = "ssh_user must not be empty."
+  }
+}
+
+variable "ssh_port" {
+  description = "SSH port for the VPS (used by deploy scripts). Source: Bitwarden rodrigo-agent/tofu-inputs"
+  type        = number
+
+  validation {
+    condition     = var.ssh_port > 0 && var.ssh_port <= 65535
+    error_message = "SSH port must be between 1 and 65535."
+  }
+}
+
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** Object Storage Configuration
 ***REMOVED*** -----------------------------------------------------------------------------
 
 variable "state_bucket_name" {
-  description = "S3 bucket name for OpenTofu remote state"
+  description = "S3 bucket name for OpenTofu remote state. Source: Bitwarden rodrigo-agent/tofu-inputs"
   type        = string
-  default     = "rodrigo-agent-tofu-state"
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.state_bucket_name))
+    error_message = "State bucket name must contain only lowercase letters, numbers, and hyphens."
+  }
 }
 
 variable "backup_bucket_name" {
-  description = "S3 bucket name for restic backups"
+  description = "S3 bucket name for restic backups. Source: Bitwarden rodrigo-agent/tofu-inputs"
   type        = string
-  default     = "rodrigo-agent-backups"
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.backup_bucket_name))
+    error_message = "Backup bucket name must contain only lowercase letters, numbers, and hyphens."
+  }
 }
 
 variable "storage_region" {
-  description = "OVH Object Storage region identifier (gra, sbg, etc.)"
+  description = "S3-compatible Object Storage region identifier (e.g. gra, sbg). Source: Bitwarden rodrigo-agent/tofu-inputs"
   type        = string
-  default     = "gra"
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.storage_region))
+    error_message = "Storage region must contain only lowercase letters, numbers, and hyphens."
+  }
+}
+
+variable "storage_endpoint" {
+  description = "S3-compatible Object Storage endpoint URL (e.g. https://s3.gra.io.REDACTED-OVH-DOMAIN). Source: Bitwarden rodrigo-agent/tofu-inputs"
+  type        = string
+
+  validation {
+    condition     = can(regex("^https?://", var.storage_endpoint))
+    error_message = "Storage endpoint must be a valid HTTP(S) URL."
+  }
+}
+
+variable "storage_access_key" {
+  description = "Access key for S3-compatible Object Storage. Source: Bitwarden rodrigo-agent/tofu-inputs"
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.storage_access_key) > 0
+    error_message = "storage_access_key must not be empty."
+  }
+}
+
+variable "storage_secret_key" {
+  description = "Secret key for S3-compatible Object Storage. Source: Bitwarden rodrigo-agent/tofu-inputs"
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.storage_secret_key) > 0
+    error_message = "storage_secret_key must not be empty."
+  }
 }
 
 ***REMOVED*** -----------------------------------------------------------------------------

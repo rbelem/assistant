@@ -3,7 +3,7 @@
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** Resources:
 ***REMOVED***   1. OVH VPS instance (Debian 12 → converted to NixOS via nixos-infect)
-***REMOVED***   2. Porkbun DNS A records: *.REDACTED-DOMAIN + subdomains → VPS public IP
+***REMOVED***   2. Porkbun DNS A records: wildcard + subdomains → VPS public IP
 ***REMOVED***   3. S3 buckets for OpenTofu state and restic backups
 ***REMOVED*** -----------------------------------------------------------------------------
 
@@ -79,48 +79,27 @@ data "ovh_vps" "agent_details" {
 }
 
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** DNS Records — Porkbun (REDACTED-DOMAIN)
+***REMOVED*** DNS Records — Porkbun
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Wildcard + per-subdomain A records pointing to the VPS public IP.
+***REMOVED*** Wildcard A record uses the data source IP; per-subdomain A records are
+***REMOVED*** driven by var.subdomains / var.vps_ip and rendered from Bitwarden.
 ***REMOVED*** Caddy uses DNS-01 challenge via Porkbun for wildcard TLS certs.
 ***REMOVED*** -----------------------------------------------------------------------------
 
 resource "porkbun_dns_record" "root_wildcard" {
-  domain  = var.domain_name
-  type    = "A"
-  content = data.ovh_vps.agent_details.ips[0]
-  ttl     = var.dns_ttl
-}
-
-resource "porkbun_dns_record" "hermes" {
   domain    = var.domain_name
-  subdomain = "hermes"
+  subdomain = ""      ***REMOVED*** apex
   type      = "A"
-  content   = data.ovh_vps.agent_details.ips[0]
+  content   = var.vps_ip
   ttl       = var.dns_ttl
 }
 
-resource "porkbun_dns_record" "status" {
+resource "porkbun_dns_record" "svc" {
+  for_each  = toset(var.subdomains)
   domain    = var.domain_name
-  subdomain = "status"
+  subdomain = each.key
   type      = "A"
-  content   = data.ovh_vps.agent_details.ips[0]
-  ttl       = var.dns_ttl
-}
-
-resource "porkbun_dns_record" "n8n" {
-  domain    = var.domain_name
-  subdomain = "n8n"
-  type      = "A"
-  content   = data.ovh_vps.agent_details.ips[0]
-  ttl       = var.dns_ttl
-}
-
-resource "porkbun_dns_record" "auth" {
-  domain    = var.domain_name
-  subdomain = "auth"
-  type      = "A"
-  content   = data.ovh_vps.agent_details.ips[0]
+  content   = var.vps_ip
   ttl       = var.dns_ttl
 }
 

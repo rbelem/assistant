@@ -3,35 +3,37 @@
 ***REMOVED*** ─────────────────────────────────────────────────────────────
 ***REMOVED*** Not committed. Set your actual values here.
 ***REMOVED*** Sensitive values can also be set via TF_VAR_* env vars.
+***REMOVED*** All values are normally rendered from Bitwarden by scripts/fetch_vault.sh.
 ***REMOVED*** ─────────────────────────────────────────────────────────────
 
-***REMOVED*** Optional: override OVH subsidiary (default: "FR")
-***REMOVED*** ovh_subsidiary = "FR"
+***REMOVED*** Base domain name (managed by Porkbun DNS)
+domain_name = "your-domain.example.com"
 
-***REMOVED*** VPS display name in OVH Manager
-***REMOVED*** vps_display_name = "rodrigo-agent"
+***REMOVED*** SSH connection metadata for the VPS
+ssh_user = "your-ssh-user"
+ssh_port = 22
 
-***REMOVED*** OVH datacenter (REDACTED-REGION1, REDACTED-REGION1, REDACTED-REGION1, REDACTED-REGION1, etc.)
-***REMOVED*** vps_datacenter = "REDACTED-REGION1"
+***REMOVED*** Primary public IPv4 address of the VPS (used for DNS A records)
+vps_ip = "203.0.113.1"
 
-***REMOVED*** VPS plan code (see: https://www.ovhcloud.com/en/vps/)
-***REMOVED*** vps_plan_code = "REDACTED-PLAN"   ***REMOVED*** 2 vCPU, 2GB RAM, 40GB NVMe, ~€4/mo
-***REMOVED*** vps_plan_code = "vps-value-2-4"   ***REMOVED*** 2 vCPU, 4GB RAM, 80GB NVMe, ~€6/mo
+***REMOVED*** Subdomains to create as A records under domain_name
+subdomains = ["hermes", "status", "n8n", "auth"]
 
-***REMOVED*** OS for the VPS (will be converted to NixOS via nixos-infect)
-***REMOVED*** vps_os = "Debian 12"
+***REMOVED*** VPS configuration in OVH Manager
+vps_display_name = "my-agent"
+vps_plan_code    = "REDACTED-PLAN"
+vps_os           = "Debian 12"
 
-***REMOVED*** SSH public key (full key string) — requires vps_image_id too
-***REMOVED*** Get image IDs: GET /vps/{serviceName}/images/available
-***REMOVED*** ssh_public_key = "ssh-ed25519 AAAA..."
-***REMOVED*** vps_image_id   = "45b2f222-ab10-44ed-863f-720942762b6f"
+***REMOVED*** SSH key and image ID must both be set together (OVH API requirement)
+ssh_public_key = "ssh-ed25519 AAAA..."
+vps_image_id   = "00000000-0000-0000-0000-000000000000"
 
-***REMOVED*** DNS — domain must be in OVH DNS zone
-***REMOVED*** domain_name = "REDACTED-DOMAIN"
-***REMOVED*** subdomain   = "agent"
-***REMOVED*** dns_ttl     = 300
+***REMOVED*** S3-compatible Object Storage buckets for Tofu state and restic backups
+state_bucket_name  = "my-agent-tofu-state"
+backup_bucket_name = "my-agent-backups"
 
-***REMOVED*** Object Storage bucket names
-***REMOVED*** state_bucket_name  = "rodrigo-agent-tofu-state"
-***REMOVED*** backup_bucket_name = "rodrigo-agent-backups"
-***REMOVED*** storage_region     = "gra"
+***REMOVED*** S3-compatible Object Storage connection settings
+storage_region     = "gra"
+storage_endpoint   = "https://s3.gra.io.REDACTED-OVH-DOMAIN"
+storage_access_key = "my-access-key"
+storage_secret_key = "my-secret-key"
