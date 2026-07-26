@@ -50,16 +50,6 @@ variable "hcloud_image_filter" {
   default     = "ubuntu-26.04"
 }
 
-variable "hcloud_ssh_key_fingerprint" {
-  description = "SSH public key fingerprint registered in Hetzner Cloud. Source: Bitwarden assistant/tofu-inputs (hcloud_ssh_key_fingerprint key). Format: SHA256:..."
-  type        = string
-
-  validation {
-    condition     = can(regex("^(SHA256:|MD5:)?[a-zA-Z0-9+/=:-]+$", var.hcloud_ssh_key_fingerprint))
-    error_message = "SSH key fingerprint must be a valid format (e.g., SHA256:..., MD5:..., or legacy format)."
-  }
-}
-
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** VPS Configuration
 ***REMOVED*** -----------------------------------------------------------------------------
@@ -120,15 +110,8 @@ variable "subdomains" {
   }
 }
 
-variable "vps_ip" {
-  description = "Primary public IPv4 address of the VPS (used for DNS A records). Source: Bitwarden assistant/domain-config"
-  type        = string
-
-  validation {
-    condition     = can(regex("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$", var.vps_ip))
-    error_message = "vps_ip must be a valid IPv4 address."
-  }
-}
+***REMOVED*** vps_ip removed (unused — DNS A records use hcloud_server.agent.ipv4_address output).
+***REMOVED*** Previously validated as IPv4 which blocked first deploy when VPS didn't exist yet.
 
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** Connection metadata (used by deploy scripts)

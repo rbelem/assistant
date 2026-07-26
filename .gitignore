@@ -1,9 +1,11 @@
 ***REMOVED*** IaC state
 terraform.tfstate
 terraform.tfstate.backup
+*.tfstate
+errored.tfstate
 .terraform/
 .tofu/
-.terraform.lock.hcl
+***REMOVED*** .terraform.lock.hcl intentionally NOT gitignored — commit it to pin provider versions.
 
 ***REMOVED*** Tofu variables — built from Bitwarden at deploy time. NEVER commit real values.
 *.tfvars
@@ -38,3 +40,7 @@ AGENTS.md
 README.md
 CONTEXT.md
 ansible/inventory/hosts.yml
+.rendered/vault.env
+.rendered/terraform.tfvars
+.rendered/runtime-config.json
+.rendered/backend.conf

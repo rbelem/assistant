@@ -16,7 +16,7 @@ terraform {
   required_version = ">= 1.6.0"
 
   required_providers {
-    hetznercloud = {
+    hcloud = {
       source  = "hetznercloud/hcloud"
       version = "~> 1.45"  ***REMOVED*** Pinned to 1.45.x line (Q1 2026 stable)
     }
@@ -26,10 +26,10 @@ terraform {
       version = "~> 5.0"
     }
 
-    porkbun = {
-      source  = "marcfrederick/porkbun"
-      version = "~> 1.3"
-    }
+    ***REMOVED*** porkbun = {
+    ***REMOVED***   source  = "marcfrederick/porkbun"
+    ***REMOVED***   version = "~> 1.3"
+    ***REMOVED*** }
   }
 }
 
@@ -61,9 +61,9 @@ provider "aws" {
 ***REMOVED*** Manages DNS records for the configured domain (registered at Porkbun).
 ***REMOVED*** Credentials sourced from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY env vars.
 ***REMOVED*** -----------------------------------------------------------------------------
-provider "porkbun" {
-  ***REMOVED*** Credentials from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY env vars
-}
+***REMOVED*** provider "porkbun" {
+***REMOVED***   ***REMOVED*** Credentials from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY env vars
+***REMOVED*** }
 
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** Hetzner Cloud Provider
@@ -71,6 +71,6 @@ provider "porkbun" {
 ***REMOVED*** Manages the VPS, SSH keys, and DNS-adjacent resources via the Hetzner Cloud API.
 ***REMOVED*** Token sourced from var.hcloud_token (Bitwarden assistant/tofu-inputs).
 ***REMOVED*** -----------------------------------------------------------------------------
-provider "hetznercloud" {
+provider "hcloud" {
   token = var.hcloud_token
 }

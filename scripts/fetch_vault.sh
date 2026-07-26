@@ -160,9 +160,13 @@ ITEM_VPS='assistant/vps-ssh-key'
 ITEM_DOMAIN='assistant/domain-config'
 ITEM_TOFU='assistant/tofu-inputs'
 
-***REMOVED*** VPS SSH Key (SSH key type → .sshKey.privateKey)
-SSH_PRIVATE_KEY="$(bw_sesh get item "$ITEM_VPS" | jq -r '.sshKey.privateKey')"
+***REMOVED*** VPS SSH Key (SSH key type → .sshKey.{privateKey,publicKey})
+SSH_KEY_ITEM="$(bw_sesh get item "$ITEM_VPS")"
+SSH_PRIVATE_KEY="$(echo "$SSH_KEY_ITEM" | jq -r '.sshKey.privateKey')"
+SSH_PUBLIC_KEY="$(echo "$SSH_KEY_ITEM" | jq -r '.sshKey.publicKey // empty')"
 assert_non_empty "$ITEM_VPS.sshKey.privateKey" "$SSH_PRIVATE_KEY"
+[[ -z "$SSH_PUBLIC_KEY" ]] && SSH_PUBLIC_KEY="$(ssh-keygen -y -f <(echo "$SSH_PRIVATE_KEY") 2>/dev/null || true)"
+assert_non_empty "$ITEM_VPS.sshKey.publicKey" "$SSH_PUBLIC_KEY"
 
 ***REMOVED*** Domain Config (Secure Note → JSON body)
 DOMAIN_JSON="$(fetch_note_payload "$ITEM_DOMAIN")"
@@ -268,9 +272,24 @@ tmp="$(mktemp)"
              and .key != "ssh_port" and .key != "subdomains"
              and .key != "tofu_state_bucket" and .key != "tofu_state_region"
              and .key != "tofu_state_endpoint" and .key != "tofu_state_access_key"
-             and .key != "tofu_state_secret_key")
-    | "\(.key) = \(.value | tostring)"
+             and .key != "tofu_state_secret_key"
+             and .key != "state_bucket_name" and .key != "storage_region"
+             and .key != "storage_endpoint" and .key != "backup_bucket_name")
+    | "\(.key) = \(.value | tojson)"
   '
+  ***REMOVED*** Aliases: bw uses tofu_state_* prefix; tofu/variables.tf uses storage_* / state_bucket_name.
+  ***REMOVED*** Emit both so the variable names tofu expects are satisfied.
+  STATE_BUCKET="$(echo "$TOFU_JSON" | jq -r '.tofu_state_bucket // .state_bucket_name // empty')"
+  STATE_REGION="$(echo "$TOFU_JSON" | jq -r '.tofu_state_region // .storage_region // empty')"
+  STATE_ENDPOINT="$(echo "$TOFU_JSON" | jq -r '.tofu_state_endpoint // .storage_endpoint // empty')"
+  BACKUP_BUCKET="$(echo "$TOFU_JSON" | jq -r '.backup_bucket_name // "REDACTED-BUCKET"')"
+  printf 'state_bucket_name = %s\n' "$(jq -n --arg v "$STATE_BUCKET" '$v')"
+  printf 'storage_region    = %s\n' "$(jq -n --arg v "$STATE_REGION" '$v')"
+  printf 'storage_endpoint  = %s\n' "$(jq -n --arg v "$STATE_ENDPOINT" '$v')"
+  printf 'backup_bucket_name = %s\n' "$(jq -n --arg v "$BACKUP_BUCKET" '$v')"
+  printf 'ssh_public_key    = %s\n' "$(jq -n --arg v "$SSH_PUBLIC_KEY" '$v')"
+  VPS_DISPLAY_NAME="$(echo "$TOFU_JSON" | jq -r '.vps_display_name // "agent"')"
+  printf 'vps_display_name  = %s\n' "$(jq -n --arg v "$VPS_DISPLAY_NAME" '$v')"
 } > "$tmp"
 mv "$tmp" "$TFVARS_FILE"
 chmod 600 "$TFVARS_FILE"
