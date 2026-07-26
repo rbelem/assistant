@@ -7,11 +7,6 @@
 #-----------------------------------------------------------------------------
 
 terraform {
-  required_providers {
-    lambda = {
-      source  = "github.com/albertocavalcante/lambda"
-      version = "~> 0.1"
-    }
   }
 }
 
