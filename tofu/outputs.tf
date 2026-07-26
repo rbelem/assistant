@@ -5,39 +5,29 @@
 ***REMOVED*** other configurations or scripts.
 ***REMOVED*** -----------------------------------------------------------------------------
 
-output "vps_service_name" {
-  description = "OVH internal service name for the VPS (used for API calls and import)"
-  value       = ovh_vps.agent.service_name
+output "vps_id" {
+  description = "Hostinger VPS ID"
+  value       = hostinger_vps.agent.id
 }
 
-output "vps_display_name" {
-  description = "Display name of the VPS in OVH Manager"
-  value       = ovh_vps.agent.display_name
-}
-
-output "vps_zone" {
-  description = "OVH zone/region where the VPS is located"
-  value       = ovh_vps.agent.zone
-}
-
-output "vps_state" {
-  description = "Current state of the VPS (running, stopped, installing, etc.)"
-  value       = ovh_vps.agent.state
-}
-
-output "vps_model" {
-  description = "VPS model details (vCPU, RAM, disk)"
-  value       = ovh_vps.agent.model
+output "vps_name" {
+  description = "Display name of the VPS"
+  value       = hostinger_vps.agent.name
 }
 
 output "vps_ip" {
-  description = "Primary public IP address of the VPS"
-  value       = data.ovh_vps.agent_details.ips[0]
+  description = "Primary public IPv4 address of the VPS"
+  value       = hostinger_vps.agent.ipv4
 }
 
-output "vps_ips" {
-  description = "All IP addresses attached to the VPS"
-  value       = data.ovh_vps.agent_details.ips
+output "vps_ipv6" {
+  description = "Primary public IPv6 address of the VPS"
+  value       = hostinger_vps.agent.ipv6
+}
+
+output "vps_status" {
+  description = "Current status of the VPS"
+  value       = hostinger_vps.agent.status
 }
 
 output "dns_fqdn" {
@@ -72,12 +62,7 @@ output "storage_endpoint" {
 
 output "ssh_command" {
   description = "SSH command to access the provisioned VPS"
-  value       = "ssh -p ${var.ssh_port} ${var.ssh_user}@${var.vps_ip}"
-}
-
-output "ovh_subsidiary" {
-  description = "OVH subsidiary used for billing"
-  value       = data.ovh_me.account.ovh_subsidiary
+  value       = "ssh -p ${var.ssh_port} ${var.ssh_user}@${hostinger_vps.agent.ipv4}"
 }
 
 ***REMOVED*** -----------------------------------------------------------------------------

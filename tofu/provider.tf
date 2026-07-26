@@ -1,9 +1,8 @@
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Provider Configuration — OVH Cloud + AWS S3 + Porkbun DNS
+***REMOVED*** Provider Configuration — Hostinger VPS + AWS S3 + Porkbun DNS
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** OVH credentials are sourced from environment variables:
-***REMOVED***   OVH_ENDPOINT, OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET,
-***REMOVED***   OVH_CONSUMER_KEY
+***REMOVED*** Hostinger credentials are sourced from environment variables:
+***REMOVED***   HOSTINGER_API_TOKEN
 ***REMOVED***
 ***REMOVED*** AWS/S3 credentials for Object Storage:
 ***REMOVED***   Passed via tofu-inputs variables: storage_access_key, storage_secret_key,
@@ -17,9 +16,9 @@ terraform {
   required_version = ">= 1.6.0"
 
   required_providers {
-    ovh = {
-      source  = "ovh/ovh"
-      version = "~> 1.6"
+    hostinger = {
+      source  = "hostinger/hostinger"
+      version = "~> 0.1.22"
     }
 
     aws = {
@@ -35,11 +34,10 @@ terraform {
 }
 
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** OVH Provider
+***REMOVED*** Hostinger Provider
 ***REMOVED*** -----------------------------------------------------------------------------
-provider "ovh" {
-  ***REMOVED*** Credentials sourced from OVH_* environment variables
-  ***REMOVED*** endpoint = "ovh-eu"  ***REMOVED*** Set via OVH_ENDPOINT env var
+provider "hostinger" {
+  ***REMOVED*** Credentials sourced from HOSTINGER_API_TOKEN environment variable
 }
 
 ***REMOVED*** -----------------------------------------------------------------------------
