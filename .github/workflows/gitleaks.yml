@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    ***REMOVED*** Weekly full-history re-scan to catch anything that snuck past a PR check
     - cron: "0 6 * * 1"
 
 permissions:
