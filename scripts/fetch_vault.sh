@@ -92,6 +92,12 @@ EOF
 ***REMOVED*** call must pass --session explicitly. (Same lesson as devbox secrets-refresh.)
 bw_sesh() { bw --session "$BW_SESSION" "$@"; }
 
+***REMOVED*** Sync the local vault cache with the server. bw reads from a local encrypted
+***REMOVED*** DB; unlock decrypts it but doesn't refresh it. Without this, items created
+***REMOVED*** via web/extension/another machine are invisible to `bw get`/`bw list` and
+***REMOVED*** every fetch returns "Not found." Idempotent + fast (~200ms when current).
+bw_sesh sync 2>/dev/null || true
+
 ***REMOVED***--- helpers -------------------------------------------------------------------
 ***REMOVED*** Pull a single custom-field value from a Login item by name.
 fetch_login_field() {
