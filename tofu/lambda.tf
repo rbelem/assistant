@@ -6,10 +6,6 @@
 #so the OCR script can query instance status via tofus output.
 #-----------------------------------------------------------------------------
 
-terraform {
-  }
-}
-
 provider "lambda" {
   #Credentials from LAMBDA_CLOUD_API_KEY env var
 }
