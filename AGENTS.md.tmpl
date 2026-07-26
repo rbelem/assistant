@@ -34,7 +34,7 @@ ssh root@$VPS_IP 'curl -sL https://raw.githubusercontent.com/elitak/nixos-infect
   | NIX_CHANNEL=nixos-unstable bash'
 ```
 
-**NixOS:** `rsync nix/` to `/etc/nixos/` on VPS, then `nixos-rebuild switch --flake /etc/nixos***REMOVED***agent`
+**NixOS:** NixOS config lives in the separate `nix-config` repo (`~/Workspace/github.com/rbelem/nix-config`). Deploy with `nixos-rebuild switch --flake path:$NIX_CONFIG_DIR***REMOVED***agent --target-host root@$VPS_IP`.
 
 **Ansible requires** Bitwarden unlocked before running. On the VPS:
 ```bash
@@ -52,9 +52,6 @@ The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` and writ
 |------|---------|
 | `tofu/main.tf` | OVH VPS + DNS A record (agent.${DOMAIN}) + S3 buckets. Uses `plan = []` list syntax, not block syntax |
 | `tofu/variables.tf` | Uses `vps_display_name`, `vps_plan_code`, `vps_datacenter`, `ssh_public_key` + `vps_image_id` (both required together) |
-| `nix/host.nix` | NixOS config: imports all modules, SSH hardened, user ${VPS_SSH_USER}, timezone REDACTED-TZ |
-| `nix/caddy.nix` | Caddy proxies to localhost:NodePort (not k8s DNS). `reverse_proxy localhost:30080` for Hermes |
-| `nix/k3s.nix` | k3s single-node server, traefik and servicelb disabled |
 | `ansible/playbooks/secrets.yml` | Bitwarden → k8s Secret sync. Fetches 12 items, creates 4 secrets (hermes + n8n + postgres + zitadel; postgres-secrets duplicated to n8n+auth) |
 | `ansible/playbooks/deploy.yml` | kubectl apply from /opt/k8s/. Waits for rollout. Idempotent |
 | `k8s/helmfile.yaml` | Helm releases: PostgreSQL, n8n, Zitadel |
@@ -76,7 +73,7 @@ The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` and writ
 
 - Status: `./scripts/deploy.sh status`
 - Update workloads: `ansible-playbook -i inventory/hosts.yml playbooks/update.yml` (does pre/post restic backup + rollout restart)
-- NixOS update: `ssh root@agent.${DOMAIN} 'nixos-rebuild switch --flake /etc/nixos***REMOVED***agent --upgrade'`
+- NixOS update: `nixos-rebuild switch --flake path:$NIX_CONFIG_DIR***REMOVED***agent --target-host root@agent.${DOMAIN} --upgrade` (from nix-config repo)
 - Backup: systemd timer runs daily restic to an S3-compatible backup target. Retention 7d/4w/3m
 - Manual backup: `ssh root@agent.${DOMAIN} 'systemctl start restic-backups-daily'`
 - Destroy: `./scripts/deploy.sh destroy` (backup first!)

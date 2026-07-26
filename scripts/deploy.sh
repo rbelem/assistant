@@ -177,12 +177,18 @@ phase_nixos() {
     exit 1
   fi
 
-  info "Copying NixOS config to VPS..."
-  rsync -avz -e "ssh -i $SSH_KEY" \
-    "$DIR/nix/" "$SSH_USER@$VPS_IP:/etc/nixos/"
+  NIX_CONFIG_DIR="${NIX_CONFIG_DIR:-$HOME/Workspace/github.com/rbelem/nix-config}"
+  if [[ ! -d "$NIX_CONFIG_DIR" ]]; then
+    err "nix-config repo not found at $NIX_CONFIG_DIR"
+    err "Set NIX_CONFIG_DIR to the path of the nix-config repo."
+    exit 1
+  fi
 
-  info "Building and switching NixOS configuration..."
-  run_ssh "nixos-rebuild switch --flake /etc/nixos***REMOVED***agent"
+  info "Building and switching NixOS configuration from $NIX_CONFIG_DIR..."
+  nixos-rebuild switch \
+    --flake "path:$NIX_CONFIG_DIR***REMOVED***agent" \
+    --target-host "$SSH_USER@$VPS_IP" \
+    --use-substitutes
 
   ok "NixOS configuration applied (k3s, Caddy, Tailscale, firewall)."
 }
