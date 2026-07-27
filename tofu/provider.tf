@@ -9,7 +9,8 @@
 ***REMOVED***   storage_endpoint, storage_region (and vps_datacenter for AWS region).
 ***REMOVED***
 ***REMOVED*** Porkbun DNS credentials:
-***REMOVED***   PORKBUN_API_KEY, PORKBUN_SECRET_API_KEY
+***REMOVED***   var.porkbun_api_key, var.porkbun_secret_api_key
+***REMOVED***   (sourced from Bitwarden via TF_VAR_* env vars)
 ***REMOVED*** -----------------------------------------------------------------------------
 
 terraform {
@@ -18,7 +19,7 @@ terraform {
   required_providers {
     hcloud = {
       source  = "hetznercloud/hcloud"
-      version = "~> 1.45"  ***REMOVED*** Pinned to 1.45.x line (Q1 2026 stable)
+      version = "~> 1.45"  ***REMOVED*** Locked at 1.67.0; bump constraint when upgrading
     }
 
     aws = {
@@ -26,10 +27,10 @@ terraform {
       version = "~> 5.0"
     }
 
-    ***REMOVED*** porkbun = {
-    ***REMOVED***   source  = "marcfrederick/porkbun"
-    ***REMOVED***   version = "~> 1.3"
-    ***REMOVED*** }
+    porkbun = {
+      source  = "marcfrederick/porkbun"
+      version = "~> 1.3"
+    }
   }
 }
 
@@ -61,9 +62,10 @@ provider "aws" {
 ***REMOVED*** Manages DNS records for the configured domain (registered at Porkbun).
 ***REMOVED*** Credentials sourced from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY env vars.
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** provider "porkbun" {
-***REMOVED***   ***REMOVED*** Credentials from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY env vars
-***REMOVED*** }
+provider "porkbun" {
+  api_key        = var.porkbun_api_key
+  secret_api_key = var.porkbun_secret_api_key
+}
 
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** Hetzner Cloud Provider

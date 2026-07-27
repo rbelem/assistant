@@ -18,7 +18,7 @@ k3s is installed with `--disable traefik --disable servicelb`. Traefik conflicts
 ***REMOVED******REMOVED*** Deploy order (exact)
 
 ```
-tofu apply  →  nixos-infect  →  nixos-rebuild  →  ansible  →  helmfile  →  kubectl apply
+tofu apply  →  nixos-infect  →  ansible  →  nixos-rebuild  →  helmfile  →  kubectl apply
 ```
 
 Use `./scripts/deploy.sh` with phase skip flags (`--skip-tofu`, `--skip-infect`, etc.). Do not skip phases or reorder.

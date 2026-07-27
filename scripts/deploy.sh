@@ -2,7 +2,7 @@
 ***REMOVED*** ─────────────────────────────────────────────────────────────
 ***REMOVED*** assistant deployment pipeline
 ***REMOVED*** ─────────────────────────────────────────────────────────────
-***REMOVED*** Order: tofu → nixos-infect → nixos-rebuild → ansible → helmfile → kubectl
+***REMOVED*** Order: tofu → nixos-infect → ansible → nixos-rebuild → helmfile → kubectl
 ***REMOVED***
 ***REMOVED*** Prerequisites:
 ***REMOVED***   - OVH API credentials (OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY)
@@ -15,11 +15,11 @@
 ***REMOVED*** Usage:
 ***REMOVED***   ./deploy.sh                    ***REMOVED*** full deploy (prompts before destructive steps)
 ***REMOVED***   ./deploy.sh --skip-tofu        ***REMOVED*** skip provisioning, go to nixos-infect
-***REMOVED***   ./deploy.sh --skip-infect      ***REMOVED*** skip nixos-infect, go to nixos-rebuild
-***REMOVED***   ./deploy.sh --skip-nixos       ***REMOVED*** skip nixos-rebuild, go to ansible
-***REMOVED***   ./deploy.sh --skip-ansible     ***REMOVED*** skip ansible, go to helmfile
+***REMOVED***   ./deploy.sh --skip-infect      ***REMOVED*** skip nixos-infect, go to ansible
+***REMOVED***   ./deploy.sh --skip-ansible     ***REMOVED*** skip ansible, go to nixos-rebuild
+***REMOVED***   ./deploy.sh --skip-nixos       ***REMOVED*** skip nixos-rebuild, go to helmfile
 ***REMOVED***   ./deploy.sh --skip-helmfile    ***REMOVED*** skip helmfile, go to kubectl
-***REMOVED***   ./deploy.sh --skip-tofu --skip-infect --skip-nixos --skip-ansible  ***REMOVED*** helmfile + kubectl only
+***REMOVED***   ./deploy.sh --skip-tofu --skip-infect --skip-ansible --skip-nixos  ***REMOVED*** helmfile + kubectl only
 ***REMOVED***   ./deploy.sh status             ***REMOVED*** show deployment status
 ***REMOVED***   ./deploy.sh destroy            ***REMOVED*** tear everything down
 ***REMOVED*** ─────────────────────────────────────────────────────────────
@@ -232,7 +232,7 @@ phase_infect() {
 }
 
 phase_nixos() {
-  step "3/6 — Apply NixOS configuration"
+  step "4/6 — Apply NixOS configuration"
   if [[ -z "$VPS_IP" ]]; then
     err "VPS_IP not set."
     exit 1
@@ -255,7 +255,7 @@ phase_nixos() {
 }
 
 phase_ansible() {
-  step "4/6 — Configure services with Ansible + Bitwarden"
+  step "3/6 — Configure services with Ansible + Bitwarden"
   cd "$DIR/ansible"
 
   ***REMOVED*** Ensure Bitwarden is logged in
@@ -401,15 +401,15 @@ main() {
       ;;
     --skip-tofu)
       phase_infect
-      phase_nixos
       phase_ansible
+      phase_nixos
       phase_helmfile
       phase_kubectl
       ;;
     --skip-infect)
       phase_tofu
-      phase_nixos
       phase_ansible
+      phase_nixos
       phase_helmfile
       phase_kubectl
       ;;
@@ -430,15 +430,15 @@ main() {
     --skip-helmfile)
       phase_tofu
       phase_infect
-      phase_nixos
       phase_ansible
+      phase_nixos
       phase_kubectl
       ;;
     --skip-kubectl)
       phase_tofu
       phase_infect
-      phase_nixos
       phase_ansible
+      phase_nixos
       phase_helmfile
       ;;
     help|--help|-h)
@@ -447,8 +447,8 @@ main() {
     *)
       phase_tofu
       phase_infect
-      phase_nixos
       phase_ansible
+      phase_nixos
       phase_helmfile
       phase_kubectl
       step "Deployment complete! 🚀"

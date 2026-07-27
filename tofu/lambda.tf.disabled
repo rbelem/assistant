@@ -6,9 +6,9 @@
 ***REMOVED***so the OCR script can query instance status via tofus output.
 ***REMOVED***-----------------------------------------------------------------------------
 
-provider "lambda" {
-  ***REMOVED***Credentials from LAMBDA_CLOUD_API_KEY env var
-}
+***REMOVED*** provider "lambda" {
+***REMOVED***   ***REMOVED***Credentials from LAMBDA_CLOUD_API_KEY env var
+***REMOVED*** }
 
 ***REMOVED***-----------------------------------------------------------------------------
 ***REMOVED***Data Sources

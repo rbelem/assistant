@@ -29,7 +29,7 @@ resource "hcloud_ssh_key" "agent" {
 resource "hcloud_server" "agent" {
   name        = var.vps_display_name
   server_type = var.hcloud_server_type
-  image       = var.hcloud_image_filter  ***REMOVED*** image name (e.g. "ubuntu-26.04") or numeric ID
+  image       = var.hcloud_image  ***REMOVED*** image name (e.g. "ubuntu-26.04") or numeric ID
   location    = var.hcloud_location
   ssh_keys    = [hcloud_ssh_key.agent.id]
   
@@ -52,22 +52,22 @@ resource "hcloud_server" "agent" {
 ***REMOVED*** Caddy uses DNS-01 challenge via Porkbun for wildcard TLS certs.
 ***REMOVED*** -----------------------------------------------------------------------------
 
-***REMOVED*** resource "porkbun_dns_record" "root_wildcard" {
-***REMOVED***   domain    = var.domain_name
-***REMOVED***   subdomain = ""      ***REMOVED*** apex
-***REMOVED***   type      = "A"
-***REMOVED***   content   = hcloud_server.agent.ipv4_address
-***REMOVED***   ttl       = var.dns_ttl
-***REMOVED*** }
-***REMOVED***
-***REMOVED*** resource "porkbun_dns_record" "svc" {
-***REMOVED***   for_each  = toset(var.subdomains)
-***REMOVED***   domain    = var.domain_name
-***REMOVED***   subdomain = each.key
-***REMOVED***   type      = "A"
-***REMOVED***   content   = hcloud_server.agent.ipv4_address
-***REMOVED***   ttl       = var.dns_ttl
-***REMOVED*** }
+resource "porkbun_dns_record" "root_wildcard" {
+  domain    = var.domain_name
+  subdomain = ""      ***REMOVED*** apex
+  type      = "A"
+  content   = hcloud_server.agent.ipv4_address
+  ttl       = var.dns_ttl
+}
+
+resource "porkbun_dns_record" "svc" {
+  for_each  = toset(var.subdomains)
+  domain    = var.domain_name
+  subdomain = each.key
+  type      = "A"
+  content   = hcloud_server.agent.ipv4_address
+  ttl       = var.dns_ttl
+}
 
 ***REMOVED*** -----------------------------------------------------------------------------
 ***REMOVED*** Object Storage Buckets (S3-compatible)
