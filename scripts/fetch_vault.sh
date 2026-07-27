@@ -133,7 +133,7 @@ assert_non_empty() {
   local label="$1" value="$2"
   if [[ -z "$value" || "$value" == "null" ]]; then
     echo "Bitwarden field empty: $label" >&2
-    echo "  check items 'assistant/vps-ssh-key', 'assistant/domain-config', 'assistant/tofu-inputs'" >&2
+    echo "  check items 'assistant/vps-ssh-key', 'assistant/domain-config', 'assistant/tofu-inputs', 'Porkbun API Key'" >&2
     exit 1
   fi
 }
@@ -159,6 +159,7 @@ to_relpath() {
 ITEM_VPS='assistant/vps-ssh-key'
 ITEM_DOMAIN='assistant/domain-config'
 ITEM_TOFU='assistant/tofu-inputs'
+ITEM_PORKBUN='Porkbun API Key'
 
 # VPS SSH Key (SSH key type → .sshKey.{privateKey,publicKey})
 SSH_KEY_ITEM="$(bw_sesh get item "$ITEM_VPS")"
@@ -194,10 +195,17 @@ assert_non_empty "$ITEM_TOFU.vps_host"     "$VPS_HOST"
 assert_non_empty "$ITEM_TOFU.vps_ssh_user" "$VPS_SSH_USER"
 assert_non_empty "$ITEM_TOFU.vps_ssh_port" "$VPS_SSH_PORT"
 
+# Porkbun API Key (Login item with custom fields: api_key, secret_api_key)
+PORKBUN_API_KEY="$(fetch_login_field "$ITEM_PORKBUN" api_key)"
+PORKBUN_SECRET_API_KEY="$(fetch_login_field "$ITEM_PORKBUN" secret_api_key)"
+assert_non_empty "$ITEM_PORKBUN.api_key"        "$PORKBUN_API_KEY"
+assert_non_empty "$ITEM_PORKBUN.secret_api_key" "$PORKBUN_SECRET_API_KEY"
+
 if [[ "$CHECK_ONLY" == "1" ]]; then
   echo "fetch_vault --check: all items present."
   echo "  VPS:    $VPS_SSH_USER@$VPS_HOST:$VPS_SSH_PORT"
   echo "  DOMAIN: $DOMAIN  SUBDOMAINS: $SUBDOMAINS_CSV"
+  echo "  PORKBUN: api_key=${PORKBUN_API_KEY:0:4}… secret=${PORKBUN_SECRET_API_KEY:0:4}…"
   exit 0
 fi
 
@@ -224,6 +232,10 @@ tmp="$(mktemp)"
   printf 'export %s=%q\n' DOMAIN       "$DOMAIN"
   printf 'export %s=%q\n' SUBDOMAINS_JSON "$SUBDOMAINS_JSON"
   printf 'export %s=%q\n' SSH_PRIVATE_KEY "$SSH_PRIVATE_KEY"
+  printf 'export %s=%q\n' PORKBUN_API_KEY "$PORKBUN_API_KEY"
+  printf 'export %s=%q\n' PORKBUN_SECRET_API_KEY "$PORKBUN_SECRET_API_KEY"
+  printf 'export %s=%q\n' TF_VAR_porkbun_api_key "$PORKBUN_API_KEY"
+  printf 'export %s=%q\n' TF_VAR_porkbun_secret_api_key "$PORKBUN_SECRET_API_KEY"
 
   # Export arbitrary TF_VAR_* from Tofu Inputs JSON.
   echo "$TOFU_JSON" | jq -r '
@@ -288,6 +300,8 @@ tmp="$(mktemp)"
   printf 'storage_endpoint  = %s\n' "$(jq -n --arg v "$STATE_ENDPOINT" '$v')"
   printf 'backup_bucket_name = %s\n' "$(jq -n --arg v "$BACKUP_BUCKET" '$v')"
   printf 'ssh_public_key    = %s\n' "$(jq -n --arg v "$SSH_PUBLIC_KEY" '$v')"
+  printf 'porkbun_api_key        = %s\n' "$(jq -Rn --arg v "$PORKBUN_API_KEY" '$v')"
+  printf 'porkbun_secret_api_key = %s\n' "$(jq -Rn --arg v "$PORKBUN_SECRET_API_KEY" '$v')"
   VPS_DISPLAY_NAME="$(echo "$TOFU_JSON" | jq -r '.vps_display_name // "agent"')"
   printf 'vps_display_name  = %s\n' "$(jq -n --arg v "$VPS_DISPLAY_NAME" '$v')"
 } > "$tmp"
@@ -334,6 +348,7 @@ echo "fetch_vault: rendered."
 echo "  VPS:    $VPS_SSH_USER@$VPS_HOST:$VPS_SSH_PORT"
 echo "  DOMAIN: $DOMAIN"
 echo "  SUBS:   $SUBDOMAINS_CSV"
+echo "  PORKBUN: api_key set (${#PORKBUN_API_KEY} chars)"
 echo "  env:    $ENV_FILE"
 echo "  tfvars: $TFVARS_FILE"
 echo "  nix:    $RUNTIME_JSON"

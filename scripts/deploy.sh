@@ -2,7 +2,7 @@
 # ─────────────────────────────────────────────────────────────
 # assistant deployment pipeline
 # ─────────────────────────────────────────────────────────────
-# Order: tofu → nixos-infect → nixos-rebuild → ansible → helmfile → kubectl
+# Order: tofu → nixos-infect → ansible → nixos-rebuild → helmfile → kubectl
 #
 # Prerequisites:
 #   - OVH API credentials (OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY)
@@ -15,11 +15,11 @@
 # Usage:
 #   ./deploy.sh                    # full deploy (prompts before destructive steps)
 #   ./deploy.sh --skip-tofu        # skip provisioning, go to nixos-infect
-#   ./deploy.sh --skip-infect      # skip nixos-infect, go to nixos-rebuild
-#   ./deploy.sh --skip-nixos       # skip nixos-rebuild, go to ansible
-#   ./deploy.sh --skip-ansible     # skip ansible, go to helmfile
+#   ./deploy.sh --skip-infect      # skip nixos-infect, go to ansible
+#   ./deploy.sh --skip-ansible     # skip ansible, go to nixos-rebuild
+#   ./deploy.sh --skip-nixos       # skip nixos-rebuild, go to helmfile
 #   ./deploy.sh --skip-helmfile    # skip helmfile, go to kubectl
-#   ./deploy.sh --skip-tofu --skip-infect --skip-nixos --skip-ansible  # helmfile + kubectl only
+#   ./deploy.sh --skip-tofu --skip-infect --skip-ansible --skip-nixos  # helmfile + kubectl only
 #   ./deploy.sh status             # show deployment status
 #   ./deploy.sh destroy            # tear everything down
 # ─────────────────────────────────────────────────────────────
@@ -232,7 +232,7 @@ phase_infect() {
 }
 
 phase_nixos() {
-  step "3/6 — Apply NixOS configuration"
+  step "4/6 — Apply NixOS configuration"
   if [[ -z "$VPS_IP" ]]; then
     err "VPS_IP not set."
     exit 1
@@ -255,7 +255,7 @@ phase_nixos() {
 }
 
 phase_ansible() {
-  step "4/6 — Configure services with Ansible + Bitwarden"
+  step "3/6 — Configure services with Ansible + Bitwarden"
   cd "$DIR/ansible"
 
   # Ensure Bitwarden is logged in
@@ -401,15 +401,15 @@ main() {
       ;;
     --skip-tofu)
       phase_infect
-      phase_nixos
       phase_ansible
+      phase_nixos
       phase_helmfile
       phase_kubectl
       ;;
     --skip-infect)
       phase_tofu
-      phase_nixos
       phase_ansible
+      phase_nixos
       phase_helmfile
       phase_kubectl
       ;;
@@ -430,15 +430,15 @@ main() {
     --skip-helmfile)
       phase_tofu
       phase_infect
-      phase_nixos
       phase_ansible
+      phase_nixos
       phase_kubectl
       ;;
     --skip-kubectl)
       phase_tofu
       phase_infect
-      phase_nixos
       phase_ansible
+      phase_nixos
       phase_helmfile
       ;;
     help|--help|-h)
@@ -447,8 +447,8 @@ main() {
     *)
       phase_tofu
       phase_infect
-      phase_nixos
       phase_ansible
+      phase_nixos
       phase_helmfile
       phase_kubectl
       step "Deployment complete! 🚀"

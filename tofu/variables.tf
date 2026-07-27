@@ -44,8 +44,8 @@ variable "hcloud_location" {
   }
 }
 
-variable "hcloud_image_filter" {
-  description = "Image name filter. Ubuntu 26.04 (because Hetzner has no native NixOS). nixos-infect runs after first boot via Ansible"
+variable "hcloud_image" {
+  description = "Image name or numeric ID. Ubuntu 26.04 (because Hetzner has no native NixOS). nixos-infect runs after first boot via Ansible"
   type        = string
   default     = "ubuntu-26.04"
 }
@@ -107,6 +107,28 @@ variable "subdomains" {
   validation {
     condition     = length(var.subdomains) > 0 && alltrue([for s in var.subdomains : length(s) > 0 && !can(regex("\\.", s))])
     error_message = "subdomains must be a non-empty list of single-label hostnames (no dots)."
+  }
+}
+
+variable "porkbun_api_key" {
+  description = "Porkbun API key. Source: Bitwarden assistant/Porkbun API Key (field api_key)"
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.porkbun_api_key) > 0
+    error_message = "porkbun_api_key must not be empty."
+  }
+}
+
+variable "porkbun_secret_api_key" {
+  description = "Porkbun secret API key. Source: Bitwarden assistant/Porkbun API Key (field secret_api_key)"
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.porkbun_secret_api_key) > 0
+    error_message = "porkbun_secret_api_key must not be empty."
   }
 }
 
