@@ -99,22 +99,6 @@ bw_sesh() { bw --session "$BW_SESSION" "$@"; }
 bw_sesh sync 2>/dev/null || true
 
 #--- helpers -------------------------------------------------------------------
-# Pull a single custom-field value from a Login item by name.
-fetch_login_field() {
-  local item_name="$1" field_name="$2"
-  if [[ -n "$BW_ORG_ID" ]]; then
-    bw_sesh list items --organizationid "$BW_ORG_ID" 2>/dev/null \
-      | jq -r --arg n "$item_name" --arg f "$field_name" \
-        '.[] | select(.type == 1 and .name == $n) | .fields[]? | select(.name == $f) | .value' \
-      | head -n1
-  else
-    bw_sesh list items 2>/dev/null \
-      | jq -r --arg n "$item_name" --arg f "$field_name" \
-        '.[] | select(.type == 1 and .name == $n) | .fields[]? | select(.name == $f) | .value' \
-      | head -n1
-  fi
-}
-
 # Pull the JSON payload of a Secure Note item by name.
 fetch_note_payload() {
   local item_name="$1"
@@ -134,14 +118,15 @@ assert_non_empty() {
   if [[ -z "$value" || "$value" == "null" ]]; then
     echo "Bitwarden field empty: $label" >&2
     echo "  check items:" >&2
-    echo "    1. assistant/openrouter-api-key    2. assistant/hermes-discord-token" >&2
-    echo "    3. assistant/n8n-encryption-key    4. assistant/zitadel-masterkey" >&2
-    echo "    5. assistant/zitadel-admin-password 6. assistant/porkbun-api-key" >&2
-    echo "    7. assistant/lambda-cloud-api-key  8. assistant/tailscale-authkey" >&2
-    echo "    9. assistant/caddy-admin-password  10. assistant/restic-backup-password" >&2
-    echo "    11. assistant/ovh-object-storage   12. assistant/postgres-password" >&2
-    echo "    13. assistant/vps-ssh-key          14. assistant/domain-config" >&2
-    echo "    15. assistant/tofu-inputs" >&2
+    echo "    1. assistant/openrouter-api-key       2. assistant/hermes-discord-token" >&2
+    echo "    3. assistant/n8n-encryption-key       4. assistant/zitadel-masterkey" >&2
+    echo "    5. assistant/zitadel-admin-password   6. assistant/porkbun-api-key" >&2
+    echo "    7. assistant/porkbun-secret-api-key   8. assistant/lambda-cloud-api-key" >&2
+    echo "    9. assistant/tailscale-authkey        10. assistant/caddy-admin-password" >&2
+    echo "    11. assistant/restic-backup-password  12. assistant/ovh-access-key" >&2
+    echo "    13. assistant/ovh-secret-key          14. assistant/postgres-password" >&2
+    echo "    15. assistant/vps-ssh-key             16. assistant/domain-config" >&2
+    echo "    17. assistant/tofu-inputs" >&2
     exit 1
   fi
 }
@@ -168,6 +153,7 @@ ITEM_VPS='assistant/vps-ssh-key'
 ITEM_DOMAIN='assistant/domain-config'
 ITEM_TOFU='assistant/tofu-inputs'
 ITEM_PORKBUN='assistant/porkbun-api-key'
+ITEM_PORKBUN_SECRET='assistant/porkbun-secret-api-key'
 
 # VPS SSH Key (SSH key type → .sshKey.{privateKey,publicKey})
 SSH_KEY_ITEM="$(bw_sesh get item "$ITEM_VPS")"
@@ -203,11 +189,11 @@ assert_non_empty "$ITEM_TOFU.vps_host"     "$VPS_HOST"
 assert_non_empty "$ITEM_TOFU.vps_ssh_user" "$VPS_SSH_USER"
 assert_non_empty "$ITEM_TOFU.vps_ssh_port" "$VPS_SSH_PORT"
 
-# assistant/porkbun-api-key (Login item with custom fields: api_key, secret_api_key)
-PORKBUN_API_KEY="$(fetch_login_field "$ITEM_PORKBUN" api_key)"
-PORKBUN_SECRET_API_KEY="$(fetch_login_field "$ITEM_PORKBUN" secret_api_key)"
-assert_non_empty "$ITEM_PORKBUN.api_key"        "$PORKBUN_API_KEY"
-assert_non_empty "$ITEM_PORKBUN.secret_api_key" "$PORKBUN_SECRET_API_KEY"
+# assistant/porkbun-api-key + assistant/porkbun-secret-api-key (each Login, password field)
+PORKBUN_API_KEY="$(bw_sesh get password "$ITEM_PORKBUN")"
+PORKBUN_SECRET_API_KEY="$(bw_sesh get password "$ITEM_PORKBUN_SECRET")"
+assert_non_empty "$ITEM_PORKBUN (password)"        "$PORKBUN_API_KEY"
+assert_non_empty "$ITEM_PORKBUN_SECRET (password)" "$PORKBUN_SECRET_API_KEY"
 
 if [[ "$CHECK_ONLY" == "1" ]]; then
   echo "fetch_vault --check: all items present."

@@ -52,7 +52,7 @@ The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` and writ
 |------|---------|
 | `tofu/main.tf` | OVH VPS + DNS A record (agent.${DOMAIN}) + S3 buckets. Uses `plan = []` list syntax, not block syntax |
 | `tofu/variables.tf` | Uses `vps_display_name`, `vps_plan_code`, `vps_datacenter`, `ssh_public_key` + `vps_image_id` (both required together) |
-| `ansible/playbooks/secrets.yml` | Bitwarden → k8s Secret sync. Fetches 12 items, creates 4 secrets (hermes + n8n + postgres + zitadel; postgres-secrets duplicated to n8n+auth) |
+| `ansible/playbooks/secrets.yml` | Bitwarden → k8s Secret sync. Fetches 17 items, creates 4 secrets (hermes + n8n + postgres + zitadel; postgres-secrets duplicated to n8n+auth) |
 | `ansible/playbooks/deploy.yml` | kubectl apply from /opt/k8s/. Waits for rollout. Idempotent |
 | `k8s/helmfile.yaml` | Helm releases: PostgreSQL, n8n, Zitadel |
 | `k8s/helm/postgres-values.yaml` | Bitnami PostgreSQL values for shared n8n+Zitadel use |
@@ -67,7 +67,7 @@ The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` and writ
 
 ***REMOVED******REMOVED*** Secrets (Bitwarden vault: `${PROJECT_NAME}`)
 
-15 items in vault (all named `assistant/<kebab-case>`). The `secrets.yml` playbook fetches them by name. See `ansible/vault.yml` for exact field names. Key items: `assistant/openrouter-api-key`, `assistant/hermes-discord-token`, `assistant/tailscale-authkey`, `assistant/restic-backup-password`, `assistant/ovh-object-storage`.
+17 items in vault (all named `assistant/<kebab-case>`, one credential per item). The `secrets.yml` playbook fetches them by name. See `ansible/vault.yml` for exact field names. Key items: `assistant/openrouter-api-key`, `assistant/hermes-discord-token`, `assistant/tailscale-authkey`, `assistant/restic-backup-password`, `assistant/ovh-access-key`.
 
 ***REMOVED******REMOVED*** Operations
 
