@@ -111,7 +111,7 @@ variable "subdomains" {
 }
 
 variable "porkbun_api_key" {
-  description = "Porkbun API key. Source: Bitwarden assistant/Porkbun API Key (field api_key)"
+  description = "Porkbun API key. Source: Bitwarden assistant/porkbun-api-key (field api_key)"
   type        = string
   sensitive   = true
 
@@ -122,7 +122,7 @@ variable "porkbun_api_key" {
 }
 
 variable "porkbun_secret_api_key" {
-  description = "Porkbun secret API key. Source: Bitwarden assistant/Porkbun API Key (field secret_api_key)"
+  description = "Porkbun secret API key. Source: Bitwarden assistant/porkbun-api-key (field secret_api_key)"
   type        = string
   sensitive   = true
 

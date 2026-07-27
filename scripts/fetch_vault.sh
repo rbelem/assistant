@@ -133,7 +133,7 @@ assert_non_empty() {
   local label="$1" value="$2"
   if [[ -z "$value" || "$value" == "null" ]]; then
     echo "Bitwarden field empty: $label" >&2
-    echo "  check items 'assistant/vps-ssh-key', 'assistant/domain-config', 'assistant/tofu-inputs', 'Porkbun API Key'" >&2
+    echo "  check items 'assistant/vps-ssh-key', 'assistant/domain-config', 'assistant/tofu-inputs', 'assistant/porkbun-api-key'" >&2
     exit 1
   fi
 }
@@ -159,7 +159,7 @@ to_relpath() {
 ITEM_VPS='assistant/vps-ssh-key'
 ITEM_DOMAIN='assistant/domain-config'
 ITEM_TOFU='assistant/tofu-inputs'
-ITEM_PORKBUN='Porkbun API Key'
+ITEM_PORKBUN='assistant/porkbun-api-key'
 
 ***REMOVED*** VPS SSH Key (SSH key type → .sshKey.{privateKey,publicKey})
 SSH_KEY_ITEM="$(bw_sesh get item "$ITEM_VPS")"
@@ -195,7 +195,7 @@ assert_non_empty "$ITEM_TOFU.vps_host"     "$VPS_HOST"
 assert_non_empty "$ITEM_TOFU.vps_ssh_user" "$VPS_SSH_USER"
 assert_non_empty "$ITEM_TOFU.vps_ssh_port" "$VPS_SSH_PORT"
 
-***REMOVED*** Porkbun API Key (Login item with custom fields: api_key, secret_api_key)
+***REMOVED*** assistant/porkbun-api-key (Login item with custom fields: api_key, secret_api_key)
 PORKBUN_API_KEY="$(fetch_login_field "$ITEM_PORKBUN" api_key)"
 PORKBUN_SECRET_API_KEY="$(fetch_login_field "$ITEM_PORKBUN" secret_api_key)"
 assert_non_empty "$ITEM_PORKBUN.api_key"        "$PORKBUN_API_KEY"

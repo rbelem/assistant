@@ -43,10 +43,10 @@
 ***REMOVED*** Field: password → <strong admin password>
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 6. Porkbun API Key
+***REMOVED*** 6. assistant/porkbun-api-key
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
-***REMOVED*** Name: "Porkbun API Key"
+***REMOVED*** Name: "assistant/porkbun-api-key"
 ***REMOVED*** Custom fields:
 ***REMOVED***   - api_key: <Porkbun API key>
 ***REMOVED***   - secret_api_key: <Porkbun secret API key>
