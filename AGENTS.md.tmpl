@@ -68,7 +68,13 @@ The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` (via `PA
 
 ***REMOVED******REMOVED*** Secrets (Bitwarden vault: `${PROJECT_NAME}`)
 
+<<<<<<< HEAD
 13 items in vault (all named `assistant/<kebab-case>`, one credential per item). The `secrets.yml` playbook fetches them by name. See `ansible/vault.yml` for exact field names. Key items: `assistant/minimax-api-key`, `assistant/hermes-discord-token`, `assistant/tailscale-authkey`.
+||||||| parent of a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
+12 items in vault. The `secrets.yml` playbook fetches them by name. See `ansible/vault.yml` for exact field names. Key items: OpenRouter API Key, Hermes Discord token, Tailscale Auth Key, Restic password, S3-compatible object storage keys.
+=======
+15 items in vault (all named `assistant/<kebab-case>`). The `secrets.yml` playbook fetches them by name. See `ansible/vault.yml` for exact field names. Key items: `assistant/openrouter-api-key`, `assistant/hermes-discord-token`, `assistant/tailscale-authkey`, `assistant/restic-backup-password`, `assistant/ovh-object-storage`.
+>>>>>>> a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
 
 ***REMOVED******REMOVED*** Operations
 
