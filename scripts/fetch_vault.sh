@@ -133,7 +133,15 @@ assert_non_empty() {
   local label="$1" value="$2"
   if [[ -z "$value" || "$value" == "null" ]]; then
     echo "Bitwarden field empty: $label" >&2
-    echo "  check items 'assistant/vps-ssh-key', 'assistant/domain-config', 'assistant/tofu-inputs', 'assistant/porkbun-api-key'" >&2
+    echo "  check items:" >&2
+    echo "    1. assistant/openrouter-api-key    2. assistant/hermes-discord-token" >&2
+    echo "    3. assistant/n8n-encryption-key    4. assistant/zitadel-masterkey" >&2
+    echo "    5. assistant/zitadel-admin-password 6. assistant/porkbun-api-key" >&2
+    echo "    7. assistant/lambda-cloud-api-key  8. assistant/tailscale-authkey" >&2
+    echo "    9. assistant/caddy-admin-password  10. assistant/restic-backup-password" >&2
+    echo "    11. assistant/ovh-object-storage   12. assistant/postgres-password" >&2
+    echo "    13. assistant/vps-ssh-key          14. assistant/domain-config" >&2
+    echo "    15. assistant/tofu-inputs" >&2
     exit 1
   fi
 }

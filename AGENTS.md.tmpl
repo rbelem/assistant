@@ -67,7 +67,7 @@ The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` and writ
 
 ***REMOVED******REMOVED*** Secrets (Bitwarden vault: `${PROJECT_NAME}`)
 
-12 items in vault. The `secrets.yml` playbook fetches them by name. See `ansible/vault.yml` for exact field names. Key items: OpenRouter API Key, Hermes Discord token, Tailscale Auth Key, Restic password, S3-compatible object storage keys.
+15 items in vault (all named `assistant/<kebab-case>`). The `secrets.yml` playbook fetches them by name. See `ansible/vault.yml` for exact field names. Key items: `assistant/openrouter-api-key`, `assistant/hermes-discord-token`, `assistant/tailscale-authkey`, `assistant/restic-backup-password`, `assistant/ovh-object-storage`.
 
 ***REMOVED******REMOVED*** Operations
 
