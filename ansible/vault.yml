@@ -1,45 +1,46 @@
 ***REMOVED*** Bitwarden Vault Structure for assistant
 ***REMOVED***
-***REMOVED*** Create these 12 items in your Bitwarden vault before running secrets.yml
+***REMOVED*** Convention: all items use `assistant/<kebab-case>` naming.
+***REMOVED*** Create these 15 items in your Bitwarden vault before running secrets.yml.
 ***REMOVED***
 ***REMOVED*** Vault: "assistant"
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 1. OpenRouter API Key
+***REMOVED*** 1. assistant/openrouter-api-key
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
-***REMOVED*** Name: "OpenRouter API Key"
+***REMOVED*** Name: "assistant/openrouter-api-key"
 ***REMOVED*** Field: password → <your openrouter API key>
 ***REMOVED*** Notes: Get from https://openrouter.ai/keys
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 2. Hermes Discord Token
+***REMOVED*** 2. assistant/hermes-discord-token
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
-***REMOVED*** Name: "Hermes Discord Token"
+***REMOVED*** Name: "assistant/hermes-discord-token"
 ***REMOVED*** Field: password → <discord bot token>
 ***REMOVED*** Notes: From Discord Developer Portal → Bot → Token
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 3. n8n Encryption Key
+***REMOVED*** 3. assistant/n8n-encryption-key
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
-***REMOVED*** Name: "n8n Encryption Key"
+***REMOVED*** Name: "assistant/n8n-encryption-key"
 ***REMOVED*** Field: password → <32+ char random hex string>
 ***REMOVED*** Generate with: openssl rand -hex 32
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 4. Zitadel Masterkey
+***REMOVED*** 4. assistant/zitadel-masterkey
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
-***REMOVED*** Name: "Zitadel Masterkey"
+***REMOVED*** Name: "assistant/zitadel-masterkey"
 ***REMOVED*** Field: password → <32+ char random key>
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 5. Zitadel Admin Password
+***REMOVED*** 5. assistant/zitadel-admin-password
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
-***REMOVED*** Name: "Zitadel Admin Password"
+***REMOVED*** Name: "assistant/zitadel-admin-password"
 ***REMOVED*** Field: password → <strong admin password>
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
@@ -53,51 +54,75 @@
 ***REMOVED*** Notes: From https://porkbun.com/account/api
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 7. Lambda Cloud API Key
+***REMOVED*** 7. assistant/lambda-cloud-api-key
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
-***REMOVED*** Name: "Lambda Cloud API Key"
+***REMOVED*** Name: "assistant/lambda-cloud-api-key"
 ***REMOVED*** Field: password → <Lambda API key>
 ***REMOVED*** Notes: From https://cloud.lambdalabs.com/api-keys
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 8. Tailscale Auth Key
+***REMOVED*** 8. assistant/tailscale-authkey
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
-***REMOVED*** Name: "Tailscale Auth Key"
+***REMOVED*** Name: "assistant/tailscale-authkey"
 ***REMOVED*** Field: password → <tailscale auth key>
 ***REMOVED*** Notes: From https://login.tailscale.com/admin/settings/keys
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 9. Caddy Admin Password
+***REMOVED*** 9. assistant/caddy-admin-password
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
-***REMOVED*** Name: "Caddy Admin Password"
+***REMOVED*** Name: "assistant/caddy-admin-password"
 ***REMOVED*** Field: password → <caddy admin password>
 ***REMOVED*** Notes: Used for Caddy API admin endpoint
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 10. Restic Backup Password
+***REMOVED*** 10. assistant/restic-backup-password
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
-***REMOVED*** Name: "Restic Backup Password"
+***REMOVED*** Name: "assistant/restic-backup-password"
 ***REMOVED*** Field: password → <restic repository password>
 ***REMOVED*** Notes: Encryption key for restic backup repository
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 11. OVH Object Storage
+***REMOVED*** 11. assistant/ovh-object-storage
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
-***REMOVED*** Name: "OVH Object Storage"
+***REMOVED*** Name: "assistant/ovh-object-storage"
 ***REMOVED*** Custom fields:
 ***REMOVED***   - access_key: <OVH S3 access key>
 ***REMOVED***   - secret_key: <OVH S3 secret key>
 ***REMOVED*** Notes: From OVHcloud Control Panel → Object Storage → S3 Credentials
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 12. Postgres Password
+***REMOVED*** 12. assistant/postgres-password
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
-***REMOVED*** Name: "Postgres Password"
+***REMOVED*** Name: "assistant/postgres-password"
 ***REMOVED*** Field: password → <strong postgres password>
 ***REMOVED*** Notes: Used by n8n and Zitadel; generate with: openssl rand -base64 32
+
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** 13. assistant/vps-ssh-key
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** Type: SSH Key (type 5)
+***REMOVED*** Name: "assistant/vps-ssh-key"
+***REMOVED*** Fields: .sshKey.privateKey, .sshKey.publicKey
+***REMOVED*** Notes: Generated once; public key registered in nixos/hosts/agent/default.nix
+
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** 14. assistant/domain-config
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** Type: Secure Note (type 2)
+***REMOVED*** Name: "assistant/domain-config"
+***REMOVED*** Notes body (JSON):
+***REMOVED***   {"domain":"<your-domain>","subdomains":["hermes","status","n8n","auth"]}
+
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** 15. assistant/tofu-inputs
+***REMOVED*** ─────────────────────────────────────────────────────────────────
+***REMOVED*** Type: Secure Note (type 2)
+***REMOVED*** Name: "assistant/tofu-inputs"
+***REMOVED*** Notes body (JSON): arbitrary TF_VAR_* keys plus vps_host, vps_ssh_user, vps_ssh_port.
+***REMOVED*** Also includes TOFU_STATE_* keys consumed by tofu/tofu-wrapper.sh for the S3 backend.
