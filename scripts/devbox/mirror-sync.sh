@@ -1,13 +1,13 @@
 ***REMOVED***!/usr/bin/env bash
-***REMOVED*** mirror-sync.sh — re-scrub the mirror with the post-scrub fix and push to the target remote.
-***REMOVED*** This is the work the pre-push hook runs before `git push` to the public mirror.
-***REMOVED*** Idempotent. Re-runnable.
+***REMOVED***mirror-sync.sh — re-scrub the mirror with the post-scrub fix and push to the target remote.
+***REMOVED***This is the work the pre-push hook runs before `git push` to the public mirror.
+***REMOVED***Idempotent. Re-runnable.
 ***REMOVED***
-***REMOVED*** Usage: mirror-sync.sh [REMOTE]
-***REMOVED***   REMOTE defaults to "target" (the public github URL added on line 19+).
-***REMOVED***   NOTE: do NOT default to "origin" — `git filter-repo` strips the origin remote,
-***REMOVED***   so pushing to "origin" fails. Use "target" or pass an explicit remote name
-***REMOVED***   that survives filter-repo (e.g. a remote pointing to the public URL).
+***REMOVED***Usage: mirror-sync.sh [REMOTE]
+***REMOVED***REMOTE defaults to "target" (the public github URL added on line 19+).
+***REMOVED***NOTE: do NOT default to "origin" — `git filter-repo` strips the origin remote,
+***REMOVED***so pushing to "origin" fails. Use "target" or pass an explicit remote name
+***REMOVED***that survives filter-repo (e.g. a remote pointing to the public URL).
 set -euo pipefail
 
 REMOTE="${1:-target}"

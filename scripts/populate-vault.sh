@@ -1,31 +1,31 @@
 ***REMOVED***!/usr/bin/env bash
-***REMOVED*** populate-vault.sh — Create the 3 Bitwarden items needed for the
-***REMOVED*** Bitwarden+template externalization architecture. Idempotent: skips items
-***REMOVED*** that already exist.
+***REMOVED***populate-vault.sh — Create the 3 Bitwarden items needed for the
+***REMOVED***Bitwarden+template externalization architecture. Idempotent: skips items
+***REMOVED***that already exist.
 ***REMOVED***
-***REMOVED*** Pattern from devbox secrets-add: bw_sesh wrapper, keyring auto-unlock.
+***REMOVED***Pattern from devbox secrets-add: bw_sesh wrapper, keyring auto-unlock.
 ***REMOVED***
-***REMOVED*** Required env vars:
-***REMOVED***   VPS_HOST          — current VPS public IPv4
-***REMOVED***   DOMAIN            — base domain (e.g. example.com)
-***REMOVED***   SUBDOMAINS_JSON   — JSON array (e.g. '["app","www"]')
-***REMOVED***   PROJECT_NAME      — project prefix (e.g. assistant)
-***REMOVED***   TOFU_INPUTS_JSON  — JSON object with Tofu vars (plan, datacenter, etc.)
-***REMOVED***   SSH_PRIVATE_KEY   — SSH private key (PEM format)
-***REMOVED***   SSH_PUBLIC_KEY    — SSH public key (e.g. ssh-ed25519 AAAA...)
+***REMOVED***Required env vars:
+***REMOVED***VPS_HOST          — current VPS public IPv4
+***REMOVED***DOMAIN            — base domain (e.g. example.com)
+***REMOVED***SUBDOMAINS_JSON   — JSON array (e.g. '["app","www"]')
+***REMOVED***PROJECT_NAME      — project prefix (e.g. assistant)
+***REMOVED***TOFU_INPUTS_JSON  — JSON object with Tofu vars (plan, datacenter, etc.)
+***REMOVED***SSH_PRIVATE_KEY   — SSH private key (PEM format)
+***REMOVED***SSH_PUBLIC_KEY    — SSH public key (e.g. ssh-ed25519 AAAA...)
 ***REMOVED***
-***REMOVED*** Optional env vars (with defaults):
-***REMOVED***   SSH_USER          — SSH user (default: root)
-***REMOVED***   SSH_PORT          — SSH port (default: 22)
+***REMOVED***Optional env vars (with defaults):
+***REMOVED***SSH_USER          — SSH user (default: root)
+***REMOVED***SSH_PORT          — SSH port (default: 22)
 ***REMOVED***
-***REMOVED*** Usage:
-***REMOVED***   VPS_HOST=203.0.113.42 DOMAIN=example.com \
-***REMOVED***     PROJECT_NAME=assistant \
-***REMOVED***     SUBDOMAINS_JSON='["app","www"]' \
-***REMOVED***     TOFU_INPUTS_JSON='{"vps_plan_code":"KVM 4","datacenter":"gra","vps_image_id":"...","state_bucket_name":"...-tofu-state","storage_region":"gra","storage_endpoint":"https://s3.gra.io.REDACTED-OVH-DOMAIN","storage_access_key":"...","storage_secret_key":"...","ssh_public_key":"...","vps_os":"debian-12","vps_display_name":"agent"}' \
-***REMOVED***     scripts/populate-vault.sh
+***REMOVED***Usage:
+***REMOVED***VPS_HOST=203.0.113.42 DOMAIN=example.com \
+***REMOVED***PROJECT_NAME=assistant \
+***REMOVED***SUBDOMAINS_JSON='["app","www"]' \
+***REMOVED***TOFU_INPUTS_JSON='{"vps_plan_code":"KVM 4","datacenter":"gra","vps_image_id":"...","state_bucket_name":"...-tofu-state","storage_region":"gra","storage_endpoint":"https://s3.gra.io.REDACTED-OVH-DOMAIN","storage_access_key":"...","storage_secret_key":"...","ssh_public_key":"...","vps_os":"debian-12","vps_display_name":"agent"}' \
+***REMOVED***scripts/populate-vault.sh
 ***REMOVED***
-***REMOVED*** After successful run: scripts/fetch_vault.sh --check  ***REMOVED*** validate schema
+***REMOVED***After successful run: scripts/fetch_vault.sh --check  ***REMOVED*** validate schema
 
 set -euo pipefail
 
@@ -49,7 +49,7 @@ need() {
 need bw
 need jq
 
-***REMOVED*** Validate JSON payloads up front
+***REMOVED***Validate JSON payloads up front
 echo "$SUBDOMAINS_JSON" | jq -e . >/dev/null 2>&1 \
   || { echo "SUBDOMAINS_JSON is not valid JSON: $SUBDOMAINS_JSON" >&2; exit 1; }
 echo "$TOFU_INPUTS_JSON" | jq -e . >/dev/null 2>&1 \

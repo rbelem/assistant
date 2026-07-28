@@ -1,34 +1,34 @@
 ***REMOVED***!/usr/bin/env bash
-***REMOVED*** fetch_vault.sh — Pull deployment config from Bitwarden and render to:
-***REMOVED***   1. .rendered/vault.env        — sourceable shell env vars (envsubst input)
-***REMOVED***   2. .rendered/terraform.tfvars — tofu apply -var-file=
-***REMOVED***   3. .rendered/runtime-config.json — Nix modules via builtins.fromJSON
+***REMOVED***fetch_vault.sh — Pull deployment config from Bitwarden and render to:
+***REMOVED***1. .rendered/vault.env        — sourceable shell env vars (envsubst input)
+***REMOVED***2. .rendered/terraform.tfvars — tofu apply -var-file=
+***REMOVED***3. .rendered/runtime-config.json — Nix modules via builtins.fromJSON
 ***REMOVED***
-***REMOVED*** Pattern inspired by ~/.local/share/devbox/global/default/bin/secrets-refresh:
-***REMOVED***   - bw_sesh() wrapper (--session arg, env-var unreliable for auth)
-***REMOVED***   - keyring auto-unlock via secret-tool (libsecret)
-***REMOVED***   - atomic cache write (mktemp + mv) with chmod 600
-***REMOVED***   - shell-safe quoting via printf %q
+***REMOVED***Pattern inspired by ~/.local/share/devbox/global/default/bin/secrets-refresh:
+***REMOVED***- bw_sesh() wrapper (--session arg, env-var unreliable for auth)
+***REMOVED***- keyring auto-unlock via secret-tool (libsecret)
+***REMOVED***- atomic cache write (mktemp + mv) with chmod 600
+***REMOVED***- shell-safe quoting via printf %q
 ***REMOVED***
-***REMOVED*** Bitwarden schema (vault `assistant`, items namespaced under that prefix):
-***REMOVED***   "assistant/vps-ssh-key"    — SSH key (type 5), .sshKey.privateKey
-***REMOVED***   "assistant/domain-config"  — Secure Note JSON:
-***REMOVED***                                     {"domain":"<your-domain>","subdomains":["hermes",...]}
-***REMOVED***   "assistant/tofu-inputs"    — Secure Note JSON (arbitrary TF_VAR_* keys + vps_host, vps_ssh_user, vps_ssh_port)
+***REMOVED***Bitwarden schema (vault `assistant`, items namespaced under that prefix):
+***REMOVED***"assistant/vps-ssh-key"    — SSH key (type 5), .sshKey.privateKey
+***REMOVED***"assistant/domain-config"  — Secure Note JSON:
+***REMOVED***{"domain":"<your-domain>","subdomains":["hermes",...]}
+***REMOVED***"assistant/tofu-inputs"    — Secure Note JSON (arbitrary TF_VAR_* keys + vps_host, vps_ssh_user, vps_ssh_port)
 ***REMOVED***
-***REMOVED*** Usage:
-***REMOVED***   scripts/fetch_vault.sh              ***REMOVED*** write all rendered outputs
-***REMOVED***   scripts/fetch_vault.sh --check      ***REMOVED*** verify items exist; don't write
-***REMOVED***   scripts/fetch_vault.sh --out-dir DIR  ***REMOVED*** custom output directory
+***REMOVED***Usage:
+***REMOVED***scripts/fetch_vault.sh              ***REMOVED*** write all rendered outputs
+***REMOVED***scripts/fetch_vault.sh --check      ***REMOVED*** verify items exist; don't write
+***REMOVED***scripts/fetch_vault.sh --out-dir DIR  ***REMOVED*** custom output directory
 ***REMOVED***
-***REMOVED*** Auto-unlock: if secret-tool (libsecret) is available and a Bitwarden master
-***REMOVED*** password is stored in the keyring under "bitwarden master-password", this
-***REMOVED*** script unlocks bw transparently and exports BW_SESSION. Otherwise set
-***REMOVED*** BW_SESSION manually (`bw unlock --raw > ~/.bw_session_token`).
+***REMOVED***Auto-unlock: if secret-tool (libsecret) is available and a Bitwarden master
+***REMOVED***password is stored in the keyring under "bitwarden master-password", this
+***REMOVED***script unlocks bw transparently and exports BW_SESSION. Otherwise set
+***REMOVED***BW_SESSION manually (`bw unlock --raw > ~/.bw_session_token`).
 ***REMOVED***
-***REMOVED*** The fetched values flow through three sinks (vault.env, terraform.tfvars,
-***REMOVED*** runtime-config.json). All three are gitignored and rebuilt on every run.
-***REMOVED*** Bitwarden is the only place environment-specific values live.
+***REMOVED***The fetched values flow through three sinks (vault.env, terraform.tfvars,
+***REMOVED***runtime-config.json). All three are gitignored and rebuilt on every run.
+***REMOVED***Bitwarden is the only place environment-specific values live.
 
 set -euo pipefail
 
@@ -88,18 +88,18 @@ EOF
     exit 1
   }
 
-***REMOVED*** bw_sesh wrapper. bw's daemon ignores BW_SESSION env for auth-state checks; every
-***REMOVED*** call must pass --session explicitly. (Same lesson as devbox secrets-refresh.)
+***REMOVED***bw_sesh wrapper. bw's daemon ignores BW_SESSION env for auth-state checks; every
+***REMOVED***call must pass --session explicitly. (Same lesson as devbox secrets-refresh.)
 bw_sesh() { bw --session "$BW_SESSION" "$@"; }
 
-***REMOVED*** Sync the local vault cache with the server. bw reads from a local encrypted
-***REMOVED*** DB; unlock decrypts it but doesn't refresh it. Without this, items created
-***REMOVED*** via web/extension/another machine are invisible to `bw get`/`bw list` and
-***REMOVED*** every fetch returns "Not found." Idempotent + fast (~200ms when current).
+***REMOVED***Sync the local vault cache with the server. bw reads from a local encrypted
+***REMOVED***DB; unlock decrypts it but doesn't refresh it. Without this, items created
+***REMOVED***via web/extension/another machine are invisible to `bw get`/`bw list` and
+***REMOVED***every fetch returns "Not found." Idempotent + fast (~200ms when current).
 bw_sesh sync 2>/dev/null || true
 
 ***REMOVED***--- helpers -------------------------------------------------------------------
-***REMOVED*** Pull the JSON payload of a Secure Note item by name.
+***REMOVED***Pull the JSON payload of a Secure Note item by name.
 fetch_note_payload() {
   local item_name="$1"
   if [[ -n "$BW_ORG_ID" ]]; then
@@ -130,8 +130,8 @@ assert_non_empty() {
 }
 
 ensure_gitignored() {
-  ***REMOVED*** Fail-closed: refuse to write if .gitignore is missing — prevents accidental
-  ***REMOVED*** commit of a rendered file with real values.
+  ***REMOVED***Fail-closed: refuse to write if .gitignore is missing — prevents accidental
+  ***REMOVED***commit of a rendered file with real values.
   local rel="$1"
   [[ -f .gitignore ]] || { echo "ERROR: .gitignore missing at repo root — refusing to render" >&2; exit 1; }
   grep -qxF "$rel" .gitignore || echo "$rel" >> .gitignore
@@ -153,7 +153,7 @@ ITEM_TOFU='assistant/tofu-inputs'
 ITEM_PORKBUN='assistant/porkbun-api-key'
 ITEM_PORKBUN_SECRET='assistant/porkbun-secret-api-key'
 
-***REMOVED*** VPS SSH Key (SSH key type → .sshKey.{privateKey,publicKey})
+***REMOVED***VPS SSH Key (SSH key type → .sshKey.{privateKey,publicKey})
 SSH_KEY_ITEM="$(bw_sesh get item "$ITEM_VPS")"
 SSH_PRIVATE_KEY="$(echo "$SSH_KEY_ITEM" | jq -r '.sshKey.privateKey')"
 SSH_PUBLIC_KEY="$(echo "$SSH_KEY_ITEM" | jq -r '.sshKey.publicKey // empty')"
@@ -161,7 +161,7 @@ assert_non_empty "$ITEM_VPS.sshKey.privateKey" "$SSH_PRIVATE_KEY"
 [[ -z "$SSH_PUBLIC_KEY" ]] && SSH_PUBLIC_KEY="$(ssh-keygen -y -f <(echo "$SSH_PRIVATE_KEY") 2>/dev/null || true)"
 assert_non_empty "$ITEM_VPS.sshKey.publicKey" "$SSH_PUBLIC_KEY"
 
-***REMOVED*** Domain Config (Secure Note → JSON body)
+***REMOVED***Domain Config (Secure Note → JSON body)
 DOMAIN_JSON="$(fetch_note_payload "$ITEM_DOMAIN")"
 [[ -n "$DOMAIN_JSON" ]] || { echo "$ITEM_DOMAIN note body empty" >&2; exit 1; }
 echo "$DOMAIN_JSON" | jq -e . >/dev/null 2>&1 \
@@ -173,13 +173,13 @@ SUBDOMAINS_CSV="$(echo "$DOMAIN_JSON" | jq -r '.subdomains | join(",")')"
 assert_non_empty "$ITEM_DOMAIN.domain"     "$DOMAIN"
 assert_non_empty "$ITEM_DOMAIN.subdomains" "$SUBDOMAINS_JSON"
 
-***REMOVED*** Tofu Inputs (Secure Note → JSON body, optional)
+***REMOVED***Tofu Inputs (Secure Note → JSON body, optional)
 TOFU_JSON="$(fetch_note_payload "$ITEM_TOFU" 2>/dev/null || true)"
 [[ -z "$TOFU_JSON" ]] && TOFU_JSON='{}'
 echo "$TOFU_JSON" | jq -e . >/dev/null 2>&1 \
   || { echo "$ITEM_TOFU body is not valid JSON: $TOFU_JSON" >&2; exit 1; }
 
-***REMOVED*** VPS host/user/port from tofu-inputs JSON (moved from vps-access Login item)
+***REMOVED***VPS host/user/port from tofu-inputs JSON (moved from vps-access Login item)
 VPS_HOST="$(echo "$TOFU_JSON" | jq -r '.vps_host // empty')"
 VPS_SSH_USER="$(echo "$TOFU_JSON" | jq -r '.vps_ssh_user // empty')"
 VPS_SSH_PORT="$(echo "$TOFU_JSON" | jq -r '.vps_ssh_port // empty')"
@@ -187,7 +187,7 @@ assert_non_empty "$ITEM_TOFU.vps_host"     "$VPS_HOST"
 assert_non_empty "$ITEM_TOFU.vps_ssh_user" "$VPS_SSH_USER"
 assert_non_empty "$ITEM_TOFU.vps_ssh_port" "$VPS_SSH_PORT"
 
-***REMOVED*** assistant/porkbun-api-key + assistant/porkbun-secret-api-key (each Login, password field)
+***REMOVED***assistant/porkbun-api-key + assistant/porkbun-secret-api-key (each Login, password field)
 PORKBUN_API_KEY="$(bw_sesh get password "$ITEM_PORKBUN")"
 PORKBUN_SECRET_API_KEY="$(bw_sesh get password "$ITEM_PORKBUN_SECRET")"
 assert_non_empty "$ITEM_PORKBUN (password)"        "$PORKBUN_API_KEY"
@@ -208,12 +208,12 @@ ENV_FILE="$OUT_DIR/vault.env"
 TFVARS_FILE="$OUT_DIR/terraform.tfvars"
 RUNTIME_JSON="$OUT_DIR/runtime-config.json"
 
-***REMOVED*** Pre-register outputs in .gitignore (idempotent, fail-closed).
+***REMOVED***Pre-register outputs in .gitignore (idempotent, fail-closed).
 for f in "$ENV_FILE" "$TFVARS_FILE" "$RUNTIME_JSON"; do
   ensure_gitignored "$(to_relpath "$f")"
 done
 
-***REMOVED*** vault.env: sourceable shell exports. %q handles shell quoting for free.
+***REMOVED***vault.env: sourceable shell exports. %q handles shell quoting for free.
 tmp="$(mktemp)"
 {
   printf '***REMOVED*** GENERATED by scripts/fetch_vault.sh — DO NOT EDIT OR COMMIT\n'
@@ -229,15 +229,15 @@ tmp="$(mktemp)"
   printf 'export %s=%q\n' TF_VAR_porkbun_api_key "$PORKBUN_API_KEY"
   printf 'export %s=%q\n' TF_VAR_porkbun_secret_api_key "$PORKBUN_SECRET_API_KEY"
 
-  ***REMOVED*** Export arbitrary TF_VAR_* from Tofu Inputs JSON.
+  ***REMOVED***Export arbitrary TF_VAR_* from Tofu Inputs JSON.
   echo "$TOFU_JSON" | jq -r '
     to_entries[]
     | "export TF_VAR_\(.key | ascii_upcase)=\(.value | tostring)"
   '
 
-  ***REMOVED*** Export selected non-TF vars from Tofu Inputs for envsubst / deploy scripts.
-  ***REMOVED*** These are also written to terraform.tfvars below as Tofu variables.
-  ***REMOVED*** Includes TOFU_STATE_* keys consumed by tofu/tofu-wrapper.sh for the S3 backend.
+  ***REMOVED***Export selected non-TF vars from Tofu Inputs for envsubst / deploy scripts.
+  ***REMOVED***These are also written to terraform.tfvars below as Tofu variables.
+  ***REMOVED***Includes TOFU_STATE_* keys consumed by tofu/tofu-wrapper.sh for the S3 backend.
   echo "$TOFU_JSON" | jq -r '
     to_entries[]
     | select(.key == "project_name" or .key == "vps_plan_code" or .key == "datacenter"
@@ -254,7 +254,7 @@ tmp="$(mktemp)"
 mv "$tmp" "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 
-***REMOVED*** terraform.tfvars: passed to tofu via -var-file=.rendered/terraform.tfvars.
+***REMOVED***terraform.tfvars: passed to tofu via -var-file=.rendered/terraform.tfvars.
 tmp="$(mktemp)"
 {
   printf '***REMOVED*** GENERATED by scripts/fetch_vault.sh — DO NOT EDIT OR COMMIT\n'
@@ -266,10 +266,10 @@ tmp="$(mktemp)"
   printf 'ssh_port    = %d\n' "$VPS_SSH_PORT"
   printf 'subdomains  = %s\n' "$SUBDOMAINS_JSON"
 
-  ***REMOVED*** Append any extra Tofu Inputs as tfvars — keys map verbatim (caller has
-  ***REMOVED*** already declared matching variables in tofu/variables.tf).
-  ***REMOVED*** Exclude TOFU_STATE_* keys; those are consumed by tofu-wrapper.sh from env vars,
-  ***REMOVED*** not passed as Tofu input variables.
+  ***REMOVED***Append any extra Tofu Inputs as tfvars — keys map verbatim (caller has
+  ***REMOVED***already declared matching variables in tofu/variables.tf).
+  ***REMOVED***Exclude TOFU_STATE_* keys; those are consumed by tofu-wrapper.sh from env vars,
+  ***REMOVED***not passed as Tofu input variables.
   echo "$TOFU_JSON" | jq -r '
     to_entries[]
     | select(.key != "domain_name" and .key != "ssh_user" and .key != "vps_ip"
@@ -281,8 +281,8 @@ tmp="$(mktemp)"
               and .key != "storage_endpoint")
     | "\(.key) = \(.value | tojson)"
   '
-  ***REMOVED*** Aliases: bw uses tofu_state_* prefix; tofu/variables.tf uses storage_* / state_bucket_name.
-  ***REMOVED*** Emit both so the variable names tofu expects are satisfied.
+  ***REMOVED***Aliases: bw uses tofu_state_* prefix; tofu/variables.tf uses storage_* / state_bucket_name.
+  ***REMOVED***Emit both so the variable names tofu expects are satisfied.
   STATE_BUCKET="$(echo "$TOFU_JSON" | jq -r '.tofu_state_bucket // .state_bucket_name // empty')"
   STATE_REGION="$(echo "$TOFU_JSON" | jq -r '.tofu_state_region // .storage_region // empty')"
   STATE_ENDPOINT="$(echo "$TOFU_JSON" | jq -r '.tofu_state_endpoint // .storage_endpoint // empty')"
@@ -298,9 +298,9 @@ tmp="$(mktemp)"
 mv "$tmp" "$TFVARS_FILE"
 chmod 600 "$TFVARS_FILE"
 
-***REMOVED*** runtime-config.json: read by Nix modules via builtins.fromJSON
-***REMOVED*** (Option A per prior Oracle review — gitignored file visible via `path:` flakeref).
-***REMOVED*** Backup S3 config removed 2026-07-27 (restic backups deferred).
+***REMOVED***runtime-config.json: read by Nix modules via builtins.fromJSON
+***REMOVED***(Option A per prior Oracle review — gitignored file visible via `path:` flakeref).
+***REMOVED***Backup S3 config removed 2026-07-27 (restic backups deferred).
 
 jq -n \
   --arg domain "$DOMAIN" \

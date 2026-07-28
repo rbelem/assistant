@@ -1,9 +1,9 @@
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Outputs — Key infrastructure values
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** These values are displayed after `tofu apply` and can be referenced by
-***REMOVED*** other configurations or scripts.
-***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Outputs — Key infrastructure values
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***These values are displayed after `tofu apply` and can be referenced by
+***REMOVED***other configurations or scripts.
+***REMOVED***-----------------------------------------------------------------------------
 
 output "vps_id" {
   description = "Hetzner Cloud server ID"
@@ -55,27 +55,27 @@ output "ssh_command" {
   value       = "ssh -p ${var.ssh_port} ${var.ssh_user}@${hcloud_server.agent.ipv4_address}"
 }
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Lambda Cloud (OCR) — DEFERRED
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Lambda Cloud dropped 2026-07-27 (OCR skill unused).
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Lambda Cloud (OCR) — DEFERRED
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Lambda Cloud dropped 2026-07-27 (OCR skill unused).
 
-***REMOVED*** output "ocr_instance_ip" {
-***REMOVED***   description = "Public IP of the Lambda OCR GPU instance"
-***REMOVED***   value       = var.ocr_enabled ? try(data.lambda_instance.ocr_running[0].ip, "") : ""
-***REMOVED*** }
+***REMOVED***output "ocr_instance_ip" {
+***REMOVED***description = "Public IP of the Lambda OCR GPU instance"
+***REMOVED***value       = var.ocr_enabled ? try(data.lambda_instance.ocr_running[0].ip, "") : ""
+***REMOVED***}
 
-***REMOVED*** output "ocr_instance_status" {
-***REMOVED***   description = "Status of the OCR GPU instance"
-***REMOVED***   value       = var.ocr_enabled ? try(data.lambda_instance.ocr_running[0].status, "") : ""
-***REMOVED*** }
+***REMOVED***output "ocr_instance_status" {
+***REMOVED***description = "Status of the OCR GPU instance"
+***REMOVED***value       = var.ocr_enabled ? try(data.lambda_instance.ocr_running[0].status, "") : ""
+***REMOVED***}
 
 output "ocr_instance_type" {
   description = "GPU instance type for OCR"
   value       = var.ocr_instance_type
 }
 
-***REMOVED*** output "ocr_api_endpoint" {
-***REMOVED***   description = "OpenAI-compatible API endpoint for the OCR model"
-***REMOVED***   value       = var.ocr_enabled ? "http://${try(data.lambda_instance.ocr_running[0].ip, "")}:10000/v1" : ""
-***REMOVED*** }
+***REMOVED***output "ocr_api_endpoint" {
+***REMOVED***description = "OpenAI-compatible API endpoint for the OCR model"
+***REMOVED***value       = var.ocr_enabled ? "http://${try(data.lambda_instance.ocr_running[0].ip, "")}:10000/v1" : ""
+***REMOVED***}

@@ -1,21 +1,21 @@
 ***REMOVED***!/usr/bin/env bash
-***REMOVED*** tofu-wrapper.sh — Run tofu with Bitwarden-driven tfvars + backend config.
+***REMOVED***tofu-wrapper.sh — Run tofu with Bitwarden-driven tfvars + backend config.
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TOFU_DIR="$REPO_ROOT/tofu"
 cd "$REPO_ROOT"
 
-***REMOVED*** Render the vault-driven tfvars (and runtime-config.json etc.) on demand.
+***REMOVED***Render the vault-driven tfvars (and runtime-config.json etc.) on demand.
 scripts/fetch_vault.sh
 
-***REMOVED*** Source the env so TF_VAR_* are exported.
-***REMOVED*** shellcheck disable=SC1091
+***REMOVED***Source the env so TF_VAR_* are exported.
+***REMOVED***shellcheck disable=SC1091
 . .rendered/vault.env
 
-***REMOVED*** Materialize a -backend-config file from the vault (gitignored).
-***REMOVED*** Use TOFU_STATE_* credential pair (the keys that own the state bucket, separate
-***REMOVED*** from STORAGE_* which backs the restic data bucket). Region falls back to
-***REMOVED*** storage_region in case TOFU_STATE_REGION is missing from the vault.
+***REMOVED***Materialize a -backend-config file from the vault (gitignored).
+***REMOVED***Use TOFU_STATE_* credential pair (the keys that own the state bucket, separate
+***REMOVED***from STORAGE_* which backs the restic data bucket). Region falls back to
+***REMOVED***storage_region in case TOFU_STATE_REGION is missing from the vault.
 mkdir -p .rendered
 BACKEND_REGION="${TOFU_STATE_REGION:-${STORAGE_REGION:-}}"
 cat > .rendered/backend.conf <<EOF
@@ -33,20 +33,20 @@ force_path_style            = true
 EOF
 chmod 600 .rendered/backend.conf
 
-***REMOVED*** Pre-add rendered files to .gitignore if they are not already ignored.
+***REMOVED***Pre-add rendered files to .gitignore if they are not already ignored.
 touch .gitignore
 for f in .rendered/terraform.tfvars .rendered/vault.env .rendered/backend.conf .rendered/runtime-config.json; do
   grep -qxF "$f" .gitignore || echo "$f" >> .gitignore
 done
 
-***REMOVED*** Pass everything through. Plan/apply/destroy/validate/refresh get the
-***REMOVED*** Bitwarden tfvars; init also gets the backend config so
-***REMOVED*** credentials/region/bucket come from Bitwarden. All tofu commands run
-***REMOVED*** from TOFU_DIR (where the *.tf files live); -backend-config and
-***REMOVED*** -var-file paths are repo-root-relative.
-***REMOVED*** Note: -var-file is INCOMPATIBLE with applying a saved plan file (tofu
-***REMOVED*** rejects it because the plan already has variables baked in). Skip
-***REMOVED*** -var-file when the user passes a positional plan-file arg.
+***REMOVED***Pass everything through. Plan/apply/destroy/validate/refresh get the
+***REMOVED***Bitwarden tfvars; init also gets the backend config so
+***REMOVED***credentials/region/bucket come from Bitwarden. All tofu commands run
+***REMOVED***from TOFU_DIR (where the *.tf files live); -backend-config and
+***REMOVED***-var-file paths are repo-root-relative.
+***REMOVED***Note: -var-file is INCOMPATIBLE with applying a saved plan file (tofu
+***REMOVED***rejects it because the plan already has variables baked in). Skip
+***REMOVED***-var-file when the user passes a positional plan-file arg.
 cd "$TOFU_DIR"
 case "${1:-}" in
   init)
@@ -60,7 +60,7 @@ case "${1:-}" in
   apply)
     shift
     if [[ $***REMOVED*** -gt 0 ]]; then
-      ***REMOVED*** Positional arg present (likely a plan file) — don't inject -var-file.
+      ***REMOVED***Positional arg present (likely a plan file) — don't inject -var-file.
       exec tofu apply "$@"
     fi
     exec tofu apply -var-file="$REPO_ROOT/.rendered/terraform.tfvars" "$@"
