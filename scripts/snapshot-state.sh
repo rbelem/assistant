@@ -73,8 +73,17 @@ need jq
 need python3
 need base64
 
-***REMOVED*** BW_SESSION resolution: env first, then keyring auto-unlock (same pattern as fetch_vault.sh)
+***REMOVED*** BW_SESSION resolution: env first, then ansible-managed file, then keyring auto-unlock
 BW_SESSION="${BW_SESSION:-}"
+
+***REMOVED*** Fallback 1: ansible-managed EnvironmentFile (VPS deployment)
+if [[ -z "$BW_SESSION" && -r /etc/agent/bw_session.env ]]; then
+  ***REMOVED*** shellcheck source=/etc/agent/bw_session.env
+  BW_SESSION="$(. /etc/agent/bw_session.env && echo "$BW_SESSION")"
+  export BW_SESSION
+fi
+
+***REMOVED*** Fallback 2: keyring auto-unlock (local development)
 if [[ -z "$BW_SESSION" ]] && command -v secret-tool >/dev/null 2>&1; then
   if master_pw="$(secret-tool lookup bitwarden master-password 2>/dev/null)" \
      && [[ -n "$master_pw" ]]; then
@@ -86,8 +95,11 @@ if [[ -z "$BW_SESSION" ]] && command -v secret-tool >/dev/null 2>&1; then
   fi
 fi
 
-[[ -n "$BW_SESSION" ]] \
-  || { err "BW_SESSION not set. Run: bw unlock --raw > ~/.bw_session_token && export BW_SESSION=\$(cat ~/.bw_session_token)"; exit "$EXIT_BW_UNAVAILABLE"; }
+if [[ -z "$BW_SESSION" ]]; then
+  err "BW_SESSION not set and /etc/agent/bw_session.env not readable"
+  err "Run: bw unlock --raw > ~/.bw_session_token && export BW_SESSION=\$(cat ~/.bw_session_token)"
+  exit "$EXIT_BW_UNAVAILABLE"
+fi
 
 bw_sesh() { bw --session "$BW_SESSION" "$@"; }
 
@@ -98,6 +110,12 @@ bw_sesh sync 2>/dev/null || true
 if ! bw_sesh list items >/dev/null 2>&1; then
   err "bw session invalid or expired"
   exit "$EXIT_BW_UNAVAILABLE"
+fi
+
+***REMOVED*** Verify BW item exists (exit code 3 if missing, with first-run hint)
+if ! bw_sesh get item "$SNAPSHOT_BW_ITEM" >/dev/null 2>&1; then
+  err "BW item '$SNAPSHOT_BW_ITEM' not found. See first-run note in --help."
+  exit "$EXIT_ITEM_MISSING"
 fi
 
 ***REMOVED***--- detect backend URL --------------------------------------------------------
@@ -231,3 +249,9 @@ echo "To restore:"
 echo "  scripts/restore-state.sh --list"
 echo "  scripts/restore-state.sh                    ***REMOVED*** most recent"
 echo "  scripts/restore-state.sh --index N          ***REMOVED*** specific entry"
+echo
+echo "=== First-run note ==="
+echo "If this is the first snapshot, ensure the BW Secure Note exists:"
+echo "  bw get item '$SNAPSHOT_BW_ITEM' >/dev/null 2>&1 || {"
+echo "    bw get template item | jq '.type=2 | .name=\"$SNAPSHOT_BW_ITEM\" | .notes=\"{\\\"schema_version\\\":1,\\\"snapshots\\\":[]}\"' | bw encode | bw create item"
+echo "  }"
