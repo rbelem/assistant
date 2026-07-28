@@ -10,7 +10,7 @@ Infrastructure-as-code for my personal AI agent — a self-hosted runtime on OVH
 ┌────────────────────────────────────────────────────────────┐
 │ Local Machine (NixOS)                                      │
 │                                                            │
-│  opencode-go  ──→  Headroom (:8787)  ──→  OpenRouter API   │
+│  opencode-go  ──→  Headroom (:8787)  ──→  minimax.io API     │
 │  (coding agent)    (token compression)    (LLM access)     │
 │                                                            │
 │  Headroom saves 60-95% on token costs.                     │
@@ -36,11 +36,11 @@ Infrastructure-as-code for my personal AI agent — a self-hosted runtime on OVH
 │  │  └──────┬───────┘  └──────┬───────┘  └────────────┘  │   │
 │  │         │                  │                           │   │
 │  │         ▼                  ▼                           │   │
-│  │         OpenRouter API     OpenRouter API               │   │
+│  │         minimax.io API       minimax.io API               │   │
 │  └──────────────────────────────────────────────────────┘   │
 │                                                              │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │  Restic → S3-compatible object storage (daily backups)         │   │
+│  │  (Restic backups deferred — OVH Object Storage drop) │   │
 │  └──────────────────────────────────────────────────────┘   │
 └────────────────────────────────────────────────────────────┘
 ```
@@ -58,13 +58,13 @@ Infrastructure-as-code for my personal AI agent — a self-hosted runtime on OVH
 | **Tailscale** | Secure overlay VPN for admin access | VPS |
 | **Ansible** | Bootstrap, secrets from Bitwarden, deploy services | Local → VPS |
 | **Uptime Kuma** | Uptime monitoring dashboard | k3s |
-| **Restic** | Encrypted daily backups to S3-compatible object storage | VPS (host level) |
+| **Restic** | Encrypted daily backups (DEFERRED — OVH Object Storage dropped) | VPS (host level) |
 
 ***REMOVED******REMOVED*** Prerequisites
 
 ***REMOVED******REMOVED******REMOVED*** Accounts & Credentials
-- [OVHcloud](https://ovhcloud.com) account — VPS + DNS + Object Storage
-- [OpenRouter](https://openrouter.ai) API key — LLM access
+- [OVHcloud](https://ovhcloud.com) account — VPS + DNS + Object Storage (state bucket only)
+- [minimax.io](https://minimax.io) API key — LLM access
 - [Bitwarden](https://bitwarden.com) vault with secrets (see `ansible/vault.yml`)
 - [Tailscale](https://tailscale.com) account — VPN
 - Domain: `${DOMAIN}` managed by OVH DNS
@@ -196,13 +196,10 @@ Create a Bitwarden vault named `${PROJECT_NAME}` with these items:
 
 | Field | Description |
 |-------|-------------|
-| `openrouter_api_key` | OpenRouter API key |
+| `minimax_api_key` | minimax.io API key |
 | `hermes_discord_token` | Discord bot token |
 | `tailscale_auth_key` | Tailscale pre-auth key (one-time use) |
 | `caddy_admin_password` | Caddy admin endpoint password |
-| `restic_password` | Restic backup encryption password |
-| `ovh_access_key` | S3-compatible object storage access key |
-| `ovh_secret_key` | S3-compatible object storage secret key |
 
 See `ansible/vault.yml` for the template.
 
@@ -233,18 +230,9 @@ ssh root@agent.${DOMAIN} 'kubectl logs -n hermes -l app=hermes-agent --tail=100'
 ssh root@agent.${DOMAIN} 'kubectl exec -n headroom deploy/headroom -- headroom dashboard'
 ```
 
-***REMOVED******REMOVED******REMOVED*** Backups
-- Automatic daily restic backups to S3-compatible object storage
-- Retention: 7 daily, 4 weekly, 3 monthly
-- Backup includes: k3s data (PVCs), Hermes memory
-
-```bash
-***REMOVED*** Manual backup trigger
-ssh root@agent.${DOMAIN} 'systemctl start restic-backups-daily'
-
-***REMOVED*** List snapshots
-ssh root@agent.${DOMAIN} 'restic -r s3:... snapshots'
-```
+***REMOVED******REMOVED******REMOVED*** Backups (DEFERRED)
+- Restic backups to S3-compatible object storage were dropped 2026-07-27 (OVH Object Storage removed for backups).
+- Tofu state bucket still uses OVH Object Storage.
 
 ***REMOVED******REMOVED******REMOVED*** Access VPS
 ```bash
@@ -288,7 +276,7 @@ existing `nix-config` flake:
 |---------|------|-------------|
 | OVHcloud VPS | ${VPS_PLAN_CODE} (2 vCPU, 4GB RAM, 80GB NVMe) | ~€6 |
 | S3-compatible object storage | Pay-as-you-go (state + backups) | ~€1 |
-| OpenRouter API | Pay-per-token | variable |
+| minimax.io API | Pay-per-token | variable |
 | Tailscale | Personal (free, 3 users/100 devices) | €0 |
 | Domain ${DOMAIN} | Already owned | €0 |
 | **Total base** | | **~€7/month** |

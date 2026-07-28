@@ -70,11 +70,10 @@ resource "porkbun_dns_record" "svc" {
 }
 
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Object Storage Buckets (S3-compatible)
+***REMOVED*** Object Storage — State Bucket Only
 ***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Two buckets:
-***REMOVED***   1. State storage — OpenTofu remote backend
-***REMOVED***   2. Backup storage — restic encrypted backups
+***REMOVED*** Backup bucket removed 2026-07-27 (restic backups deferred).
+***REMOVED*** Only the tofu state bucket remains.
 ***REMOVED*** -----------------------------------------------------------------------------
 
 ***REMOVED*** --- State bucket (must exist before `tofu init`, import if pre-existing) ---
@@ -111,48 +110,7 @@ resource "aws_s3_bucket" "tofu_state" {
 ***REMOVED***   restrict_public_buckets = true
 ***REMOVED*** }
 
-***REMOVED*** --- Backup bucket for restic ---
-resource "aws_s3_bucket" "backups" {
-  bucket = var.backup_bucket_name
-}
-
-resource "aws_s3_bucket_versioning" "backups" {
-  bucket = aws_s3_bucket.backups.id
-
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_public_access_block" "backups" {
-  bucket = aws_s3_bucket.backups.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-***REMOVED*** Lifecycle: expire old backup versions after 90 days
-***REMOVED*** Commented out: Hetzner Object Storage does not support S3 lifecycle configurations.
-***REMOVED*** Configure backup retention via restic forget policies in nix-config backup.nix instead.
-***REMOVED*** resource "aws_s3_bucket_lifecycle_configuration" "backups" {
-***REMOVED***   bucket = aws_s3_bucket.backups.id
-***REMOVED***
-***REMOVED***   rule {
-***REMOVED***     id     = "expire-old-backups"
-***REMOVED***     status = "Enabled"
-***REMOVED***
-***REMOVED***     filter {
-***REMOVED***       prefix = ""
-***REMOVED***     }
-***REMOVED***
-***REMOVED***     expiration {
-***REMOVED***       days = 90
-***REMOVED***     }
-***REMOVED***
-***REMOVED***     noncurrent_version_expiration {
-***REMOVED***       noncurrent_days = 30
-***REMOVED***     }
-***REMOVED***   }
-***REMOVED*** }
+***REMOVED*** --- Backup bucket removed 2026-07-27 (restic backups deferred) ---
+***REMOVED*** Previously: aws_s3_bucket.backups, aws_s3_bucket_versioning.backups,
+***REMOVED*** aws_s3_bucket_public_access_block.backups — all removed.
+***REMOVED*** Lifecycle configuration was also commented out (Hetzner doesn't support it).

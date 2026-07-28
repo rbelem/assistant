@@ -2,17 +2,21 @@
 ***REMOVED***
 ***REMOVED*** Convention: all items use `assistant/<kebab-case>` naming.
 ***REMOVED*** One credential per BW item, all Login type (type 1) with value in the password field.
-***REMOVED*** Create these 17 items in your Bitwarden vault before running secrets.yml.
+***REMOVED*** Create these 13 items in your Bitwarden vault before running secrets.yml.
 ***REMOVED***
 ***REMOVED*** Vault: "assistant"
+***REMOVED***
+***REMOVED*** Dropped 2026-07-27: assistant/openrouter-api-key (→ assistant/minimax-api-key),
+***REMOVED*** assistant/lambda-cloud-api-key (Lambda Cloud unused), assistant/restic-backup-password
+***REMOVED*** + assistant/ovh-access-key + assistant/ovh-secret-key (OVH backups deferred).
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 1. assistant/openrouter-api-key
+***REMOVED*** 1. assistant/minimax-api-key
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/openrouter-api-key"
-***REMOVED*** Field: password → <your openrouter API key>
-***REMOVED*** Notes: Get from https://openrouter.ai/keys
+***REMOVED*** Name: "assistant/minimax-api-key"
+***REMOVED*** Field: password → <your minimax.io API key>
+***REMOVED*** Notes: Get from https://minimax.io/ (replaces OpenRouter)
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** 2. assistant/hermes-discord-token
@@ -61,15 +65,7 @@
 ***REMOVED*** Notes: From https://porkbun.com/account/api
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 8. assistant/lambda-cloud-api-key
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/lambda-cloud-api-key"
-***REMOVED*** Field: password → <Lambda API key>
-***REMOVED*** Notes: From https://cloud.lambdalabs.com/api-keys
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 9. assistant/tailscale-authkey
+***REMOVED*** 8. assistant/tailscale-authkey
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
 ***REMOVED*** Name: "assistant/tailscale-authkey"
@@ -77,7 +73,7 @@
 ***REMOVED*** Notes: From https://login.tailscale.com/admin/settings/keys
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 10. assistant/caddy-admin-password
+***REMOVED*** 9. assistant/caddy-admin-password
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
 ***REMOVED*** Name: "assistant/caddy-admin-password"
@@ -85,31 +81,7 @@
 ***REMOVED*** Notes: Used for Caddy API admin endpoint
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 11. assistant/restic-backup-password
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/restic-backup-password"
-***REMOVED*** Field: password → <restic repository password>
-***REMOVED*** Notes: Encryption key for restic backup repository
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 12. assistant/ovh-access-key
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/ovh-access-key"
-***REMOVED*** Field: password → <OVH S3 access key>
-***REMOVED*** Notes: From OVHcloud Control Panel → Object Storage → S3 Credentials
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 13. assistant/ovh-secret-key
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/ovh-secret-key"
-***REMOVED*** Field: password → <OVH S3 secret key>
-***REMOVED*** Notes: From OVHcloud Control Panel → Object Storage → S3 Credentials
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 14. assistant/postgres-password
+***REMOVED*** 10. assistant/postgres-password
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
 ***REMOVED*** Name: "assistant/postgres-password"
@@ -117,7 +89,7 @@
 ***REMOVED*** Notes: Used by n8n and Zitadel; generate with: openssl rand -base64 32
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 15. assistant/vps-ssh-key
+***REMOVED*** 11. assistant/vps-ssh-key
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: SSH Key (type 5)
 ***REMOVED*** Name: "assistant/vps-ssh-key"
@@ -125,7 +97,7 @@
 ***REMOVED*** Notes: Generated once; public key registered in nixos/hosts/agent/default.nix
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 16. assistant/domain-config
+***REMOVED*** 12. assistant/domain-config
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Secure Note (type 2)
 ***REMOVED*** Name: "assistant/domain-config"
@@ -133,10 +105,10 @@
 ***REMOVED***   {"domain":"<your-domain>","subdomains":["hermes","status","n8n","auth"]}
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 17. assistant/tofu-inputs
+***REMOVED*** 13. assistant/tofu-inputs
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Secure Note (type 2)
 ***REMOVED*** Name: "assistant/tofu-inputs"
 ***REMOVED*** Notes body (JSON): arbitrary TF_VAR_* keys plus vps_host, vps_ssh_user, vps_ssh_port.
 ***REMOVED*** Also includes TOFU_STATE_* keys consumed by tofu/tofu-wrapper.sh for the S3 backend.
-***REMOVED*** Also includes storage_access_key and storage_secret_key for the backup bucket.
+***REMOVED*** Also includes storage_access_key and storage_secret_key for the state bucket.
