@@ -7,7 +7,7 @@ IaC repo for a self-hosted AI agent runtime (Hermes + Headroom) on OVHcloud VPS 
 ***REMOVED******REMOVED*** Architecture snapshot
 
 ```
-Local: opencode → Headroom(:8787) → OpenRouter
+Local: opencode → Headroom(:8787) → minimax.io
 VPS:   Caddy(host) → NodePort → k3s { Hermes Agent, Headroom proxy, Uptime Kuma, n8n, Zitadel }
 ```
 
@@ -42,7 +42,7 @@ bw login
 bw unlock --raw > /root/.bw_session_token
 ```
 
-The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` and writes to k8s Secrets + `/etc/restic/env` + `/etc/tailscale/authkey`.
+The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` and writes to k8s Secrets + `/etc/tailscale/authkey`.
 
 **k8s manifests:** rsync to `/opt/k8s/` on VPS, then `kubectl apply -f /opt/k8s/manifests/hermes/` etc. Namespaces are managed by Ansible (`namespace_list` in `ansible/inventory/hosts.yml`).
 
@@ -50,9 +50,9 @@ The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` and writ
 
 | Path | Purpose |
 |------|---------|
-| `tofu/main.tf` | OVH VPS + DNS A record (agent.${DOMAIN}) + S3 buckets. Uses `plan = []` list syntax, not block syntax |
+| `tofu/main.tf` | OVH VPS + DNS A record (agent.${DOMAIN}) + S3 state bucket. Uses `plan = []` list syntax, not block syntax |
 | `tofu/variables.tf` | Uses `vps_display_name`, `vps_plan_code`, `vps_datacenter`, `ssh_public_key` + `vps_image_id` (both required together) |
-| `ansible/playbooks/secrets.yml` | Bitwarden → k8s Secret sync. Fetches 17 items, creates 4 secrets (hermes + n8n + postgres + zitadel; postgres-secrets duplicated to n8n+auth) |
+| `ansible/playbooks/secrets.yml` | Bitwarden → k8s Secret sync. Fetches 13 items, creates 4 secrets (hermes + n8n + postgres + zitadel; postgres-secrets duplicated to n8n+auth) |
 | `ansible/playbooks/deploy.yml` | kubectl apply from /opt/k8s/. Waits for rollout. Idempotent |
 | `k8s/helmfile.yaml` | Helm releases: PostgreSQL, n8n, Zitadel |
 | `k8s/helm/postgres-values.yaml` | Bitnami PostgreSQL values for shared n8n+Zitadel use |
@@ -60,27 +60,25 @@ The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` and writ
 | `k8s/helm/zitadel-values.yaml` | Zitadel Helm chart values |
 | `ansible/inventory/hosts.yml` | Ansible inventory with `namespace_list` (source of truth for k8s namespaces) |
 | `k8s/manifests/hermes/deployment.yaml` | Hermes: 1 replica, Recreate strategy (PVC), probes, 2CPU/4Gi limits |
-| `k8s/manifests/hermes/configmap.yaml` | Hermes config: Discord gateway, DeepSeek V4 Flash model, OCR skill |
+| `k8s/manifests/hermes/configmap.yaml` | Hermes config: Discord gateway, MiniMax-M3 model, OCR skill |
 | `k8s/manifests/headroom/service.yaml` | ClusterIP in hermes namespace |
 | `k8s/manifests/hermes/service.yaml` | NodePort 30080 |
 | `scripts/deploy.sh` | Phase-aware deploy pipeline. Source of truth for deploy order |
 
 ***REMOVED******REMOVED*** Secrets (Bitwarden vault: `${PROJECT_NAME}`)
 
-17 items in vault (all named `assistant/<kebab-case>`, one credential per item). The `secrets.yml` playbook fetches them by name. See `ansible/vault.yml` for exact field names. Key items: `assistant/openrouter-api-key`, `assistant/hermes-discord-token`, `assistant/tailscale-authkey`, `assistant/restic-backup-password`, `assistant/ovh-access-key`.
+13 items in vault (all named `assistant/<kebab-case>`, one credential per item). The `secrets.yml` playbook fetches them by name. See `ansible/vault.yml` for exact field names. Key items: `assistant/minimax-api-key`, `assistant/hermes-discord-token`, `assistant/tailscale-authkey`.
 
 ***REMOVED******REMOVED*** Operations
 
 - Status: `./scripts/deploy.sh status`
-- Update workloads: `ansible-playbook -i inventory/hosts.yml playbooks/update.yml` (does pre/post restic backup + rollout restart)
+- Update workloads: `ansible-playbook -i inventory/hosts.yml playbooks/update.yml` (does rollout restart)
 - NixOS update: `nixos-rebuild switch --flake path:$NIX_CONFIG_DIR#agent --target-host root@agent.${DOMAIN} --upgrade` (from nix-config repo)
-- Backup: systemd timer runs daily restic to an S3-compatible backup target. Retention 7d/4w/3m
-- Manual backup: `ssh root@agent.${DOMAIN} 'systemctl start restic-backups-daily'`
-- Destroy: `./scripts/deploy.sh destroy` (backup first!)
+- Destroy: `./scripts/deploy.sh destroy`
 
-***REMOVED******REMOVED*** OCR (Baidu Unlimited-OCR on Lambda Cloud)
+***REMOVED******REMOVED*** OCR (Baidu Unlimited-OCR on Lambda Cloud) — DEFERRED
 
-On-demand GPU OCR for images and PDFs. Managed via OpenTofu in `tofu/lambda.tf`.
+On-demand GPU OCR for images and PDFs. Lambda Cloud dropped 2026-07-27; OCR skill stays as dead config. Managed via OpenTofu in `tofu/lambda.tf` (disabled).
 
 ***REMOVED******REMOVED******REMOVED*** CLI
 
@@ -99,9 +97,9 @@ instance. Instance auto-terminates after 5 min idle (`--keep` to hold).
 Hermes has an `ocr` skill (`skills/ocr.md`). Send a file attachment on Discord
 and say "extract text from this" — Hermes invokes the skill automatically.
 
-***REMOVED******REMOVED******REMOVED*** Requirements
+***REMOVED******REMOVED******REMOVED*** Requirements (DEFERRED — Lambda Cloud dropped)
 
-- `LAMBDA_CLOUD_API_KEY` env var
+- `LAMBDA_CLOUD_API_KEY` env var (no longer provisioned)
 - SSH key in Lambda Cloud (managed via Tofu `tofu/lambda.tf`)
 - GPU instance types: `gpu_1x_a10` (24GB, ~$0.60/hr) or `gpu_1x_l40s` (48GB, ~$0.90/hr)
 
@@ -114,4 +112,4 @@ and say "extract text from this" — Hermes invokes the skill automatically.
 - **NixOS locale** uses `en_GB.UTF-8` default with `pt_BR.UTF-8` overrides for regional fields. This matches the user's nix-config convention.
 - **Headroom runs in two places**: local machine (wraps opencode via `headroom wrap opencode`) and VPS (k3s deployment that Hermes routes through).
 - **DNS propagation** on OVH is slow (hours). Use the raw IP for initial deploy.
-- **Lambda GPU instance is NOT always running** — it's managed as an on-demand resource. Set `ocr_enabled = true` in Tofu before `apply`, or use `scripts/ocr.sh` which handles the lifecycle automatically.
+- **Lambda GPU instance is NOT always running** — Lambda Cloud dropped 2026-07-27. OCR skill stays as dead config.

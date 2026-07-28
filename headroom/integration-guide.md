@@ -19,7 +19,7 @@ LOCAL MACHINE                          VPS (k3s)
        │                                   │
        ▼                                   ▼
 ┌─────────────┐                     ┌──────────────┐
-│  OpenRouter │                     │  OpenRouter  │
+│  minimax.io │                     │  minimax.io  │
 │  (upstream) │                     │  (upstream)  │
 └─────────────┘                     └──────────────┘
 ```
@@ -30,10 +30,10 @@ When you run `headroom wrap opencode`, it does two things:
 
 1. Starts the Headroom proxy on `127.0.0.1:8787`
 2. Patches opencode's config to point `base_url` at `http://127.0.0.1:8787` instead
-   of `https://openrouter.ai/api/v1`
+   of `https://api.minimax.io/v1`
 
-opencode thinks it's talking to OpenRouter. It's actually talking to Headroom.
-Headroom compresses the request, forwards it to OpenRouter, compresses the response,
+opencode thinks it's talking to minimax.io. It's actually talking to Headroom.
+Headroom compresses the request, forwards it to minimax.io, compresses the response,
 and sends it back.
 
 To verify the config was patched:
@@ -53,8 +53,8 @@ Hermes doesn't need `headroom wrap`. Instead, configure its `base_url` directly:
 ***REMOVED*** In Hermes's LLM config
 llm:
   base_url: http://headroom-proxy:8787   ***REMOVED*** k8s service name, or localhost if same pod
-  api_key: ${OPENROUTER_API_KEY}
-  model: openrouter/your-model
+  api_key: ${MINIMAX_API_KEY}
+  model: minimax/MiniMax-M3
 ```
 
 The Headroom proxy is deployed as a k8s Deployment/Service. Hermes routes through
@@ -122,7 +122,7 @@ lsof -i :8787
 ***REMOVED*** Verify the config was patched
 opencode config show | grep base_url
 
-***REMOVED*** If it still points to OpenRouter directly, re-run wrap
+***REMOVED*** If it still points to minimax.io directly, re-run wrap
 headroom wrap opencode
 
 ***REMOVED*** Or manually set it:

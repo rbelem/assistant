@@ -45,16 +45,6 @@ output "state_bucket_arn" {
   value       = aws_s3_bucket.tofu_state.arn
 }
 
-output "backup_bucket" {
-  description = "S3 bucket name for restic backups"
-  value       = aws_s3_bucket.backups.bucket
-}
-
-output "backup_bucket_arn" {
-  description = "ARN of the backup bucket"
-  value       = aws_s3_bucket.backups.arn
-}
-
 output "storage_endpoint" {
   description = "S3-compatible Object Storage endpoint URL (sourced from vault)"
   value       = var.storage_endpoint
@@ -66,8 +56,9 @@ output "ssh_command" {
 }
 
 # -----------------------------------------------------------------------------
-# Lambda Cloud (OCR)
+# Lambda Cloud (OCR) — DEFERRED
 # -----------------------------------------------------------------------------
+# Lambda Cloud dropped 2026-07-27 (OCR skill unused).
 
 # output "ocr_instance_ip" {
 #   description = "Public IP of the Lambda OCR GPU instance"

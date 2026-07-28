@@ -9,8 +9,8 @@ proxy:
   host: 127.0.0.1      ***REMOVED*** local only — no external access
 
   upstreams:
-    - name: openrouter
-      base_url: https://openrouter.ai/api/v1
+    - name: minimax
+      base_url: https://api.minimax.io/v1
       default: true
 
 compression:

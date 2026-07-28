@@ -22,7 +22,7 @@
 #   VPS_HOST=203.0.113.42 DOMAIN=example.com \
 #     PROJECT_NAME=assistant \
 #     SUBDOMAINS_JSON='["app","www"]' \
-#     TOFU_INPUTS_JSON='{"vps_plan_code":"KVM 4","datacenter":"gra","vps_image_id":"...","state_bucket_name":"...-tofu-state","backup_bucket_name":"...-backups","storage_region":"gra","storage_endpoint":"https://s3.gra.io.REDACTED-OVH-DOMAIN","storage_access_key":"...","storage_secret_key":"...","ssh_public_key":"...","vps_os":"debian-12","vps_display_name":"agent"}' \
+#     TOFU_INPUTS_JSON='{"vps_plan_code":"KVM 4","datacenter":"gra","vps_image_id":"...","state_bucket_name":"...-tofu-state","storage_region":"gra","storage_endpoint":"https://s3.gra.io.REDACTED-OVH-DOMAIN","storage_access_key":"...","storage_secret_key":"...","ssh_public_key":"...","vps_os":"debian-12","vps_display_name":"agent"}' \
 #     scripts/populate-vault.sh
 #
 # After successful run: scripts/fetch_vault.sh --check  # validate schema
@@ -179,7 +179,7 @@ echo "  bw get item 'assistant/tofu-inputs' | jq -r '.notes | fromjson'"
 echo
 echo "Required TOFU_INPUTS_JSON keys (for full deploy):"
 echo '  vps_plan_code, datacenter, vps_image_id, vps_os, vps_display_name,'
-echo '  ssh_public_key, state_bucket_name, backup_bucket_name, storage_region,'
+echo '  ssh_public_key, state_bucket_name, storage_region,'
 echo '  storage_endpoint, storage_access_key, storage_secret_key,'
 echo '  tofu_state_bucket, tofu_state_region, tofu_state_endpoint,'
 echo '  tofu_state_access_key, tofu_state_secret_key'

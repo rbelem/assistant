@@ -39,9 +39,9 @@ spec:
                 name: hermes-secrets
           env:
             - name: HERMES_LLM_PROVIDER
-              value: "openrouter"
-            - name: HERMES_OPENROUTER_BASE_URL
-              value: "https://openrouter.ai/api/v1"
+              value: "minimax"
+            - name: HERMES_MINIMAX_BASE_URL
+              value: "https://api.minimax.io/v1"
             - name: HERMES_MEMORY_DIR
               value: "/data/memory"
             - name: HERMES_SKILLS_DIR

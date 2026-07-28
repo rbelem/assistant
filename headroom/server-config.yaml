@@ -1,7 +1,7 @@
 ***REMOVED*** Headroom VPS Proxy Config
 ***REMOVED*** Deployed alongside Hermes Agent on k3s
 ***REMOVED***
-***REMOVED*** This proxy sits between Hermes and the upstream LLM API (OpenRouter).
+***REMOVED*** This proxy sits between Hermes and the upstream LLM API (minimax.io).
 ***REMOVED*** All traffic is compressed before hitting the LLM, saving 60-95% of tokens.
 
 proxy:
@@ -12,8 +12,8 @@ proxy:
   ***REMOVED*** Upstream LLM endpoints to compress traffic for.
   ***REMOVED*** The proxy forwards compressed requests to these endpoints.
   upstreams:
-    - name: openrouter
-      base_url: https://openrouter.ai/api/v1
+    - name: minimax
+      base_url: https://api.minimax.io/v1
       default: true
 
 compression:

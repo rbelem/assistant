@@ -70,11 +70,10 @@ resource "porkbun_dns_record" "svc" {
 }
 
 # -----------------------------------------------------------------------------
-# Object Storage Buckets (S3-compatible)
+# Object Storage — State Bucket Only
 # -----------------------------------------------------------------------------
-# Two buckets:
-#   1. State storage — OpenTofu remote backend
-#   2. Backup storage — restic encrypted backups
+# Backup bucket removed 2026-07-27 (restic backups deferred).
+# Only the tofu state bucket remains.
 # -----------------------------------------------------------------------------
 
 # --- State bucket (must exist before `tofu init`, import if pre-existing) ---
@@ -111,48 +110,7 @@ resource "aws_s3_bucket" "tofu_state" {
 #   restrict_public_buckets = true
 # }
 
-# --- Backup bucket for restic ---
-resource "aws_s3_bucket" "backups" {
-  bucket = var.backup_bucket_name
-}
-
-resource "aws_s3_bucket_versioning" "backups" {
-  bucket = aws_s3_bucket.backups.id
-
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_public_access_block" "backups" {
-  bucket = aws_s3_bucket.backups.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-# Lifecycle: expire old backup versions after 90 days
-# Commented out: Hetzner Object Storage does not support S3 lifecycle configurations.
-# Configure backup retention via restic forget policies in nix-config backup.nix instead.
-# resource "aws_s3_bucket_lifecycle_configuration" "backups" {
-#   bucket = aws_s3_bucket.backups.id
-#
-#   rule {
-#     id     = "expire-old-backups"
-#     status = "Enabled"
-#
-#     filter {
-#       prefix = ""
-#     }
-#
-#     expiration {
-#       days = 90
-#     }
-#
-#     noncurrent_version_expiration {
-#       noncurrent_days = 30
-#     }
-#   }
-# }
+# --- Backup bucket removed 2026-07-27 (restic backups deferred) ---
+# Previously: aws_s3_bucket.backups, aws_s3_bucket_versioning.backups,
+# aws_s3_bucket_public_access_block.backups — all removed.
+# Lifecycle configuration was also commented out (Hetzner doesn't support it).

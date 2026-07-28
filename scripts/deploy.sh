@@ -6,10 +6,8 @@
 #
 # Prerequisites:
 #   - OVH API credentials (OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY)
-#   - OVH Object Storage credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
 #   - Porkbun API credentials (PORKBUN_API_KEY, PORKBUN_SECRET_API_KEY)
-#   - Lambda Cloud API key (LAMBDA_CLOUD_API_KEY) for OCR GPU instances
-#   - SSH key uploaded to OVH account & Lambda Cloud
+#   - SSH key uploaded to OVH account
 #   - Bitwarden CLI installed and logged in
 #
 # Usage:

@@ -162,6 +162,8 @@ variable "ssh_port" {
 # -----------------------------------------------------------------------------
 # Object Storage Configuration
 # -----------------------------------------------------------------------------
+# OVH backup bucket removed (2026-07-27); tofu state bucket stays.
+# -----------------------------------------------------------------------------
 
 variable "state_bucket_name" {
   description = "S3 bucket name for OpenTofu remote state. Source: Bitwarden assistant/tofu-inputs"
@@ -170,16 +172,6 @@ variable "state_bucket_name" {
   validation {
     condition     = can(regex("^[a-z0-9-]+$", var.state_bucket_name))
     error_message = "State bucket name must contain only lowercase letters, numbers, and hyphens."
-  }
-}
-
-variable "backup_bucket_name" {
-  description = "S3 bucket name for restic backups. Source: Bitwarden assistant/tofu-inputs"
-  type        = string
-
-  validation {
-    condition     = can(regex("^[a-z0-9-]+$", var.backup_bucket_name))
-    error_message = "Backup bucket name must contain only lowercase letters, numbers, and hyphens."
   }
 }
 
@@ -226,8 +218,10 @@ variable "storage_secret_key" {
 }
 
 # -----------------------------------------------------------------------------
-# Lambda Cloud (OCR GPU Instance)
+# Lambda Cloud (OCR GPU Instance) — DEFERRED
 # -----------------------------------------------------------------------------
+# Lambda Cloud dropped 2026-07-27 (OCR skill unused). Variables kept as
+# placeholders so tofu/lambda.tf can be re-enabled without variable changes.
 
 variable "ocr_enabled" {
   description = "Enable the OCR GPU instance in Tofu (set to true when OCR is needed)"
@@ -251,11 +245,4 @@ variable "ocr_region" {
   description = "Lambda region to launch the OCR instance"
   type        = string
   default     = "us-west-2"
-}
-
-variable "lambda_ssh_public_key" {
-  description = "SSH public key to register with Lambda Cloud for OCR instance access"
-  type        = string
-  sensitive   = true
-  default     = ""
 }

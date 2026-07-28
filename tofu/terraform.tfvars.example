@@ -28,9 +28,8 @@ vps_os           = "Debian 12"
 ssh_public_key = "ssh-ed25519 AAAA..."
 vps_image_id   = "00000000-0000-0000-0000-000000000000"
 
-***REMOVED*** S3-compatible Object Storage buckets for Tofu state and restic backups
+***REMOVED*** S3-compatible Object Storage bucket for Tofu state (backups deferred)
 state_bucket_name  = "my-agent-tofu-state"
-backup_bucket_name = "my-agent-backups"
 
 ***REMOVED*** S3-compatible Object Storage connection settings
 storage_region     = "<your-region>"

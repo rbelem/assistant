@@ -21,10 +21,10 @@ TLS via Caddy Let's Encrypt using **DNS-01 challenge** with Porkbun API — wild
 | Zitadel | `auth.${DOMAIN}` | Tailscale-gated |
 
 ***REMOVED******REMOVED*** Hermes
-Self-hosted AI agent by Nous Research. Agentic tasks: memory, skills, scheduling, multi-platform gateways. Initial gateway: **Discord only** (no Telegram, Signal, or Matrix at launch). Runs in k3s namespace `hermes`. LLM calls route through Headroom proxy via `OPENROUTER_BASE_URL`. Default model: **DeepSeek V4 Flash** (`deepseek/deepseek-v4-flash`) via OpenRouter.
+Self-hosted AI agent by Nous Research. Agentic tasks: memory, skills, scheduling, multi-platform gateways. Initial gateway: **Discord only** (no Telegram, Signal, or Matrix at launch). Runs in k3s namespace `hermes`. LLM calls route through Headroom proxy via `MINIMAX_BASE_URL`. Default model: **MiniMax-M3** (`minimax/MiniMax-M3`) via minimax.io.
 
 ***REMOVED******REMOVED*** Headroom
-Token compression proxy for LLM calls. Runs as an internal ClusterIP-only service inside the `hermes` namespace — consumed by Hermes via `OPENROUTER_BASE_URL`. No external exposure.
+Token compression proxy for LLM calls. Runs as an internal ClusterIP-only service inside the `hermes` namespace — consumed by Hermes via `MINIMAX_BASE_URL`. No external exposure.
 
 ***REMOVED******REMOVED*** n8n
 Self-hosted workflow automation (node-based编排, 400+ integrations). Additive to Hermes — handles external API integrations, notifications, data pipelines while Hermes handles agentic tasks. Runs in k3s namespace `n8n`. Deployed via Helm chart (managed through Helmfile). 2Gi PVC for workflow data. PostgreSQL via shared Bitnami chart (5Gi PVC, shared with Zitadel). Encryption key stored in Bitwarden vault. Authenticated via Zitadel OIDC.
@@ -42,4 +42,4 @@ Database for n8n and Zitadel (shared Bitnami Helm chart, separate databases). 5G
 Declarative Helm release manager. Manages Bitnami PostgreSQL, n8n, and Zitadel Helm releases. Config in `k8s/helmfile.yaml` with values in `k8s/helm/`. Used alongside raw `kubectl apply` for non-Helm manifests (Hermes, Headroom, Uptime Kuma in `k8s/manifests/`).
 
 ***REMOVED******REMOVED*** OCR
-Text extraction from images/PDFs using Baidu Unlimited-OCR model deployed on Lambda Cloud GPU instances (`gpu_1x_a10` or `gpu_1x_l40s`). On-demand lifecycle: Tofu provisions the instance, `scripts/ocr.sh` manages the full flow (launch → deploy model → OCR → return text → terminate). Hermes can invoke via the `ocr` skill. OpenAI-compatible API via vLLM Docker image `vllm/vllm-openai:unlimited-ocr`. Requires `LAMBDA_CLOUD_API_KEY`.
+Text extraction from images/PDFs using Baidu Unlimited-OCR model. Lambda Cloud dropped 2026-07-27; OCR skill stays as dead config. On-demand lifecycle was: Tofu provisions the instance, `scripts/ocr.sh` manages the full flow. Hermes can invoke via the `ocr` skill (currently non-functional).

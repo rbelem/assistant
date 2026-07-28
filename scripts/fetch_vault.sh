@@ -118,15 +118,13 @@ assert_non_empty() {
   if [[ -z "$value" || "$value" == "null" ]]; then
     echo "Bitwarden field empty: $label" >&2
     echo "  check items:" >&2
-    echo "    1. assistant/openrouter-api-key       2. assistant/hermes-discord-token" >&2
+    echo "    1. assistant/minimax-api-key          2. assistant/hermes-discord-token" >&2
     echo "    3. assistant/n8n-encryption-key       4. assistant/zitadel-masterkey" >&2
     echo "    5. assistant/zitadel-admin-password   6. assistant/porkbun-api-key" >&2
-    echo "    7. assistant/porkbun-secret-api-key   8. assistant/lambda-cloud-api-key" >&2
-    echo "    9. assistant/tailscale-authkey        10. assistant/caddy-admin-password" >&2
-    echo "    11. assistant/restic-backup-password  12. assistant/ovh-access-key" >&2
-    echo "    13. assistant/ovh-secret-key          14. assistant/postgres-password" >&2
-    echo "    15. assistant/vps-ssh-key             16. assistant/domain-config" >&2
-    echo "    17. assistant/tofu-inputs" >&2
+    echo "    7. assistant/porkbun-secret-api-key   8. assistant/tailscale-authkey" >&2
+    echo "    9. assistant/caddy-admin-password     10. assistant/postgres-password" >&2
+    echo "    11. assistant/vps-ssh-key             12. assistant/domain-config" >&2
+    echo "    13. assistant/tofu-inputs" >&2
     exit 1
   fi
 }
@@ -280,7 +278,7 @@ tmp="$(mktemp)"
              and .key != "tofu_state_endpoint" and .key != "tofu_state_access_key"
              and .key != "tofu_state_secret_key"
              and .key != "state_bucket_name" and .key != "storage_region"
-             and .key != "storage_endpoint" and .key != "backup_bucket_name")
+              and .key != "storage_endpoint")
     | "\(.key) = \(.value | tojson)"
   '
   # Aliases: bw uses tofu_state_* prefix; tofu/variables.tf uses storage_* / state_bucket_name.
@@ -288,11 +286,9 @@ tmp="$(mktemp)"
   STATE_BUCKET="$(echo "$TOFU_JSON" | jq -r '.tofu_state_bucket // .state_bucket_name // empty')"
   STATE_REGION="$(echo "$TOFU_JSON" | jq -r '.tofu_state_region // .storage_region // empty')"
   STATE_ENDPOINT="$(echo "$TOFU_JSON" | jq -r '.tofu_state_endpoint // .storage_endpoint // empty')"
-  BACKUP_BUCKET="$(echo "$TOFU_JSON" | jq -r '.backup_bucket_name // "assistant-backups"')"
   printf 'state_bucket_name = %s\n' "$(jq -n --arg v "$STATE_BUCKET" '$v')"
   printf 'storage_region    = %s\n' "$(jq -n --arg v "$STATE_REGION" '$v')"
   printf 'storage_endpoint  = %s\n' "$(jq -n --arg v "$STATE_ENDPOINT" '$v')"
-  printf 'backup_bucket_name = %s\n' "$(jq -n --arg v "$BACKUP_BUCKET" '$v')"
   printf 'ssh_public_key    = %s\n' "$(jq -n --arg v "$SSH_PUBLIC_KEY" '$v')"
   printf 'porkbun_api_key        = %s\n' "$(jq -Rn --arg v "$PORKBUN_API_KEY" '$v')"
   printf 'porkbun_secret_api_key = %s\n' "$(jq -Rn --arg v "$PORKBUN_SECRET_API_KEY" '$v')"
@@ -304,9 +300,7 @@ chmod 600 "$TFVARS_FILE"
 
 # runtime-config.json: read by Nix modules via builtins.fromJSON
 # (Option A per prior Oracle review — gitignored file visible via `path:` flakeref).
-# Extract backup S3 config from tofu-inputs (consumed by nix-config backup.nix)
-BACKUP_S3_ENDPOINT="$(echo "$TOFU_JSON" | jq -r '.storage_endpoint // empty')"
-BACKUP_S3_BUCKET="$(echo "$TOFU_JSON" | jq -r '.backup_bucket_name // empty')"
+# Backup S3 config removed 2026-07-27 (restic backups deferred).
 
 jq -n \
   --arg domain "$DOMAIN" \
@@ -316,8 +310,6 @@ jq -n \
   --argjson subdomains "$SUBDOMAINS_JSON" \
   --argjson tofu "$TOFU_JSON" \
   --arg ssh_private_key "$SSH_PRIVATE_KEY" \
-  --arg backup_s3_endpoint "$BACKUP_S3_ENDPOINT" \
-  --arg backup_s3_bucket "$BACKUP_S3_BUCKET" \
   '{
      domain:     $domain,
      subdomains: $subdomains,
@@ -325,13 +317,7 @@ jq -n \
      ssh_user:   $ssh_user,
      ssh_port:   $ssh_port,
      ssh_private_key: $ssh_private_key,
-     tofu:       $tofu,
-     backup: {
-       s3: {
-         endpoint: $backup_s3_endpoint,
-         bucket:   $backup_s3_bucket
-       }
-     }
+     tofu:       $tofu
    }' \
   > "$RUNTIME_JSON"
 chmod 600 "$RUNTIME_JSON"
