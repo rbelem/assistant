@@ -250,6 +250,18 @@ tmp="$(mktemp)"
              or .key == "tofu_state_secret_key")
     | "export \(.key | ascii_upcase)=\(.value | tostring)"
   '
+
+  ***REMOVED*** Aliases: the BW note stores Hetzner Object Storage creds as storage_*, but
+  ***REMOVED*** the state bucket lives on the same Hetzner account — tofu/tofu-wrapper.sh
+  ***REMOVED*** reads TOFU_STATE_ACCESS_KEY / TOFU_STATE_SECRET_KEY from env to write
+  ***REMOVED*** .rendered/backend.conf. Without these aliases the wrapper fails with
+  ***REMOVED*** "unbound variable" (set -u). Precedence: explicit tofu_state_* wins
+  ***REMOVED*** when present; storage_* is the fallback (forward-compatible with
+  ***REMOVED*** adding tofu_state_* fields to the BW note later).
+  STATE_ACCESS_KEY="$(echo "$TOFU_JSON" | jq -r '.tofu_state_access_key // .storage_access_key // empty')"
+  STATE_SECRET_KEY="$(echo "$TOFU_JSON" | jq -r '.tofu_state_secret_key // .storage_secret_key // empty')"
+  printf 'export %s=%q\n' TOFU_STATE_ACCESS_KEY "$STATE_ACCESS_KEY"
+  printf 'export %s=%q\n' TOFU_STATE_SECRET_KEY "$STATE_SECRET_KEY"
 } > "$tmp"
 mv "$tmp" "$ENV_FILE"
 chmod 600 "$ENV_FILE"
