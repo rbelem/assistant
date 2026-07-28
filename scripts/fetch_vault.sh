@@ -290,7 +290,10 @@ tmp="$(mktemp)"
              and .key != "tofu_state_endpoint" and .key != "tofu_state_access_key"
              and .key != "tofu_state_secret_key"
              and .key != "state_bucket_name" and .key != "storage_region"
-              and .key != "storage_endpoint")
+              and .key != "storage_endpoint"
+              and .key != "vps_ssh_user" and .key != "vps_ssh_port" and .key != "vps_host"
+              and .key != "initial_ssh_user" and .key != "hcloud_ssh_key_fingerprint"
+              and .key != "hcloud_image_filter")
     | "\(.key) = \(.value | tojson)"
   '
   # Aliases: bw uses tofu_state_* prefix; tofu/variables.tf uses storage_* / state_bucket_name.

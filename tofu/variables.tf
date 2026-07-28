@@ -44,7 +44,7 @@ variable "hcloud_location" {
   }
 }
 
-variable "hcloud_image" {
+variable "hcloud_image_filter" {
   description = "Image name or numeric ID. Ubuntu 26.04 (because Hetzner has no native NixOS). nixos-infect runs after first boot via Ansible"
   type        = string
   default     = "ubuntu-26.04"
@@ -90,13 +90,13 @@ variable "domain_name" {
 }
 
 variable "dns_ttl" {
-  description = "DNS record TTL in seconds (minimum 60)"
+  description = "DNS record TTL in seconds (Porkbun minimum 600)"
   type        = number
-  default     = 300
+  default     = 600
 
   validation {
-    condition     = var.dns_ttl >= 60 && var.dns_ttl <= 86400
-    error_message = "TTL must be between 60 and 86400 seconds."
+    condition     = var.dns_ttl >= 600 && var.dns_ttl <= 86400
+    error_message = "TTL must be between 600 and 86400 seconds (Porkbun rejects <600)."
   }
 }
 
