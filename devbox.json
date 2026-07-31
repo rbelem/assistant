@@ -5,7 +5,6 @@
     "gh@latest",
     "git@latest",
     "jq@latest",
-    "bitwarden-cli@latest",
     "nix@latest",
     "gnused@latest",
     "coreutils@latest",
