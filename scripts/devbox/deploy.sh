@@ -93,10 +93,10 @@ echo "  ✓ gitleaks passed"
 
 # ---- Phase 5: render vault.env ----
 echo "==> Phase 5: render vault.env from Bitwarden"
-if [[ -z "${BW_SESSION:-}" ]]; then
+if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
   echo
-  echo "BW_SESSION is not set. Run:"
-  echo "  export BW_SESSION=\$(bw unlock --raw)"
+  echo "bitw login tokens not found. Run:"
+  echo "  bitw login"
   echo "Then re-run this script."
   exit 1
 fi

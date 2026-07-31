@@ -6,12 +6,17 @@
 # Secure Note). Trims to SNAPSHOT_HISTORY_MAX entries (default 10) to keep
 # note size bounded. Captures backend URL + git SHA for cross-reference.
 #
+# Uses the `bitw` CLI (rbelem fork). bitw auto-unlocks via libsecret keyring
+# (entry "bitwarden master-password"), or the PASSWORD env var, or an
+# interactive prompt. No session tokens, no BW_SESSION.
+#
 # Usage:
 #   scripts/snapshot-state.sh              # snapshot current state
 #   scripts/snapshot-state.sh --help       # this message
 #
 # Environment:
-#   BW_SESSION              required (bw unlock --raw)
+#   PASSWORD                optional (bitw reads it for master password)
+#                           On VPS: /etc/agent/bw_master_pw is read as fallback
 #   SNAPSHOT_BW_ITEM        BW item name (default: assistant/tofu-state-snapshot)
 #   SNAPSHOT_HISTORY_MAX    max snapshots to keep (default: 10)
 #   TOFU_DIR                path to tofu/ directory (default: ../tofu relative to script)
@@ -22,7 +27,7 @@
 #   2  BW unavailable
 #   3  item missing
 #   4  tofu state pull failed
-#   5  bw write failed
+#   5  bitw write failed
 
 set -euo pipefail
 
@@ -68,52 +73,38 @@ need() {
   command -v "$1" >/dev/null 2>&1 \
     || { err "missing required binary: $1"; exit "$EXIT_USAGE"; }
 }
-need bw
+need bitw
 need jq
 need python3
 need base64
 
-# BW_SESSION resolution: env first, then ansible-managed file, then keyring auto-unlock
-BW_SESSION="${BW_SESSION:-}"
-
-# Fallback 1: ansible-managed EnvironmentFile (VPS deployment)
-if [[ -z "$BW_SESSION" && -r /etc/agent/bw_session.env ]]; then
-  # shellcheck source=/etc/agent/bw_session.env
-  BW_SESSION="$(. /etc/agent/bw_session.env && echo "$BW_SESSION")"
-  export BW_SESSION
+# PASSWORD resolution: env first, then VPS file, then libsecret auto-unlock
+if [[ -z "${PASSWORD:-}" && -r /etc/agent/bw_master_pw ]]; then
+  export PASSWORD="$(cat /etc/agent/bw_master_pw)"
 fi
 
-# Fallback 2: keyring auto-unlock (local development)
-if [[ -z "$BW_SESSION" ]] && command -v secret-tool >/dev/null 2>&1; then
-  if master_pw="$(secret-tool lookup bitwarden master-password 2>/dev/null)" \
-     && [[ -n "$master_pw" ]]; then
-    if BW_SESSION="$(bw unlock --raw "$master_pw" 2>/dev/null)" \
-       && [[ -n "$BW_SESSION" ]]; then
-      export BW_SESSION
-    fi
-    unset master_pw
+# bitw preflight: verify login tokens exist
+if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
+  err "bitw login tokens not found."
+  err "Run: bitw login"
+  err "Or store master password: secret-tool store --label=\"Bitwarden\" bitwarden master-password"
+  exit "$EXIT_BW_UNAVAILABLE"
+fi
+
+# Sync vault cache (idempotent, fast)
+bitw sync 2>/dev/null || true
+
+# Verify bitw can access the vault (doubles as session validity check)
+if ! bitw get --json "$SNAPSHOT_BW_ITEM" >/dev/null 2>&1; then
+  # Could be missing item or unlock failure — check status
+  if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
+    err "bitw session invalid or expired"
+    exit "$EXIT_BW_UNAVAILABLE"
   fi
 fi
 
-if [[ -z "$BW_SESSION" ]]; then
-  err "BW_SESSION not set and /etc/agent/bw_session.env not readable"
-  err "Run: bw unlock --raw > ~/.bw_session_token && export BW_SESSION=\$(cat ~/.bw_session_token)"
-  exit "$EXIT_BW_UNAVAILABLE"
-fi
-
-bw_sesh() { bw --session "$BW_SESSION" "$@"; }
-
-# Sync vault cache (idempotent, fast)
-bw_sesh sync 2>/dev/null || true
-
-# Verify BW session is valid
-if ! bw_sesh list items >/dev/null 2>&1; then
-  err "bw session invalid or expired"
-  exit "$EXIT_BW_UNAVAILABLE"
-fi
-
 # Verify BW item exists (exit code 3 if missing, with first-run hint)
-if ! bw_sesh get item "$SNAPSHOT_BW_ITEM" >/dev/null 2>&1; then
+if ! bitw get --json "$SNAPSHOT_BW_ITEM" >/dev/null 2>&1; then
   err "BW item '$SNAPSHOT_BW_ITEM' not found. See first-run note in --help."
   exit "$EXIT_ITEM_MISSING"
 fi
@@ -187,22 +178,16 @@ SNAPSHOT_ENTRY="$(jq -n \
     byte_size: $byte_size
   }')"
 
-#--- read existing BW item (if exists) -----------------------------------------
+#--- read existing BW item notes -----------------------------------------------
 info "reading existing snapshot item: $SNAPSHOT_BW_ITEM..."
-EXISTING_ITEM_JSON=""
-EXISTING_ITEM_ID=""
-if EXISTING_ITEM_JSON="$(bw_sesh get item "$SNAPSHOT_BW_ITEM" 2>/dev/null)"; then
-  EXISTING_ITEM_ID="$(echo "$EXISTING_ITEM_JSON" | jq -r '.id')"
-  info "found existing item (id: $EXISTING_ITEM_ID)"
-else
+EXISTING_NOTES=""
+if ! EXISTING_NOTES="$(bitw get --field notes "$SNAPSHOT_BW_ITEM" 2>/dev/null)"; then
   warn "item not found: $SNAPSHOT_BW_ITEM"
   err "Create it first with:"
-  err "  bw create item --type 2 --name '$SNAPSHOT_BW_ITEM' --notes '{\"schema_version\":1,\"snapshots\":[]}'"
+  err "  bitw create '$SNAPSHOT_BW_ITEM' --type 2 --notes '{\"schema_version\":1,\"snapshots\":[]}'"
   exit "$EXIT_ITEM_MISSING"
 fi
 
-# Parse existing notes
-EXISTING_NOTES="$(echo "$EXISTING_ITEM_JSON" | jq -r '.notes // ""')"
 if [[ -z "$EXISTING_NOTES" ]]; then
   err "item exists but .notes is empty"
   exit "$EXIT_ITEM_MISSING"
@@ -224,14 +209,9 @@ NEW_NOTES="$(echo "$EXISTING_NOTES" | jq \
 
 #--- write back to BW ----------------------------------------------------------
 info "writing updated snapshot to Bitwarden..."
-TMP_FILE="$(mktemp)"
-trap 'rm -f "$TMP_FILE"' EXIT
 
-# Build the full item JSON for `bw edit`
-echo "$EXISTING_ITEM_JSON" | jq --arg notes "$NEW_NOTES" '.notes = $notes' > "$TMP_FILE"
-
-if ! bw_sesh edit item "$EXISTING_ITEM_ID" < "$TMP_FILE" >/dev/null 2>&1; then
-  err "bw edit item failed"
+if ! bitw edit "$SNAPSHOT_BW_ITEM" --notes "$NEW_NOTES"; then
+  err "bitw edit failed"
   exit "$EXIT_BW_WRITE_FAILED"
 fi
 
@@ -252,6 +232,5 @@ echo "  scripts/restore-state.sh --index N          # specific entry"
 echo
 echo "=== First-run note ==="
 echo "If this is the first snapshot, ensure the BW Secure Note exists:"
-echo "  bw get item '$SNAPSHOT_BW_ITEM' >/dev/null 2>&1 || {"
-echo "    bw get template item | jq '.type=2 | .name=\"$SNAPSHOT_BW_ITEM\" | .notes=\"{\\\"schema_version\\\":1,\\\"snapshots\\\":[]}\"' | bw encode | bw create item"
-echo "  }"
+echo "  bitw get --json '$SNAPSHOT_BW_ITEM' >/dev/null 2>&1 || \\"
+echo "    bitw create '$SNAPSHOT_BW_ITEM' --type 2 --notes '{\"schema_version\":1,\"snapshots\":[]}'"
