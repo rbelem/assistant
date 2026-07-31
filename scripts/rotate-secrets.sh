@@ -5,6 +5,10 @@
 ***REMOVED*** Auto-rotate items (stateless): zitadel-admin-password
 ***REMOVED*** Manual-only items (stateful): restic, n8n-key, postgres, zitadel-masterkey
 ***REMOVED***
+***REMOVED*** Uses the `bitw` CLI (rbelem fork). bitw auto-unlocks via libsecret keyring
+***REMOVED*** (entry "bitwarden master-password"), or the PASSWORD env var, or an
+***REMOVED*** interactive prompt. No session tokens, no BW_SESSION.
+***REMOVED***
 ***REMOVED*** Usage:
 ***REMOVED***   rotate-secrets.sh list                              ***REMOVED*** all items + last rotation
 ***REMOVED***   rotate-secrets.sh status                            ***REMOVED*** list + exit 1 if any past age
@@ -72,7 +76,6 @@ TARGET_ITEM=""
 DRY_RUN=0
 AUTO_YES=0
 I_KNOW=0
-BW_SESSION_ARG=""
 CONFIG_PATH="$DEFAULT_CONFIG"
 
 usage() {
@@ -98,7 +101,6 @@ while [[ $***REMOVED*** -gt 0 ]]; do
     --dry-run)      DRY_RUN=1; shift ;;
     --yes|-y)       AUTO_YES=1; shift ;;
     --i-know-what-im-doing) I_KNOW=1; shift ;;
-    --bw-session)   BW_SESSION_ARG="$2"; shift 2 ;;
     --config)       CONFIG_PATH="$2"; shift 2 ;;
     -h|--help)      usage ;;
     *)              err "unknown arg: $1"; exit "$EXIT_USAGE" ;;
@@ -119,42 +121,29 @@ LOG_FILE="${LOG_FILE:-$LOG_FILE_DEFAULT}"
 KEEP_PER_ITEM="$(echo "$CONFIG_JSON" | jq -r '.backup.keep_per_item // 5')"
 HISTORY_ITEM="$(echo "$CONFIG_JSON" | jq -r '.backup.history_item')"
 
-***REMOVED***--- BW session resolution ----------------------------------------------------
-if [[ -n "$BW_SESSION_ARG" ]]; then
-  BW_SESSION="$BW_SESSION_ARG"
-elif [[ -z "${BW_SESSION:-}" ]] && command -v secret-tool >/dev/null 2>&1; then
-  if master_pw="$(secret-tool lookup bitwarden master-password 2>/dev/null)" \
-     && [[ -n "$master_pw" ]]; then
-    if BW_SESSION="$(bw unlock --raw "$master_pw" 2>/dev/null)" \
-       && [[ -n "$BW_SESSION" ]]; then
-      export BW_SESSION
-    fi
-    unset master_pw
-  fi
+***REMOVED***--- PASSWORD resolution + bitw preflight -------------------------------------
+***REMOVED*** PASSWORD env first, then VPS file fallback, then libsecret auto-unlock.
+if [[ -z "${PASSWORD:-}" && -r /etc/agent/bw_master_pw ]]; then
+  export PASSWORD="$(cat /etc/agent/bw_master_pw)"
 fi
-
-bw_sesh() { bw --session "${BW_SESSION:-}" "$@"; }
 
 ***REMOVED***--- preflight (skip for --help / dry-run list) --------------------------------
 preflight() {
-  command -v bw >/dev/null 2>&1 || { err "bw CLI not found"; exit "$EXIT_BW_UNAVAILABLE"; }
+  command -v bitw >/dev/null 2>&1 || { err "bitw CLI not found"; exit "$EXIT_BW_UNAVAILABLE"; }
   command -v jq >/dev/null 2>&1 || { err "jq not found"; exit "$EXIT_USAGE"; }
   command -v yq >/dev/null 2>&1 || { err "yq not found (https://github.com/mikefarah/yq)"; exit "$EXIT_USAGE"; }
   command -v openssl >/dev/null 2>&1 || { err "openssl not found"; exit "$EXIT_USAGE"; }
 
-  ***REMOVED*** Check BW is unlocked
-  if [[ -z "${BW_SESSION:-}" ]]; then
-    err "BW_SESSION not set. Run: bw unlock --raw > ~/.bw_session_token && export BW_SESSION=\$(cat ~/.bw_session_token)"
+  ***REMOVED*** Check bitw login tokens exist
+  if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
+    err "bitw login tokens not found."
+    err "Run: bitw login"
+    err "Or store master password: secret-tool store --label=\"Bitwarden\" bitwarden master-password"
     exit "$EXIT_BW_UNAVAILABLE"
   fi
 
-  bw_sesh status >/dev/null 2>&1 || {
-    err "bw session invalid or expired"
-    exit "$EXIT_BW_UNAVAILABLE"
-  }
-
   ***REMOVED*** Sync vault cache
-  bw_sesh sync 2>/dev/null || true
+  bitw sync 2>/dev/null || true
 }
 
 ***REMOVED***--- concurrency: flock --------------------------------------------------------
@@ -170,9 +159,7 @@ acquire_lock() {
 ***REMOVED***--- history RMW ---------------------------------------------------------------
 read_history() {
   local payload
-  payload="$(bw_sesh list items 2>/dev/null \
-    | jq -r --arg n "$HISTORY_ITEM" \
-      '.[] | select(.type == 2 and .name == $n) | .notes // ""')"
+  payload="$(bitw get --field notes "$HISTORY_ITEM" 2>/dev/null || true)"
 
   if [[ -z "$payload" ]]; then
     echo "[]"
@@ -195,34 +182,19 @@ read_history() {
 
 write_history() {
   local new_json="$1"
-  local item_id
-  item_id="$(bw_sesh list items 2>/dev/null \
-    | jq -r --arg n "$HISTORY_ITEM" \
-      '.[] | select(.type == 2 and .name == $n) | .id')"
 
-  if [[ -z "$item_id" || "$item_id" == "null" ]]; then
+  ***REMOVED*** Check history item exists
+  if ! bitw get --json "$HISTORY_ITEM" >/dev/null 2>&1; then
     err "history item not found: $HISTORY_ITEM — create it first (Secure Note)"
     exit "$EXIT_ITEM_MISSING"
   fi
 
-  ***REMOVED*** bw edit requires full item JSON via stdin
-  local full_item
-  full_item="$(bw_sesh get item "$item_id")"
-
-  ***REMOVED*** /proc/<pid>/cmdline exposure: bw edit takes JSON as positional arg or stdin.
-  ***REMOVED*** We use stdin via pipe to avoid cmdline exposure. On single-user box this is
-  ***REMOVED*** acceptable; documented risk.
-  local tmp
-  tmp="$(mktemp)"
-  trap 'rm -f "$tmp"' EXIT
-  echo "$new_json" > "$tmp"
-  chmod 600 "$tmp"
-
-  echo "$full_item" | jq --slurpfile notes "$tmp" '.notes = ($notes[0] | tostring)' \
-    | bw_sesh encode | bw_sesh edit item "$item_id" >/dev/null
-
-  rm -f "$tmp"
-  trap - EXIT
+  ***REMOVED*** bitw edit takes --notes directly; no /proc cmdline exposure for secrets
+  ***REMOVED*** (notes are passed as argv, but the history JSON contains no high-value secrets).
+  if ! bitw edit "$HISTORY_ITEM" --notes "$new_json" >/dev/null; then
+    err "bitw edit failed for history item"
+    exit "$EXIT_BW_UNAVAILABLE"
+  fi
 }
 
 ***REMOVED***--- first-run bootstrap -------------------------------------------------------
@@ -239,9 +211,9 @@ bootstrap_item_baseline() {
     return 0  ***REMOVED*** already bootstrapped
   fi
 
-  ***REMOVED*** Seed from BW revisionDate
+  ***REMOVED*** Seed from bitw revisionDate
   local rev_date
-  rev_date="$(bw_sesh get item "$item_name" 2>/dev/null | jq -r '.revisionDate // empty')"
+  rev_date="$(bitw get --json "$item_name" 2>/dev/null | jq -r '.revisionDate // empty')"
 
   if [[ -z "$rev_date" ]]; then
     warn "cannot bootstrap $item_name: revisionDate not available"
@@ -301,10 +273,7 @@ rotate_item() {
   fi
 
   ***REMOVED*** Check BW item exists
-  local bw_item_id
-  bw_item_id="$(bw_sesh list items 2>/dev/null \
-    | jq -r --arg n "$item_name" '.[] | select(.name == $n) | .id')"
-  if [[ -z "$bw_item_id" || "$bw_item_id" == "null" ]]; then
+  if ! bitw get --json "$item_name" >/dev/null 2>&1; then
     err "BW item not found: $item_name"
     exit "$EXIT_ITEM_MISSING"
   fi
@@ -350,49 +319,35 @@ rotate_item() {
 
   ***REMOVED*** Read old value for history
   local old_value old_value_b64
-  old_value="$(bw_sesh get password "$item_name")"
+  old_value="$(bitw get --field password "$item_name")"
   old_value_b64="$(echo -n "$old_value" | base64 -w0)"
 
-  ***REMOVED*** Write new value to BW
-  ***REMOVED*** bw edit requires full item JSON. Read → modify → write back.
-  local full_item updated_item
-  full_item="$(bw_sesh get item "$bw_item_id")"
-  updated_item="$(echo "$full_item" | jq --arg pw "$new_value" '.login.password = $pw')"
-
-  ***REMOVED*** /proc/<pid>/cmdline exposure: passing JSON via stdin pipe, not arg.
-  local tmp
-  tmp="$(mktemp)"
-  trap 'rm -f "$tmp"' EXIT
-  echo "$updated_item" > "$tmp"
-  chmod 600 "$tmp"
-
-  bw_sesh encode < "$tmp" | bw_sesh edit item "$bw_item_id" >/dev/null
-  rm -f "$tmp"
-  trap - EXIT
+  ***REMOVED*** Write new value to BW via --password-stdin (keeps secret out of /proc cmdline)
+  if ! printf '%s' "$new_value" | bitw edit "$item_name" --password-stdin >/dev/null; then
+    err "bitw edit failed for $item_name"
+    exit "$EXIT_BW_UNAVAILABLE"
+  fi
 
   ***REMOVED*** Verify-after-write
   local verify_value
-  verify_value="$(bw_sesh get password "$item_name")"
+  verify_value="$(bitw get --field password "$item_name")"
   if [[ "$verify_value" != "$new_value" ]]; then
     err "VERIFY FAILED for $item_name — new value doesn't match"
     err "attempting rollback..."
 
-    ***REMOVED*** Rollback: restore old value
-    local rollback_item
-    rollback_item="$(echo "$full_item" | jq --arg pw "$old_value" '.login.password = $pw')"
-    tmp="$(mktemp)"
-    trap 'rm -f "$tmp"' EXIT
-    echo "$rollback_item" > "$tmp"
-    chmod 600 "$tmp"
-    bw_sesh encode < "$tmp" | bw_sesh edit item "$bw_item_id" >/dev/null
-    rm -f "$tmp"
-    trap - EXIT
+    ***REMOVED*** Rollback: restore old value via --password-stdin
+    if ! printf '%s' "$old_value" | bitw edit "$item_name" --password-stdin >/dev/null; then
+      err "ROLLBACK FAILED — manual intervention required"
+      err "old value (base64): $old_value_b64"
+      audit_log "$item_name" "rotate" "rollback_failed" "$age" ""
+      exit "$EXIT_ROLLBACK_FAILED"
+    fi
 
     ***REMOVED*** Verify rollback
     local rollback_verify
-    rollback_verify="$(bw_sesh get password "$item_name")"
+    rollback_verify="$(bitw get --field password "$item_name")"
     if [[ "$rollback_verify" != "$old_value" ]]; then
-      err "ROLLBACK FAILED — manual intervention required"
+      err "ROLLBACK VERIFY FAILED — manual intervention required"
       err "old value (base64): $old_value_b64"
       audit_log "$item_name" "rotate" "rollback_failed" "$age" ""
       exit "$EXIT_ROLLBACK_FAILED"
@@ -413,7 +368,7 @@ rotate_item() {
 
   ***REMOVED*** Get new revision
   local new_rev
-  new_rev="$(bw_sesh get item "$item_name" | jq -r '.revisionDate')"
+  new_rev="$(bitw get --json "$item_name" | jq -r '.revisionDate')"
 
   ok "rotated: $item_name"
   audit_log "$item_name" "rotate" "success" "$age" "$new_rev"

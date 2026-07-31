@@ -256,14 +256,10 @@ phase_ansible() {
   step "3/6 — Configure services with Ansible + Bitwarden"
   cd "$DIR/ansible"
 
-  ***REMOVED*** Ensure Bitwarden is logged in
-  if ! bw status 2>/dev/null | grep -q '"status":"unlocked"'; then
-    info "Bitwarden session required."
-    export BW_SESSION=$(bw login --check 2>&1 | grep -o 'BW_SESSION="[^"]*"' | cut -d'"' -f2)
-    if [[ -z "${BW_SESSION:-}" ]]; then
-      info "Logging into Bitwarden..."
-      eval $(bw login | grep 'export BW_SESSION')
-    fi
+  ***REMOVED*** Ensure bitw login tokens exist
+  if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
+    info "Bitwarden login required."
+    bitw login
   fi
 
   info "Running bootstrap playbook..."

@@ -6,6 +6,10 @@
 ***REMOVED*** never writes to a tofu backend automatically. Optional --push for backend
 ***REMOVED*** recovery (requires explicit confirmation).
 ***REMOVED***
+***REMOVED*** Uses the `bitw` CLI (rbelem fork). bitw auto-unlocks via libsecret keyring
+***REMOVED*** (entry "bitwarden master-password"), or the PASSWORD env var, or an
+***REMOVED*** interactive prompt. No session tokens, no BW_SESSION.
+***REMOVED***
 ***REMOVED*** Usage:
 ***REMOVED***   scripts/restore-state.sh                    ***REMOVED*** restore most recent snapshot
 ***REMOVED***   scripts/restore-state.sh --list             ***REMOVED*** list available snapshots
@@ -15,7 +19,8 @@
 ***REMOVED***   scripts/restore-state.sh --help             ***REMOVED*** this message
 ***REMOVED***
 ***REMOVED*** Environment:
-***REMOVED***   BW_SESSION              required (bw unlock --raw)
+***REMOVED***   PASSWORD                optional (bitw reads it for master password)
+***REMOVED***                           On VPS: /etc/agent/bw_master_pw is read as fallback
 ***REMOVED***   SNAPSHOT_BW_ITEM        BW item name (default: assistant/tofu-state-snapshot)
 ***REMOVED***   TOFU_DIR                path to tofu/ directory (default: ../tofu relative to script)
 ***REMOVED***
@@ -79,49 +84,37 @@ need() {
   command -v "$1" >/dev/null 2>&1 \
     || { err "missing required binary: $1"; exit "$EXIT_USAGE"; }
 }
-need bw
+need bitw
 need jq
 need python3
 need base64
 
-***REMOVED*** BW_SESSION resolution: env first, then keyring auto-unlock
-BW_SESSION="${BW_SESSION:-}"
-if [[ -z "$BW_SESSION" ]] && command -v secret-tool >/dev/null 2>&1; then
-  if master_pw="$(secret-tool lookup bitwarden master-password 2>/dev/null)" \
-     && [[ -n "$master_pw" ]]; then
-    if BW_SESSION="$(bw unlock --raw "$master_pw" 2>/dev/null)" \
-       && [[ -n "$BW_SESSION" ]]; then
-      export BW_SESSION
-    fi
-    unset master_pw
-  fi
+***REMOVED*** PASSWORD resolution: env first, then VPS file, then libsecret auto-unlock
+if [[ -z "${PASSWORD:-}" && -r /etc/agent/bw_master_pw ]]; then
+  export PASSWORD="$(cat /etc/agent/bw_master_pw)"
 fi
 
-[[ -n "$BW_SESSION" ]] \
-  || { err "BW_SESSION not set. Run: bw unlock --raw > ~/.bw_session_token && export BW_SESSION=\$(cat ~/.bw_session_token)"; exit "$EXIT_BW_UNAVAILABLE"; }
-
-bw_sesh() { bw --session "$BW_SESSION" "$@"; }
-
-***REMOVED*** Sync vault cache
-bw_sesh sync 2>/dev/null || true
-
-***REMOVED*** Verify BW session
-if ! bw_sesh list items >/dev/null 2>&1; then
-  err "bw session invalid or expired"
+***REMOVED*** bitw preflight: verify login tokens exist
+if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
+  err "bitw login tokens not found."
+  err "Run: bitw login"
+  err "Or store master password: secret-tool store --label=\"Bitwarden\" bitwarden master-password"
   exit "$EXIT_BW_UNAVAILABLE"
 fi
 
+***REMOVED*** Sync vault cache
+bitw sync 2>/dev/null || true
+
 ***REMOVED***--- read BW item --------------------------------------------------------------
 info "reading snapshot item: $SNAPSHOT_BW_ITEM..."
-ITEM_JSON=""
-if ! ITEM_JSON="$(bw_sesh get item "$SNAPSHOT_BW_ITEM" 2>/dev/null)"; then
+NOTES=""
+if ! NOTES="$(bitw get --field notes "$SNAPSHOT_BW_ITEM" 2>/dev/null)"; then
   err "item not found: $SNAPSHOT_BW_ITEM"
   err "Create it first with snapshot-state.sh or manually:"
-  err "  bw create item --type 2 --name '$SNAPSHOT_BW_ITEM' --notes '{\"schema_version\":1,\"snapshots\":[]}'"
+  err "  bitw create '$SNAPSHOT_BW_ITEM' --type 2 --notes '{\"schema_version\":1,\"snapshots\":[]}'"
   exit "$EXIT_ITEM_MISSING"
 fi
 
-NOTES="$(echo "$ITEM_JSON" | jq -r '.notes // ""')"
 if [[ -z "$NOTES" ]]; then
   err "item .notes is empty"
   exit "$EXIT_ITEM_MISSING"

@@ -4,11 +4,9 @@
 ***REMOVED***   2. .rendered/terraform.tfvars — tofu apply -var-file=
 ***REMOVED***   3. .rendered/runtime-config.json — Nix modules via builtins.fromJSON
 ***REMOVED***
-***REMOVED*** Pattern inspired by ~/.local/share/devbox/global/default/bin/secrets-refresh:
-***REMOVED***   - bw_sesh() wrapper (--session arg, env-var unreliable for auth)
-***REMOVED***   - keyring auto-unlock via secret-tool (libsecret)
-***REMOVED***   - atomic cache write (mktemp + mv) with chmod 600
-***REMOVED***   - shell-safe quoting via printf %q
+***REMOVED*** Uses the `bitw` CLI (rbelem fork). bitw auto-unlocks via libsecret keyring
+***REMOVED*** (entry "bitwarden master-password"), or the PASSWORD env var, or an
+***REMOVED*** interactive prompt. No session tokens, no BW_SESSION.
 ***REMOVED***
 ***REMOVED*** Bitwarden schema (vault `assistant`, items namespaced under that prefix):
 ***REMOVED***   "assistant/vps-ssh-key"    — SSH key (type 5), .sshKey.privateKey
@@ -22,9 +20,8 @@
 ***REMOVED***   scripts/fetch_vault.sh --out-dir DIR  ***REMOVED*** custom output directory
 ***REMOVED***
 ***REMOVED*** Auto-unlock: if secret-tool (libsecret) is available and a Bitwarden master
-***REMOVED*** password is stored in the keyring under "bitwarden master-password", this
-***REMOVED*** script unlocks bw transparently and exports BW_SESSION. Otherwise set
-***REMOVED*** BW_SESSION manually (`bw unlock --raw > ~/.bw_session_token`).
+***REMOVED*** password is stored in the keyring under "bitwarden master-password", bitw
+***REMOVED*** unlocks transparently. Otherwise set PASSWORD env or run `bitw login` first.
 ***REMOVED***
 ***REMOVED*** The fetched values flow through three sinks (vault.env, terraform.tfvars,
 ***REMOVED*** runtime-config.json). All three are gitignored and rebuilt on every run.
@@ -35,14 +32,12 @@ set -euo pipefail
 ***REMOVED***--- arg parsing ----------------------------------------------------------------
 CHECK_ONLY=0
 OUT_DIR="${OUT_DIR:-.rendered}"
-BW_SESSION="${BW_SESSION:-}"
-BW_ORG_ID="${BW_ORG_ID:-}"   ***REMOVED*** empty = personal vault; set for org vault
+BW_ORG_ID="${BW_ORG_ID:-}"   ***REMOVED*** empty = personal vault; set for org vault (kept for compat)
 
 while [[ $***REMOVED*** -gt 0 ]]; do
   case "$1" in
     --check)     CHECK_ONLY=1 ;;
     --out-dir)   OUT_DIR="$2"; shift ;;
-    --session)   BW_SESSION="$2"; shift ;;
     --org-id)    BW_ORG_ID="$2"; shift ;;
     -h|--help)   sed -n '2,/^$/p' "$0" | sed 's/^***REMOVED*** \?//'; exit 0 ;;
     *)           echo "unknown arg: $1" >&2; exit 2 ;;
@@ -55,62 +50,39 @@ need() {
   command -v "$1" >/dev/null 2>&1 \
     || { echo "missing required binary: $1" >&2; exit 1; }
 }
-need bw
+need bitw
 need jq
 need mkdir
 need grep
 need mktemp
 need mv
 
-***REMOVED***--- BW_SESSION resolution: keyring first, then env fallback --------------------
-if [[ -z "${BW_SESSION:-}" ]] && command -v secret-tool >/dev/null 2>&1; then
-  if master_pw="$(secret-tool lookup bitwarden master-password 2>/dev/null)" \
-     && [[ -n "$master_pw" ]]; then
-    if BW_SESSION="$(bw unlock --raw "$master_pw" 2>/dev/null)" \
-       && [[ -n "$BW_SESSION" ]]; then
-      export BW_SESSION
-    fi
-    unset master_pw
-  fi
+***REMOVED***--- bitw preflight: verify login tokens exist --------------------------------
+***REMOVED*** bitw status exits 0 when tokens exist (does NOT require unlock).
+***REMOVED*** If tokens are missing, the operator needs to run `bitw login` once.
+if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
+  cat >&2 <<EOF
+bitw login tokens not found. Two ways to fix:
+  1. Run \`bitw login\` (interactive) to store login tokens.
+  2. Store master password in system keyring for auto-unlock:
+       secret-tool store --label="Bitwarden" bitwarden master-password
+     (bitw will use it automatically from then on)
+EOF
+  exit 1
 fi
 
-[[ -n "${BW_SESSION:-}" ]] \
-  || {
-    cat >&2 <<EOF
-BW_SESSION not resolved. Two ways to fix:
-  1. Recommended: store master password in system keyring once, then auto-unlock:
-       secret-tool store --label="Bitwarden" bitwarden master-password
-     (run \`scripts/fetch_vault.sh\` after that — it will auto-unlock from then on)
-  2. One-off:
-       bw unlock --raw > ~/.bw_session_token
-       export BW_SESSION=\$(cat ~/.bw_session_token)
-EOF
-    exit 1
-  }
-
-***REMOVED*** bw_sesh wrapper. bw's daemon ignores BW_SESSION env for auth-state checks; every
-***REMOVED*** call must pass --session explicitly. (Same lesson as devbox secrets-refresh.)
-bw_sesh() { bw --session "$BW_SESSION" "$@"; }
-
-***REMOVED*** Sync the local vault cache with the server. bw reads from a local encrypted
+***REMOVED*** Sync the local vault cache with the server. bitw reads from a local encrypted
 ***REMOVED*** DB; unlock decrypts it but doesn't refresh it. Without this, items created
-***REMOVED*** via web/extension/another machine are invisible to `bw get`/`bw list` and
-***REMOVED*** every fetch returns "Not found." Idempotent + fast (~200ms when current).
-bw_sesh sync 2>/dev/null || true
+***REMOVED*** via web/extension/another machine are invisible to `bitw get` and
+***REMOVED*** every fetch returns empty. Idempotent + fast (~200ms when current).
+bitw sync 2>/dev/null || true
 
 ***REMOVED***--- helpers -------------------------------------------------------------------
 ***REMOVED*** Pull the JSON payload of a Secure Note item by name.
+***REMOVED*** bitw get --json finds items by name regardless of org.
 fetch_note_payload() {
   local item_name="$1"
-  if [[ -n "$BW_ORG_ID" ]]; then
-    bw_sesh list items --organizationid "$BW_ORG_ID" 2>/dev/null \
-      | jq -r --arg n "$item_name" \
-        '.[] | select(.type == 2 and .name == $n) | .notes // ""'
-  else
-    bw_sesh list items 2>/dev/null \
-      | jq -r --arg n "$item_name" \
-        '.[] | select(.type == 2 and .name == $n) | .notes // ""'
-  fi
+  bitw get --json "$item_name" 2>/dev/null | jq -r '.notes // ""'
 }
 
 assert_non_empty() {
@@ -154,9 +126,9 @@ ITEM_PORKBUN='assistant/porkbun-api-key'
 ITEM_PORKBUN_SECRET='assistant/porkbun-secret-api-key'
 
 ***REMOVED*** VPS SSH Key (SSH key type → .sshKey.{privateKey,publicKey})
-SSH_KEY_ITEM="$(bw_sesh get item "$ITEM_VPS")"
-SSH_PRIVATE_KEY="$(echo "$SSH_KEY_ITEM" | jq -r '.sshKey.privateKey')"
-SSH_PUBLIC_KEY="$(echo "$SSH_KEY_ITEM" | jq -r '.sshKey.publicKey // empty')"
+SSH_KEY_ITEM="$(bitw get --json "$ITEM_VPS")"
+SSH_PRIVATE_KEY="$(echo "$SSH_KEY_ITEM" | jq -r '.sshKey.privateKey // ""')"
+SSH_PUBLIC_KEY="$(echo "$SSH_KEY_ITEM" | jq -r '.sshKey.publicKey // ""')"
 assert_non_empty "$ITEM_VPS.sshKey.privateKey" "$SSH_PRIVATE_KEY"
 [[ -z "$SSH_PUBLIC_KEY" ]] && SSH_PUBLIC_KEY="$(ssh-keygen -y -f <(echo "$SSH_PRIVATE_KEY") 2>/dev/null || true)"
 assert_non_empty "$ITEM_VPS.sshKey.publicKey" "$SSH_PUBLIC_KEY"
@@ -188,8 +160,8 @@ assert_non_empty "$ITEM_TOFU.vps_ssh_user" "$VPS_SSH_USER"
 assert_non_empty "$ITEM_TOFU.vps_ssh_port" "$VPS_SSH_PORT"
 
 ***REMOVED*** assistant/porkbun-api-key + assistant/porkbun-secret-api-key (each Login, password field)
-PORKBUN_API_KEY="$(bw_sesh get password "$ITEM_PORKBUN")"
-PORKBUN_SECRET_API_KEY="$(bw_sesh get password "$ITEM_PORKBUN_SECRET")"
+PORKBUN_API_KEY="$(bitw get --field password "$ITEM_PORKBUN")"
+PORKBUN_SECRET_API_KEY="$(bitw get --field password "$ITEM_PORKBUN_SECRET")"
 assert_non_empty "$ITEM_PORKBUN (password)"        "$PORKBUN_API_KEY"
 assert_non_empty "$ITEM_PORKBUN_SECRET (password)" "$PORKBUN_SECRET_API_KEY"
 
@@ -296,7 +268,7 @@ tmp="$(mktemp)"
               and .key != "hcloud_image_filter")
     | "\(.key) = \(.value | tojson)"
   '
-  ***REMOVED*** Aliases: bw uses tofu_state_* prefix; tofu/variables.tf uses storage_* / state_bucket_name.
+  ***REMOVED*** Aliases: bitw uses tofu_state_* prefix; tofu/variables.tf uses storage_* / state_bucket_name.
   ***REMOVED*** Emit both so the variable names tofu expects are satisfied.
   STATE_BUCKET="$(echo "$TOFU_JSON" | jq -r '.tofu_state_bucket // .state_bucket_name // empty')"
   STATE_REGION="$(echo "$TOFU_JSON" | jq -r '.tofu_state_region // .storage_region // empty')"
