@@ -152,21 +152,13 @@
       changed_when: false
       failed_when: false
 
-    - name: Install Bitwarden CLI via npm
-      ansible.builtin.shell:
-        cmd: npm install -g @bitwarden/cli
-        creates: /usr/local/bin/bw
-      when:
-        - not is_nixos
-        - not bootstrap_stat.stat.exists
-
-    - name: Check if bw CLI is available
-      ansible.builtin.command: which bw
-      register: bw_check
+    - name: Check if bitw CLI is available
+      ansible.builtin.command: which bitw
+      register: bitw_check
       changed_when: false
       failed_when: false
 
-    - name: Create Bitwarden session helper script
+    - name: Create bitw session helper script
       ansible.builtin.copy:
         dest: /root/.bw_session.sh
         owner: root
@@ -174,28 +166,27 @@
         mode: "0700"
         content: |
           ***REMOVED***!/usr/bin/env bash
-          ***REMOVED*** Source this file to set BW_SESSION for the current shell
+          ***REMOVED*** Source this file to set PASSWORD for bitw from /root/.bw_master_pw
           ***REMOVED*** Usage: source /root/.bw_session.sh
           set -euo pipefail
 
-          if [ -f /root/.bw_session_token ]; then
-            export BW_SESSION="$(cat /root/.bw_session_token)"
-            ***REMOVED*** Validate session is still active
-            if ! bw status --session "$BW_SESSION" 2>/dev/null | grep -q '"status":"unlocked"'; then
-              echo "Session expired. Please login and unlock:"
-              echo "  bw login"
-              echo "  bw unlock --raw > /root/.bw_session_token"
-              unset BW_SESSION
-              rm -f /root/.bw_session_token
-              return 1 2>/dev/null || exit 1
-            fi
-          else
-            echo "No session token found. Please login and unlock:"
-            echo "  bw login"
-            echo "  bw unlock --raw > /root/.bw_session_token"
+          ***REMOVED*** Check bitw login tokens exist
+          if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
+            echo "bitw login tokens not found. Please login:"
+            echo "  bitw login"
             return 1 2>/dev/null || exit 1
           fi
-          echo "Bitwarden session active."
+
+          ***REMOVED*** Export PASSWORD from master password file if present
+          if [ -f /root/.bw_master_pw ]; then
+            export PASSWORD="$(cat /root/.bw_master_pw)"
+          else
+            echo "No master password file found at /root/.bw_master_pw"
+            echo "Run: umask 077; read -s -p 'Master password: ' pw; echo \"\$pw\" > /root/.bw_master_pw"
+            return 1 2>/dev/null || exit 1
+          fi
+
+          echo "Bitwarden ready."
 
     - name: Create bootstrap marker
       ansible.builtin.file:
@@ -213,4 +204,4 @@
           - OS: {{ 'NixOS' if is_nixos else ansible_distribution }}
           - k3s: {{ 'managed by NixOS' if is_nixos else 'installed via script' }}
           - kubectl test: {{ 'OK' if kubectl_test.rc == 0 else 'FAILED' }}
-          - bw CLI: {{ 'found' if bw_check.rc == 0 else 'NOT FOUND — install manually' }}
+          - bitw CLI: {{ 'found' if bitw_check.rc == 0 else 'NOT FOUND — install manually' }}
