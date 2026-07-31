@@ -36,13 +36,14 @@ ssh root@$VPS_IP 'curl -sL https://raw.githubusercontent.com/elitak/nixos-infect
 
 **NixOS:** NixOS config lives in the separate `nix-config` repo (`~/Workspace/github.com/rbelem/nix-config`). Deploy with `nixos-rebuild switch --flake path:$NIX_CONFIG_DIR#agent --target-host root@$VPS_IP`.
 
-**Ansible requires** Bitwarden unlocked before running. On the VPS:
+**Ansible requires** bitw login before running. On the VPS:
 ```bash
-bw login
-bw unlock --raw > /root/.bw_session_token
+bitw login
+umask 077
+read -s -p "Master password: " pw; echo "$pw" > /root/.bw_master_pw
 ```
 
-The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` and writes to k8s Secrets + `/etc/tailscale/authkey`.
+The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` (via `PASSWORD` env from `/root/.bw_master_pw`) and writes to k8s Secrets + `/etc/tailscale/authkey`.
 
 **k8s manifests:** rsync to `/opt/k8s/` on VPS, then `kubectl apply -f /opt/k8s/manifests/hermes/` etc. Namespaces are managed by Ansible (`namespace_list` in `ansible/inventory/hosts.yml`).
 
