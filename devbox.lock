@@ -1,54 +1,6 @@
 {
   "lockfile_version": "1",
   "packages": {
-    "bitwarden-cli@latest": {
-      "last_modified": "2026-07-23T05:10:05Z",
-      "resolved": "github:NixOS/nixpkgs/7525d999cd850b9a488817abc89c75dc733acf17#bitwarden-cli",
-      "source": "devbox-search",
-      "version": "2026.6.0",
-      "systems": {
-        "aarch64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/g5nmix27b0v92dbbk8hix1ar8l1kinzy-bitwarden-cli-2026.6.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/g5nmix27b0v92dbbk8hix1ar8l1kinzy-bitwarden-cli-2026.6.0"
-        },
-        "aarch64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/2xgy28qm0qkmbzjdcr9d07wma3d3mpbf-bitwarden-cli-2026.6.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/2xgy28qm0qkmbzjdcr9d07wma3d3mpbf-bitwarden-cli-2026.6.0"
-        },
-        "x86_64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/95lxns2wnlw73gq6vx0aihzaz7dgvf9j-bitwarden-cli-2026.6.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/95lxns2wnlw73gq6vx0aihzaz7dgvf9j-bitwarden-cli-2026.6.0"
-        },
-        "x86_64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/8bkqm0h50304bwn8q939i9hh4h3wncpp-bitwarden-cli-2026.6.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/8bkqm0h50304bwn8q939i9hh4h3wncpp-bitwarden-cli-2026.6.0"
-        }
-      }
-    },
     "coreutils@latest": {
       "last_modified": "2026-07-23T13:11:22Z",
       "resolved": "github:NixOS/nixpkgs/6d12004108e0e4a5cfa4bd83b14477f040b15773#coreutils",
