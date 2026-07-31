@@ -44,3 +44,6 @@ ansible/inventory/hosts.yml
 .rendered/terraform.tfvars
 .rendered/runtime-config.json
 .rendered/backend.conf
+../../../../../tmp/opencode/rendered-test/vault.env
+../../../../../tmp/opencode/rendered-test/terraform.tfvars
+../../../../../tmp/opencode/rendered-test/runtime-config.json
