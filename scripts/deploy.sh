@@ -1,30 +1,30 @@
 ***REMOVED***!/usr/bin/env bash
-***REMOVED***─────────────────────────────────────────────────────────────
-***REMOVED***assistant deployment pipeline
-***REMOVED***─────────────────────────────────────────────────────────────
-***REMOVED***Order: tofu → nixos-infect → ansible → nixos-rebuild → helmfile → kubectl
+***REMOVED*** ─────────────────────────────────────────────────────────────
+***REMOVED*** assistant deployment pipeline
+***REMOVED*** ─────────────────────────────────────────────────────────────
+***REMOVED*** Order: tofu → nixos-infect → ansible → nixos-rebuild → helmfile → kubectl
 ***REMOVED***
-***REMOVED***Prerequisites:
-***REMOVED***- OVH API credentials (OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY)
-***REMOVED***- Porkbun API credentials (PORKBUN_API_KEY, PORKBUN_SECRET_API_KEY)
-***REMOVED***- SSH key uploaded to OVH account
-***REMOVED***- Bitwarden CLI installed and logged in
+***REMOVED*** Prerequisites:
+***REMOVED***   - OVH API credentials (OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY)
+***REMOVED***   - Porkbun API credentials (PORKBUN_API_KEY, PORKBUN_SECRET_API_KEY)
+***REMOVED***   - SSH key uploaded to OVH account
+***REMOVED***   - Bitwarden CLI installed and logged in
 ***REMOVED***
-***REMOVED***Usage:
-***REMOVED***./deploy.sh                    ***REMOVED*** full deploy (prompts before destructive steps)
-***REMOVED***./deploy.sh --skip-tofu        ***REMOVED*** skip provisioning, go to nixos-infect
-***REMOVED***./deploy.sh --skip-infect      ***REMOVED*** skip nixos-infect, go to ansible
-***REMOVED***./deploy.sh --skip-ansible     ***REMOVED*** skip ansible, go to nixos-rebuild
-***REMOVED***./deploy.sh --skip-nixos       ***REMOVED*** skip nixos-rebuild, go to helmfile
-***REMOVED***./deploy.sh --skip-helmfile    ***REMOVED*** skip helmfile, go to kubectl
-***REMOVED***./deploy.sh --skip-tofu --skip-infect --skip-ansible --skip-nixos  ***REMOVED*** helmfile + kubectl only
-***REMOVED***./deploy.sh status             ***REMOVED*** show deployment status
-***REMOVED***./deploy.sh destroy            ***REMOVED*** tear everything down
-***REMOVED***─────────────────────────────────────────────────────────────
+***REMOVED*** Usage:
+***REMOVED***   ./deploy.sh                    ***REMOVED*** full deploy (prompts before destructive steps)
+***REMOVED***   ./deploy.sh --skip-tofu        ***REMOVED*** skip provisioning, go to nixos-infect
+***REMOVED***   ./deploy.sh --skip-infect      ***REMOVED*** skip nixos-infect, go to ansible
+***REMOVED***   ./deploy.sh --skip-ansible     ***REMOVED*** skip ansible, go to nixos-rebuild
+***REMOVED***   ./deploy.sh --skip-nixos       ***REMOVED*** skip nixos-rebuild, go to helmfile
+***REMOVED***   ./deploy.sh --skip-helmfile    ***REMOVED*** skip helmfile, go to kubectl
+***REMOVED***   ./deploy.sh --skip-tofu --skip-infect --skip-ansible --skip-nixos  ***REMOVED*** helmfile + kubectl only
+***REMOVED***   ./deploy.sh status             ***REMOVED*** show deployment status
+***REMOVED***   ./deploy.sh destroy            ***REMOVED*** tear everything down
+***REMOVED*** ─────────────────────────────────────────────────────────────
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
-***REMOVED***── Config ──────────────────────────────────────────────────
+***REMOVED*** ── Config ──────────────────────────────────────────────────
 VPS_IP="${VPS_IP:-}"
 SSH_USER="${SSH_USER:-root}"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519}"
@@ -33,18 +33,18 @@ PLAYBOOKS="$DIR/ansible/playbooks"
 INVENTORY="$DIR/ansible/inventory/hosts.yml"
 VERBOSE="${VERBOSE:-0}"
 
-***REMOVED***Allowlist of variables passed to envsubst when rendering *.tmpl files.
-***REMOVED***This prevents $HOME, $USER, $PWD, etc. from leaking into committed files.
+***REMOVED*** Allowlist of variables passed to envsubst when rendering *.tmpl files.
+***REMOVED*** This prevents $HOME, $USER, $PWD, etc. from leaking into committed files.
 RENDER_VARS='$VPS_HOST $VPS_SSH_USER $VPS_SSH_PORT $DOMAIN $SUBDOMAINS_JSON $PROJECT_NAME $VPS_PLAN_CODE $DATACENTER'
 HELMFILE_DIR="$DIR/k8s"
 HELMFILE_BIN="${HELMFILE_BIN:-helmfile}"
 
-***REMOVED***── Source vault environment ────────────────────────────────
-***REMOVED***Load Bitwarden-derived secrets (SSH_PRIVATE_KEY, VPS_HOST, etc.) if available.
-***REMOVED***shellcheck disable=SC1091
+***REMOVED*** ── Source vault environment ────────────────────────────────
+***REMOVED*** Load Bitwarden-derived secrets (SSH_PRIVATE_KEY, VPS_HOST, etc.) if available.
+***REMOVED*** shellcheck disable=SC1091
 [[ -f "$DIR/.rendered/vault.env" ]] && . "$DIR/.rendered/vault.env"
 
-***REMOVED***── Colors ──────────────────────────────────────────────────
+***REMOVED*** ── Colors ──────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; NC='\033[0m'
 info()  { echo -e "${BLUE}[INFO]${NC}  $*"; }
@@ -53,11 +53,11 @@ warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 err()   { echo -e "${RED}[ERR]${NC}   $*"; }
 step()  { echo; echo -e "${BLUE}═══ $* ═══${NC}"; }
 
-***REMOVED***=== SSH key setup =============================================================
-***REMOVED***The SSH private key lives in Bitwarden (assistant/vps-ssh-key, SSH key
-***REMOVED***type 5). fetch_vault.sh exports SSH_PRIVATE_KEY into .rendered/vault.env.
-***REMOVED***We write it to a temp file and load it into ssh-agent for all SSH operations.
-***REMOVED***Falls back to ~/.ssh/id_ed25519 if SSH_PRIVATE_KEY is empty.
+***REMOVED*** === SSH key setup =============================================================
+***REMOVED*** The SSH private key lives in Bitwarden (assistant/vps-ssh-key, SSH key
+***REMOVED*** type 5). fetch_vault.sh exports SSH_PRIVATE_KEY into .rendered/vault.env.
+***REMOVED*** We write it to a temp file and load it into ssh-agent for all SSH operations.
+***REMOVED*** Falls back to ~/.ssh/id_ed25519 if SSH_PRIVATE_KEY is empty.
 
 SSH_KEY_FILE="$(mktemp -t agent_key.XXXXXX)"
 chmod 600 "$SSH_KEY_FILE"
@@ -75,30 +75,30 @@ else
   exit 1
 fi
 
-***REMOVED***Update SSH_KEY to point to the resolved key file (used by ssh -i in run_ssh and rsync)
+***REMOVED*** Update SSH_KEY to point to the resolved key file (used by ssh -i in run_ssh and rsync)
 SSH_KEY="$SSH_KEY_FILE"
 
-***REMOVED***Export SSH_AUTH_SOCK so ssh-agent is used by all subsequent ssh invocations
-***REMOVED***(including nixos-rebuild --target-host which uses ssh internally)
+***REMOVED*** Export SSH_AUTH_SOCK so ssh-agent is used by all subsequent ssh invocations
+***REMOVED*** (including nixos-rebuild --target-host which uses ssh internally)
 if [[ -n "${SSH_AUTH_SOCK:-}" ]]; then
   export SSH_AUTH_SOCK SSH_AGENT_PID
 fi
-***REMOVED***=============================================================================
+***REMOVED*** =============================================================================
 
-***REMOVED***=== Effective SSH user =========================================================
-***REMOVED***For the very first deploy (when no nix-config is applied yet), set
-***REMOVED***INITIAL_SSH_USER=root in the env. After the first nixos-rebuild
-***REMOVED***applies the nix-config (which creates the 'rodrigo' user and disables
-***REMOVED***root SSH), unset INITIAL_SSH_USER and subsequent deploys use the
-***REMOVED***VPS_SSH_USER from the vault (default: rodrigo).
+***REMOVED*** === Effective SSH user =========================================================
+***REMOVED*** For the very first deploy (when no nix-config is applied yet), set
+***REMOVED*** INITIAL_SSH_USER=root in the env. After the first nixos-rebuild
+***REMOVED*** applies the nix-config (which creates the 'rodrigo' user and disables
+***REMOVED*** root SSH), unset INITIAL_SSH_USER and subsequent deploys use the
+***REMOVED*** VPS_SSH_USER from the vault (default: rodrigo).
 ***REMOVED***
-***REMOVED***This is a security trade-off: the first deploy needs root to run
-***REMOVED***nixos-infect and bootstrap the system. Every deploy after that uses
-***REMOVED***the configured admin user (rodrigo).
+***REMOVED*** This is a security trade-off: the first deploy needs root to run
+***REMOVED*** nixos-infect and bootstrap the system. Every deploy after that uses
+***REMOVED*** the configured admin user (rodrigo).
 EFFECTIVE_SSH_USER="${INITIAL_SSH_USER:-$VPS_SSH_USER}"
 export EFFECTIVE_SSH_USER
 
-***REMOVED***── Helpers ─────────────────────────────────────────────────
+***REMOVED*** ── Helpers ─────────────────────────────────────────────────
 prompt_confirm() {
   echo -en "${YELLOW}Continue? [y/N]${NC} "
   read -r reply
@@ -111,7 +111,7 @@ run_ssh() {
       "$EFFECTIVE_SSH_USER@$VPS_IP" "$@"
 }
 
-***REMOVED***── Phases ──────────────────────────────────────────────────
+***REMOVED*** ── Phases ──────────────────────────────────────────────────
 
 phase_inventory_render() {
   step "preflight — fetch vault + render templates"
@@ -121,30 +121,30 @@ phase_inventory_render() {
     exit 1
   fi
 
-  ***REMOVED***Pull deployment config from Bitwarden into .rendered/vault.env.
+  ***REMOVED*** Pull deployment config from Bitwarden into .rendered/vault.env.
   "$DIR/scripts/fetch_vault.sh"
 
-  ***REMOVED***Source only the vault-generated exports. set -a auto-exports every variable
-  ***REMOVED***defined while it is active, so envsubst can see the allowlisted names.
+  ***REMOVED*** Source only the vault-generated exports. set -a auto-exports every variable
+  ***REMOVED*** defined while it is active, so envsubst can see the allowlisted names.
   set -a
-  ***REMOVED***shellcheck source=.rendered/vault.env
+  ***REMOVED*** shellcheck source=.rendered/vault.env
   . "$DIR/.rendered/vault.env"
   set +a
 
-  ***REMOVED***Export the allowlist explicitly; envsubst uses the current environment.
-  ***REMOVED***Any new name added to RENDER_VARS above must also be exported here.
+  ***REMOVED*** Export the allowlist explicitly; envsubst uses the current environment.
+  ***REMOVED*** Any new name added to RENDER_VARS above must also be exported here.
   export VPS_HOST VPS_SSH_USER VPS_SSH_PORT DOMAIN SUBDOMAINS_JSON PROJECT_NAME VPS_PLAN_CODE DATACENTER
 
-  ***REMOVED***Fall back to vault-derived host when VPS_IP is not already set (e.g.
-  ***REMOVED***--skip-tofu runs). This keeps run_ssh() working across all phases.
+  ***REMOVED*** Fall back to vault-derived host when VPS_IP is not already set (e.g.
+  ***REMOVED*** --skip-tofu runs). This keeps run_ssh() working across all phases.
   VPS_IP="${VPS_IP:-$VPS_HOST}"
   export VPS_IP
 
-  ***REMOVED***Also honor vault-derived SSH user unless the caller overrode it.
+  ***REMOVED*** Also honor vault-derived SSH user unless the caller overrode it.
   SSH_USER="${SSH_USER:-$VPS_SSH_USER}"
   export SSH_USER
 
-  ***REMOVED***Render every *.tmpl outside .rendered/ in-place.
+  ***REMOVED*** Render every *.tmpl outside .rendered/ in-place.
   local tpl out
   while IFS= read -r -d '' tpl; do
     out="${tpl%.tmpl}"
@@ -158,7 +158,7 @@ phase_tofu() {
   step "1/6 — Provision VPS with OpenTofu"
   cd "$DIR"
 
-  ***REMOVED***Skip if VPS already exists (state has hcloud_server.agent).
+  ***REMOVED*** Skip if VPS already exists (state has hcloud_server.agent).
   if "$DIR/tofu/tofu-wrapper.sh" output -raw vps_ip 2>/dev/null; then
     VPS_IP="$("$DIR/tofu/tofu-wrapper.sh" output -raw vps_ip 2>/dev/null)"
     ok "VPS already provisioned (IP: $VPS_IP). Skipping tofu init/plan/apply."
@@ -179,13 +179,13 @@ phase_tofu() {
   "$DIR/tofu/tofu-wrapper.sh" apply -input=false -auto-approve /tmp/tofu-plan.out
   ok "VPS provisioned."
 
-  ***REMOVED***Capture VPS IP
+  ***REMOVED*** Capture VPS IP
   VPS_IP="$("$DIR/tofu/tofu-wrapper.sh" output -raw vps_ip)"
   info "VPS IP: $VPS_IP"
   export VPS_IP
 
-  ***REMOVED***Inventory is now rendered from Bitwarden vault by phase_inventory_render()
-  ***REMOVED***before the Ansible phase runs. VPS_IP is captured above for SSH use.
+  ***REMOVED*** Inventory is now rendered from Bitwarden vault by phase_inventory_render()
+  ***REMOVED*** before the Ansible phase runs. VPS_IP is captured above for SSH use.
 }
 
 phase_infect() {
@@ -256,14 +256,10 @@ phase_ansible() {
   step "3/6 — Configure services with Ansible + Bitwarden"
   cd "$DIR/ansible"
 
-  ***REMOVED***Ensure Bitwarden is logged in
-  if ! bw status 2>/dev/null | grep -q '"status":"unlocked"'; then
-    info "Bitwarden session required."
-    export BW_SESSION=$(bw login --check 2>&1 | grep -o 'BW_SESSION="[^"]*"' | cut -d'"' -f2)
-    if [[ -z "${BW_SESSION:-}" ]]; then
-      info "Logging into Bitwarden..."
-      eval $(bw login | grep 'export BW_SESSION')
-    fi
+  ***REMOVED*** Ensure bitw login tokens exist
+  if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
+    info "Bitwarden login required."
+    bitw login
   fi
 
   info "Running bootstrap playbook..."
@@ -283,7 +279,7 @@ phase_helmfile() {
   fi
 
   if ! command -v "$HELMFILE_BIN" &>/dev/null; then
-    ***REMOVED***Helmfile should be installed on the VPS via NixOS packages
+    ***REMOVED*** Helmfile should be installed on the VPS via NixOS packages
     info "Helmfile not found locally. Using helmfile on VPS..."
     HELMFILE_CMD="run_ssh"
     HELMFILE_DIR_REMOTE="/opt/k8s"
@@ -379,12 +375,12 @@ phase_destroy() {
   ok "Infrastructure destroyed."
 }
 
-***REMOVED***── Main ─────────────────────────────────────────────────────
+***REMOVED*** ── Main ─────────────────────────────────────────────────────
 main() {
   cd "$DIR"
 
-  ***REMOVED***Render vault-driven templates for all deployment paths. status/destroy/help
-  ***REMOVED***do not need the vault, so skip them to avoid unnecessary Bitwarden calls.
+  ***REMOVED*** Render vault-driven templates for all deployment paths. status/destroy/help
+  ***REMOVED*** do not need the vault, so skip them to avoid unnecessary Bitwarden calls.
   case "${1:-}" in
     status|destroy|help|--help|-h) : ;;
     *) phase_inventory_render ;;

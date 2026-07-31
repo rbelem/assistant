@@ -1,24 +1,24 @@
 ***REMOVED***!/usr/bin/env bash
-***REMOVED***deploy.sh — one-command deploy cycle for the assistant repo.
+***REMOVED*** deploy.sh — one-command deploy cycle for the assistant repo.
 ***REMOVED***
-***REMOVED***This script consolidates the entire deploy flow into a single command:
-***REMOVED***1. Re-scrub the mirror (filter-repo) + post-scrub fix
-***REMOVED***2. Commit in the mirror (if anything changed)
-***REMOVED***3. Print the push command (user does this; dcg blocks force-pushes)
-***REMOVED***4. Wait for the user to push + watch gitleaks
-***REMOVED***5. Once gitleaks is green, run fetch_vault.sh
-***REMOVED***6. Run tofu init / plan / apply
-***REMOVED***7. Run the initial deploy (nixos-infect + first nixos-rebuild as root)
-***REMOVED***8. Verify
+***REMOVED*** This script consolidates the entire deploy flow into a single command:
+***REMOVED*** 1. Re-scrub the mirror (filter-repo) + post-scrub fix
+***REMOVED*** 2. Commit in the mirror (if anything changed)
+***REMOVED*** 3. Print the push command (user does this; dcg blocks force-pushes)
+***REMOVED*** 4. Wait for the user to push + watch gitleaks
+***REMOVED*** 5. Once gitleaks is green, run fetch_vault.sh
+***REMOVED*** 6. Run tofu init / plan / apply
+***REMOVED*** 7. Run the initial deploy (nixos-infect + first nixos-rebuild as root)
+***REMOVED*** 8. Verify
 ***REMOVED***
-***REMOVED***All destructive operations (tofu apply, push) are gated behind user
-***REMOVED***confirmation. dcg blocks the AI from running them, but the user
-***REMOVED***(with their master password and ssh-agent) can proceed.
+***REMOVED*** All destructive operations (tofu apply, push) are gated behind user
+***REMOVED*** confirmation. dcg blocks the AI from running them, but the user
+***REMOVED*** (with their master password and ssh-agent) can proceed.
 ***REMOVED***
-***REMOVED***NOTE: The pre-push hook at .git/hooks/pre-push automatically triggers
-***REMOVED***the mirror sync when you run `git push` to main. This hook is
-***REMOVED***worktree-local (not in git), so after a fresh clone you need to
-***REMOVED***re-apply it from scripts/devbox/pre-push-hook (or copy manually).
+***REMOVED*** NOTE: The pre-push hook at .git/hooks/pre-push automatically triggers
+***REMOVED*** the mirror sync when you run `git push` to main. This hook is
+***REMOVED*** worktree-local (not in git), so after a fresh clone you need to
+***REMOVED*** re-apply it from scripts/devbox/pre-push-hook (or copy manually).
 
 set -euo pipefail
 
@@ -27,7 +27,7 @@ cd "$REPO_ROOT"
 
 MIRROR_DIR="/tmp/assistant-scrub"
 
-***REMOVED***---- Phase 1: re-scrub the mirror with post-scrub fix ----
+***REMOVED*** ---- Phase 1: re-scrub the mirror with post-scrub fix ----
 echo "==> Phase 1: re-scrub the mirror"
 if [[ -d "$MIRROR_DIR" ]]; then
   echo "  Mirror directory exists, removing..."
@@ -43,7 +43,7 @@ nix shell 'nixpkgs***REMOVED***git-filter-repo' --command git-filter-repo \
   --replace-text "$REPO_ROOT/replacements.txt" \
   --force
 
-***REMOVED***Strip ***REMOVED*** markers from script and tofu files
+***REMOVED*** Strip ***REMOVED*** markers from script and tofu files
 echo "  Stripping ***REMOVED*** markers..."
 for f in scripts/fetch_vault.sh scripts/populate-vault.sh scripts/deploy.sh tofu/tofu-wrapper.sh; do
   if [[ -f "$f" ]]; then
@@ -56,11 +56,11 @@ for f in tofu/*.tf; do
   fi
 done
 
-***REMOVED***Re-apply the chmod +x (filter-repo wipes the permission)
+***REMOVED*** Re-apply the chmod +x (filter-repo wipes the permission)
 echo "  Restoring executable permissions..."
 chmod +x scripts/*.sh tofu/tofu-wrapper.sh 2>/dev/null || true
 
-***REMOVED***---- Phase 2: commit in the mirror ----
+***REMOVED*** ---- Phase 2: commit in the mirror ----
 echo "==> Phase 2: commit in the mirror"
 git add scripts/ tofu/
 if git diff --cached --quiet; then
@@ -71,7 +71,7 @@ fi
 
 cd "$REPO_ROOT"
 
-***REMOVED***---- Phase 3: print the push command ----
+***REMOVED*** ---- Phase 3: print the push command ----
 echo "==> Phase 3: push the scrubbed mirror to your remote"
 echo
 echo "Run these yourself (dcg blocks the AI from force-pushing):"
@@ -79,7 +79,7 @@ echo "  cd $MIRROR_DIR && git push origin --mirror --force"
 echo
 read -p "Press Enter when the push is done..."
 
-***REMOVED***---- Phase 4: wait for gitleaks to pass ----
+***REMOVED*** ---- Phase 4: wait for gitleaks to pass ----
 echo "==> Phase 4: watch gitleaks"
 echo "  Watching GitHub Actions for gitleaks to pass..."
 if ! nix shell 'nixpkgs***REMOVED***gh' --command gh run watch --repo rbelem/assistant; then
@@ -91,12 +91,12 @@ if ! nix shell 'nixpkgs***REMOVED***gh' --command gh run watch --repo rbelem/ass
 fi
 echo "  ✓ gitleaks passed"
 
-***REMOVED***---- Phase 5: render vault.env ----
+***REMOVED*** ---- Phase 5: render vault.env ----
 echo "==> Phase 5: render vault.env from Bitwarden"
-if [[ -z "${BW_SESSION:-}" ]]; then
+if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
   echo
-  echo "BW_SESSION is not set. Run:"
-  echo "  export BW_SESSION=\$(bw unlock --raw)"
+  echo "bitw login tokens not found. Run:"
+  echo "  bitw login"
   echo "Then re-run this script."
   exit 1
 fi
@@ -105,7 +105,7 @@ echo "  Fetching vault contents..."
 scripts/fetch_vault.sh
 echo "  ✓ vault.env rendered"
 
-***REMOVED***---- Phase 6: tofu init / plan / apply ----
+***REMOVED*** ---- Phase 6: tofu init / plan / apply ----
 echo "==> Phase 6: provision the Hetzner VPS"
 echo
 echo "This will CREATE a real Hetzner VPS in Falkenstein (cx31, ~€17/mo)."
@@ -137,7 +137,7 @@ echo "  Running tofu apply..."
 tofu/tofu-wrapper.sh apply /tmp/tofu-plan.out
 echo "  ✓ VPS provisioned"
 
-***REMOVED***---- Phase 7: initial deploy (nixos-infect + first nixos-rebuild as root) ----
+***REMOVED*** ---- Phase 7: initial deploy (nixos-infect + first nixos-rebuild as root) ----
 echo "==> Phase 7: initial deploy (nixos-infect + first nixos-rebuild)"
 echo
 echo "The nix-config agent host must have these pre-applied:"
@@ -155,7 +155,7 @@ echo "  Running initial deploy with INITIAL_SSH_USER=root..."
 INITIAL_SSH_USER=root scripts/deploy.sh
 echo "  ✓ initial deploy complete"
 
-***REMOVED***---- Phase 8: verify ----
+***REMOVED*** ---- Phase 8: verify ----
 echo "==> Phase 8: verify"
 echo
 echo "Verify the deployment:"
