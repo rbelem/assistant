@@ -122,10 +122,8 @@ KEEP_PER_ITEM="$(echo "$CONFIG_JSON" | jq -r '.backup.keep_per_item // 5')"
 HISTORY_ITEM="$(echo "$CONFIG_JSON" | jq -r '.backup.history_item')"
 
 #--- PASSWORD resolution + bitw preflight -------------------------------------
-# PASSWORD env first, then VPS file fallback, then libsecret auto-unlock.
-if [[ -z "${PASSWORD:-}" && -r /etc/agent/bw_master_pw ]]; then
-  export PASSWORD="$(cat /etc/agent/bw_master_pw)"
-fi
+# PASSWORD env overrides libsecret auto-unlock. Master password lives on
+# workstation only — never on the VPS.
 
 #--- preflight (skip for --help / dry-run list) --------------------------------
 preflight() {

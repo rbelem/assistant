@@ -159,14 +159,25 @@ echo "  ✓ initial deploy complete"
 echo "==> Phase 8: verify"
 echo
 echo "Verify the deployment:"
-echo "  1. Check the public repo:"
+echo "  1. Check rendered secrets:"
+if [[ -d "$REPO_ROOT/.rendered/k8s-secrets" && -d "$REPO_ROOT/.rendered/host-files" ]]; then
+  echo "     .rendered/k8s-secrets/ and .rendered/host-files/ exist"
+  echo "     $(ls "$REPO_ROOT/.rendered/k8s-secrets/" | wc -l) k8s manifests rendered"
+else
+  echo "     WARNING: .rendered/ not found — secrets-render.yml may not have run"
+fi
+echo
+echo "  2. Check the public repo:"
 echo "     nix shell 'nixpkgs#gh' --command gh api repos/rbelem/assistant/contents/AGENTS.md --jq .content | head -50"
 echo
-echo "  2. SSH into the VPS and check k3s:"
+echo "  3. SSH into the VPS and check k3s:"
 VPS_IP=$(tofu output -raw vps_ip 2>/dev/null || echo "<vps-ip>")
 echo "     ssh rodrigo@$VPS_IP kubectl get pods -A"
 echo
-echo "  3. Check the services:"
+echo "  4. Verify VPS has no master password artifacts:"
+echo "     scripts/verify-g3.sh"
+echo
+echo "  5. Check the services:"
 echo "     curl -I https://hermes.\$(jq -r .domain .rendered/runtime-config.json)"
 echo
 echo "Deploy complete! 🚀"

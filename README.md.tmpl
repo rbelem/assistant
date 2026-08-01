@@ -112,7 +112,8 @@ ${PROJECT_NAME}/
 │   ├── vault.yml      ***REMOVED*** Bitwarden vault template
 │   └── playbooks/
 │       ├── bootstrap.yml  ***REMOVED*** Initial server setup
-│       ├── secrets.yml    ***REMOVED*** Bitwarden → k8s secrets sync
+│       ├── secrets-render.yml ***REMOVED*** Workstation: Bitwarden → .rendered/
+│       ├── secrets-apply.yml  ***REMOVED*** VPS: .rendered/ → k8s + host files
 │       ├── deploy.yml     ***REMOVED*** Deploy workloads to k3s
 │       └── update.yml     ***REMOVED*** Rolling update workflow
 ├── k8s/               ***REMOVED*** Kubernetes manifests
@@ -178,10 +179,11 @@ ssh root@$VPS_IP 'curl -sL https://raw.githubusercontent.com/elitak/nixos-infect
 rsync -avz nix/ root@$VPS_IP:/etc/nixos/
 ssh root@$VPS_IP 'nixos-rebuild switch --flake /etc/nixos***REMOVED***agent'
 
-***REMOVED*** Phase 4 — Ansible + secrets
+***REMOVED*** Phase 4 — Render + apply secrets (workstation renders, VPS applies)
 cd ansible
 ansible-playbook -i inventory/hosts.yml playbooks/bootstrap.yml
-ansible-playbook -i inventory/hosts.yml playbooks/secrets.yml
+ansible-playbook -i inventory/hosts.yml playbooks/secrets-render.yml   ***REMOVED*** localhost: Bitwarden → .rendered/
+ansible-playbook -i inventory/hosts.yml playbooks/secrets-apply.yml    ***REMOVED*** VPS: .rendered/ → k8s + host files
 
 ***REMOVED*** Phase 5 — Deploy workloads
 rsync -avz k8s/ root@$VPS_IP:/opt/k8s/

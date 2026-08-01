@@ -152,42 +152,6 @@
       changed_when: false
       failed_when: false
 
-    - name: Check if bitw CLI is available
-      ansible.builtin.command: which bitw
-      register: bitw_check
-      changed_when: false
-      failed_when: false
-
-    - name: Create bitw session helper script
-      ansible.builtin.copy:
-        dest: /root/.bw_session.sh
-        owner: root
-        group: root
-        mode: "0700"
-        content: |
-          ***REMOVED***!/usr/bin/env bash
-          ***REMOVED*** Source this file to set PASSWORD for bitw from /root/.bw_master_pw
-          ***REMOVED*** Usage: source /root/.bw_session.sh
-          set -euo pipefail
-
-          ***REMOVED*** Check bitw login tokens exist
-          if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
-            echo "bitw login tokens not found. Please login:"
-            echo "  bitw login"
-            return 1 2>/dev/null || exit 1
-          fi
-
-          ***REMOVED*** Export PASSWORD from master password file if present
-          if [ -f /root/.bw_master_pw ]; then
-            export PASSWORD="$(cat /root/.bw_master_pw)"
-          else
-            echo "No master password file found at /root/.bw_master_pw"
-            echo "Run: umask 077; read -s -p 'Master password: ' pw; echo \"\$pw\" > /root/.bw_master_pw"
-            return 1 2>/dev/null || exit 1
-          fi
-
-          echo "Bitwarden ready."
-
     - name: Create bootstrap marker
       ansible.builtin.file:
         path: "{{ bootstrap_marker }}"
@@ -204,4 +168,4 @@
           - OS: {{ 'NixOS' if is_nixos else ansible_distribution }}
           - k3s: {{ 'managed by NixOS' if is_nixos else 'installed via script' }}
           - kubectl test: {{ 'OK' if kubectl_test.rc == 0 else 'FAILED' }}
-          - bitw CLI: {{ 'found' if bitw_check.rc == 0 else 'NOT FOUND — install manually' }}
+          - bitw CLI: NOT installed on VPS (secrets render on workstation)

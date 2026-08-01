@@ -19,8 +19,8 @@
 #   scripts/restore-state.sh --help             # this message
 #
 # Environment:
-#   PASSWORD                optional (bitw reads it for master password)
-#                           On VPS: /etc/agent/bw_master_pw is read as fallback
+#   PASSWORD                optional (bitw reads it for master password from
+#                           libsecret keyring; this env var overrides if set)
 #   SNAPSHOT_BW_ITEM        BW item name (default: assistant/tofu-state-snapshot)
 #   TOFU_DIR                path to tofu/ directory (default: ../tofu relative to script)
 #
@@ -88,11 +88,6 @@ need bitw
 need jq
 need python3
 need base64
-
-# PASSWORD resolution: env first, then VPS file, then libsecret auto-unlock
-if [[ -z "${PASSWORD:-}" && -r /etc/agent/bw_master_pw ]]; then
-  export PASSWORD="$(cat /etc/agent/bw_master_pw)"
-fi
 
 # bitw preflight: verify login tokens exist
 if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
