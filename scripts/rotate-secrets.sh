@@ -189,7 +189,7 @@ write_history() {
 
   ***REMOVED*** bitw edit takes --notes directly; no /proc cmdline exposure for secrets
   ***REMOVED*** (notes are passed as argv, but the history JSON contains no high-value secrets).
-  if ! bitw edit "$HISTORY_ITEM" --notes "$new_json" >/dev/null; then
+  if ! bitw edit --notes "$new_json" "$HISTORY_ITEM" >/dev/null; then
     err "bitw edit failed for history item"
     exit "$EXIT_BW_UNAVAILABLE"
   fi
@@ -321,7 +321,7 @@ rotate_item() {
   old_value_b64="$(echo -n "$old_value" | base64 -w0)"
 
   ***REMOVED*** Write new value to BW via --password-stdin (keeps secret out of /proc cmdline)
-  if ! printf '%s' "$new_value" | bitw edit "$item_name" --password-stdin >/dev/null; then
+  if ! printf '%s' "$new_value" | bitw edit --password-stdin "$item_name" >/dev/null; then
     err "bitw edit failed for $item_name"
     exit "$EXIT_BW_UNAVAILABLE"
   fi
@@ -334,7 +334,7 @@ rotate_item() {
     err "attempting rollback..."
 
     ***REMOVED*** Rollback: restore old value via --password-stdin
-    if ! printf '%s' "$old_value" | bitw edit "$item_name" --password-stdin >/dev/null; then
+    if ! printf '%s' "$old_value" | bitw edit --password-stdin "$item_name" >/dev/null; then
       err "ROLLBACK FAILED — manual intervention required"
       err "old value (base64): $old_value_b64"
       audit_log "$item_name" "rotate" "rollback_failed" "$age" ""

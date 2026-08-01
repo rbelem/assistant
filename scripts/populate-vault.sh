@@ -76,7 +76,7 @@ if bitw get --json "assistant/vps-ssh-key" >/dev/null 2>&1; then
   echo "  ⊘ assistant/vps-ssh-key (already exists — skip)"
 else
   ***REMOVED*** Private key via stdin to avoid argv exposure
-  if ! printf '%s' "$SSH_PRIVATE_KEY" | bitw create "assistant/vps-ssh-key" --type 5 --ssh-private-key-stdin --ssh-public-key "$SSH_PUBLIC_KEY"; then
+  if ! printf '%s' "$SSH_PRIVATE_KEY" | bitw create --type 5 --ssh-private-key-stdin --ssh-public-key "$SSH_PUBLIC_KEY" "assistant/vps-ssh-key"; then
     echo "  ✗ assistant/vps-ssh-key: bitw create failed" >&2
     exit 1
   fi
@@ -90,7 +90,7 @@ if bitw get --json "assistant/domain-config" >/dev/null 2>&1; then
   echo "  ⊘ assistant/domain-config (already exists — skip)"
 else
   DOMAIN_NOTES="$(jq -n --arg domain "$DOMAIN" --argjson subdomains "$SUBDOMAINS_JSON" '{domain:$domain, subdomains:$subdomains}' | jq -c .)"
-  if ! bitw create "assistant/domain-config" --type 2 --notes "$DOMAIN_NOTES"; then
+  if ! bitw create --type 2 --notes "$DOMAIN_NOTES" "assistant/domain-config"; then
     echo "  ✗ assistant/domain-config: bitw create failed" >&2
     exit 1
   fi
@@ -104,7 +104,7 @@ if bitw get --json "assistant/tofu-inputs" >/dev/null 2>&1; then
   echo "  ⊘ assistant/tofu-inputs (already exists — skip)"
 else
   TOFU_NOTES="$(jq -n --argjson inputs "$TOFU_INPUTS_JSON" --arg project "$PROJECT_NAME" --arg domain "$DOMAIN" --arg host "$VPS_HOST" --arg user "$SSH_USER" --argjson port "$SSH_PORT" '{project_name:$project, domain:$domain, vps_host:$host, vps_ssh_user:$user, vps_ssh_port:$port} + $inputs' | jq -c .)"
-  if ! bitw create "assistant/tofu-inputs" --type 2 --notes "$TOFU_NOTES"; then
+  if ! bitw create --type 2 --notes "$TOFU_NOTES" "assistant/tofu-inputs"; then
     echo "  ✗ assistant/tofu-inputs: bitw create failed" >&2
     exit 1
   fi
