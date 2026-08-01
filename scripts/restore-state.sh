@@ -116,7 +116,7 @@ if [[ -z "$NOTES" ]]; then
 fi
 
 # Validate structure
-if ! echo "$NOTES" | jq -e '.schema_version == 1 and .snapshots | type == "array"' >/dev/null 2>&1; then
+if ! echo "$NOTES" | jq -e '(.schema_version == 1) and ((.snapshots | type) == "array")' >/dev/null 2>&1; then
   err "item .notes is not valid snapshot structure"
   exit "$EXIT_ITEM_MISSING"
 fi
@@ -185,7 +185,7 @@ fi
 
 #--- decode + write ------------------------------------------------------------
 info "decoding base64 state..."
-STATE_JSON="$(echo "$STATE_B64" | base64 -d)"
+STATE_JSON="$(echo "$STATE_B64" | base64 -d | gunzip)"
 
 # Validate decoded JSON
 if ! echo "$STATE_JSON" | jq -e . >/dev/null 2>&1; then

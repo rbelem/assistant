@@ -151,7 +151,7 @@ if ! echo "$STATE_JSON" | jq -e . >/dev/null 2>&1; then
 fi
 
 STATE_BYTE_SIZE="${#STATE_JSON}"
-STATE_B64="$(echo "$STATE_JSON" | base64 -w 0)"
+STATE_B64="$(echo "$STATE_JSON" | gzip -9 | base64 -w 0)"
 TIMESTAMP_UTC="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
 ok "pulled state: $STATE_BYTE_SIZE bytes"
@@ -189,7 +189,7 @@ if [[ -z "$EXISTING_NOTES" ]]; then
 fi
 
 # Validate existing structure
-if ! echo "$EXISTING_NOTES" | jq -e '.schema_version == 1 and .snapshots | type == "array"' >/dev/null 2>&1; then
+if ! echo "$EXISTING_NOTES" | jq -e '(.schema_version == 1) and ((.snapshots | type) == "array")' >/dev/null 2>&1; then
   err "existing item .notes is not valid snapshot structure"
   err "Expected: {\"schema_version\":1,\"snapshots\":[...]}"
   exit "$EXIT_ITEM_MISSING"
@@ -205,7 +205,7 @@ NEW_NOTES="$(echo "$EXISTING_NOTES" | jq \
 #--- write back to BW ----------------------------------------------------------
 info "writing updated snapshot to Bitwarden..."
 
-if ! bitw edit "$SNAPSHOT_BW_ITEM" --notes "$NEW_NOTES"; then
+if ! bitw edit --notes "$NEW_NOTES" "$SNAPSHOT_BW_ITEM"; then
   err "bitw edit failed"
   exit "$EXIT_BW_WRITE_FAILED"
 fi
