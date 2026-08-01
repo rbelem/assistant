@@ -46,7 +46,8 @@ If the workstation is unavailable, the VPS cannot self-heal secrets. Recovery: n
 
 | Path | Purpose |
 |------|---------|
-| `tofu/main.tf` | OVH VPS + DNS A record (agent.${DOMAIN}) + S3 state bucket. Uses `plan = []` list syntax, not block syntax |
+| `tofu/main.tf` | Hetzner VPS + S3 state bucket. Uses `plan = []` list syntax, not block syntax |
+| `scripts/dns-sync.sh` | Porkbun DNS A records (apex + subdomains → VPS IP) via direct API. Replaces the tofu porkbun provider (create/edit broken upstream — marcfrederick/porkbun issue ***REMOVED***35) |
 | `tofu/variables.tf` | Uses `vps_display_name`, `vps_plan_code`, `vps_datacenter`, `ssh_public_key` + `vps_image_id` (both required together) |
 | `ansible/playbooks/secrets-render.yml` | Workstation-side: renders Bitwarden vault items to `.rendered/` (k8s Secret/ConfigMap manifests + host files). Runs on localhost with `connection: local` |
 | `ansible/playbooks/secrets-apply.yml` | VPS-side: copies pinned allowlist from `.rendered/` to VPS, applies k8s manifests. No bitw or master password needed |
@@ -109,7 +110,7 @@ and say "extract text from this" — Hermes invokes the skill automatically.
 - **Don't run `tofu apply` in CI** — OVH API rate-limits aggressively.
 - **NixOS locale** uses `en_GB.UTF-8` default with `pt_BR.UTF-8` overrides for regional fields. This matches the user's nix-config convention.
 - **Headroom runs in two places**: local machine (wraps opencode via `headroom wrap opencode`) and VPS (k3s deployment that Hermes routes through).
-- **DNS propagation** on OVH is slow (hours). Use the raw IP for initial deploy.
+- **DNS propagation** at Porkbun is fast, but TTL is 600s minimum. Use the raw IP for initial deploy if needed.
 - **Lambda GPU instance is NOT always running** — Lambda Cloud dropped 2026-07-27. OCR skill stays as dead config.
 - **Master password never touches the VPS by design.** Do not re-add `/etc/agent/bw_master_pw` or a VPS-side bitw install to make state-snapshot unattended again. If unattended VPS-side vault access becomes a hard requirement, migrate to Bitwarden Organizations + service accounts.
 

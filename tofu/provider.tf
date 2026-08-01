@@ -1,17 +1,17 @@
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Provider Configuration — Hetzner Cloud + AWS S3 + Porkbun DNS
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Hetzner Cloud credentials are sourced from environment variables:
-***REMOVED***   HCLOUD_TOKEN
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Provider Configuration — Hetzner Cloud + AWS S3 + Porkbun DNS
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Hetzner Cloud credentials are sourced from environment variables:
+***REMOVED***HCLOUD_TOKEN
 ***REMOVED***
-***REMOVED*** AWS/S3 credentials for Object Storage:
-***REMOVED***   Passed via tofu-inputs variables: storage_access_key, storage_secret_key,
-***REMOVED***   storage_endpoint, storage_region (and vps_datacenter for AWS region).
+***REMOVED***AWS/S3 credentials for Object Storage:
+***REMOVED***Passed via tofu-inputs variables: storage_access_key, storage_secret_key,
+***REMOVED***storage_endpoint, storage_region (and vps_datacenter for AWS region).
 ***REMOVED***
-***REMOVED*** Porkbun DNS credentials:
-***REMOVED***   var.porkbun_api_key, var.porkbun_secret_api_key
-***REMOVED***   (sourced from Bitwarden via TF_VAR_* env vars)
-***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED***Porkbun DNS credentials:
+***REMOVED***var.porkbun_api_key, var.porkbun_secret_api_key
+***REMOVED***(sourced from Bitwarden via TF_VAR_* env vars)
+***REMOVED***-----------------------------------------------------------------------------
 
 terraform {
   required_version = ">= 1.6.0"
@@ -26,20 +26,15 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
-
-    porkbun = {
-      source  = "marcfrederick/porkbun"
-      version = "~> 1.3"
-    }
   }
 }
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** AWS S3 Provider — configured for S3-compatible Object Storage
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Manages S3 buckets on an S3-compatible Object Storage backend (e.g. Hetzner, Backblaze B2, Wasabi).
-***REMOVED*** Region, endpoint, and credentials are sourced from tofu-inputs variables.
-***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***AWS S3 Provider — configured for S3-compatible Object Storage
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Manages S3 buckets on an S3-compatible Object Storage backend (e.g. Hetzner, Backblaze B2, Wasabi).
+***REMOVED***Region, endpoint, and credentials are sourced from tofu-inputs variables.
+***REMOVED***-----------------------------------------------------------------------------
 provider "aws" {
   region     = var.storage_region
   access_key = var.storage_access_key
@@ -56,33 +51,18 @@ provider "aws" {
   s3_use_path_style           = true
 }
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Porkbun DNS Provider
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Manages DNS records for the configured domain (registered at Porkbun).
-***REMOVED*** Credentials sourced from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY env vars.
-***REMOVED*** -----------------------------------------------------------------------------
-provider "porkbun" {
-  api_key        = var.porkbun_api_key
-  secret_api_key = var.porkbun_secret_api_key
-}
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Porkbun DNS is managed by scripts/dns-sync.sh (direct API) — the
+***REMOVED***marcfrederick/porkbun provider's create path is broken upstream
+***REMOVED***(record id returned as object, provider expects int64 — issue ***REMOVED***35).
+***REMOVED***-----------------------------------------------------------------------------
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Hetzner Cloud Provider
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Manages the VPS, SSH keys, and DNS-adjacent resources via the Hetzner Cloud API.
-***REMOVED*** Token sourced from var.hcloud_token (Bitwarden assistant/tofu-inputs).
-***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Hetzner Cloud Provider
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Manages the VPS, SSH keys, and DNS-adjacent resources via the Hetzner Cloud API.
+***REMOVED***Token sourced from var.hcloud_token (Bitwarden assistant/tofu-inputs).
+***REMOVED***-----------------------------------------------------------------------------
 provider "hcloud" {
-  token = var.hcloud_token
-}
-
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Hetzner Cloud Provider
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Manages the VPS, SSH keys, and DNS-adjacent resources via the Hetzner Cloud API.
-***REMOVED*** Token sourced from var.hcloud_token (Bitwarden assistant/tofu-inputs).
-***REMOVED*** -----------------------------------------------------------------------------
-provider "hetznercloud" {
   token = var.hcloud_token
 }

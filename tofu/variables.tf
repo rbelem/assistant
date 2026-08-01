@@ -1,15 +1,15 @@
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Input Variables — Hetzner Cloud VPS + Infrastructure Configuration
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Values are sourced from Bitwarden via scripts/fetch_vault.sh, which renders:
-***REMOVED***   .rendered/terraform.tfvars   (tfvars passed via tofu-wrapper.sh)
-***REMOVED***   .rendered/vault.env          (TF_VAR_* env vars)
-***REMOVED*** No environment-specific defaults are committed in this public repo.
-***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Input Variables — Hetzner Cloud VPS + Infrastructure Configuration
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Values are sourced from Bitwarden via scripts/fetch_vault.sh, which renders:
+***REMOVED***.rendered/terraform.tfvars   (tfvars passed via tofu-wrapper.sh)
+***REMOVED***.rendered/vault.env          (TF_VAR_* env vars)
+***REMOVED***No environment-specific defaults are committed in this public repo.
+***REMOVED***-----------------------------------------------------------------------------
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Hetzner Cloud Configuration
-***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Hetzner Cloud Configuration
+***REMOVED***-----------------------------------------------------------------------------
 
 variable "hcloud_token" {
   description = "Hetzner Cloud API token. Source: Bitwarden assistant/tofu-inputs (hcloud_token key)"
@@ -44,15 +44,15 @@ variable "hcloud_location" {
   }
 }
 
-variable "hcloud_image_filter" {
+variable "hcloud_image" {
   description = "Image name or numeric ID. Ubuntu 26.04 (because Hetzner has no native NixOS). nixos-infect runs after first boot via Ansible"
   type        = string
   default     = "ubuntu-26.04"
 }
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** VPS Configuration
-***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***VPS Configuration
+***REMOVED***-----------------------------------------------------------------------------
 
 variable "vps_display_name" {
   description = "Display name for the VPS in Hetzner Cloud console. Source: Bitwarden assistant/tofu-inputs"
@@ -75,9 +75,9 @@ variable "ssh_public_key" {
   }
 }
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** DNS Configuration
-***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***DNS Configuration
+***REMOVED***-----------------------------------------------------------------------------
 
 variable "domain_name" {
   description = "Base domain name (managed by Porkbun DNS). Source: Bitwarden assistant/domain-config"
@@ -86,17 +86,6 @@ variable "domain_name" {
   validation {
     condition     = length(regexall("\\.", var.domain_name)) > 0
     error_message = "Domain name must contain at least one dot (e.g. example.com)."
-  }
-}
-
-variable "dns_ttl" {
-  description = "DNS record TTL in seconds (Porkbun minimum 600)"
-  type        = number
-  default     = 600
-
-  validation {
-    condition     = var.dns_ttl >= 600 && var.dns_ttl <= 86400
-    error_message = "TTL must be between 600 and 86400 seconds (Porkbun rejects <600)."
   }
 }
 
@@ -110,34 +99,12 @@ variable "subdomains" {
   }
 }
 
-variable "porkbun_api_key" {
-  description = "Porkbun API key. Source: Bitwarden assistant/porkbun-api-key (password field)"
-  type        = string
-  sensitive   = true
+***REMOVED***vps_ip removed (unused — DNS A records use hcloud_server.agent.ipv4_address output).
+***REMOVED***Previously validated as IPv4 which blocked first deploy when VPS didn't exist yet.
 
-  validation {
-    condition     = length(var.porkbun_api_key) > 0
-    error_message = "porkbun_api_key must not be empty."
-  }
-}
-
-variable "porkbun_secret_api_key" {
-  description = "Porkbun secret API key. Source: Bitwarden assistant/porkbun-secret-api-key (password field)"
-  type        = string
-  sensitive   = true
-
-  validation {
-    condition     = length(var.porkbun_secret_api_key) > 0
-    error_message = "porkbun_secret_api_key must not be empty."
-  }
-}
-
-***REMOVED*** vps_ip removed (unused — DNS A records use hcloud_server.agent.ipv4_address output).
-***REMOVED*** Previously validated as IPv4 which blocked first deploy when VPS didn't exist yet.
-
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Connection metadata (used by deploy scripts)
-***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Connection metadata (used by deploy scripts)
+***REMOVED***-----------------------------------------------------------------------------
 
 variable "ssh_user" {
   description = "SSH user for the VPS (used by deploy scripts). Source: Bitwarden assistant/tofu-inputs"
@@ -159,11 +126,11 @@ variable "ssh_port" {
   }
 }
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Object Storage Configuration
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** OVH backup bucket removed (2026-07-27); tofu state bucket stays.
-***REMOVED*** -----------------------------------------------------------------------------
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Object Storage Configuration
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***OVH backup bucket removed (2026-07-27); tofu state bucket stays.
+***REMOVED***-----------------------------------------------------------------------------
 
 variable "state_bucket_name" {
   description = "S3 bucket name for OpenTofu remote state. Source: Bitwarden assistant/tofu-inputs"
@@ -217,11 +184,11 @@ variable "storage_secret_key" {
   }
 }
 
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Lambda Cloud (OCR GPU Instance) — DEFERRED
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Lambda Cloud dropped 2026-07-27 (OCR skill unused). Variables kept as
-***REMOVED*** placeholders so tofu/lambda.tf can be re-enabled without variable changes.
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Lambda Cloud (OCR GPU Instance) — DEFERRED
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Lambda Cloud dropped 2026-07-27 (OCR skill unused). Variables kept as
+***REMOVED***placeholders so tofu/lambda.tf can be re-enabled without variable changes.
 
 variable "ocr_enabled" {
   description = "Enable the OCR GPU instance in Tofu (set to true when OCR is needed)"

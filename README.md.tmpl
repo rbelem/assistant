@@ -49,7 +49,7 @@ Infrastructure-as-code for my personal AI agent — a self-hosted runtime on OVH
 
 | Component | What It Does | Runs On |
 |-----------|-------------|---------|
-| **OpenTofu** | Provision OVHcloud VPS + DNS + Object Storage | Local machine |
+| **OpenTofu** | Provision Hetzner VPS + Object Storage (state bucket) | Local machine |
 | **NixOS** | Immutable OS with k3s, Caddy, Tailscale, firewall | VPS |
 | **k3s** | Lightweight Kubernetes for service orchestration | VPS |
 | **Hermes Agent** | Self-hosted AI agent with memory, skills, multi-platform gateways | k3s |
@@ -90,8 +90,9 @@ export AWS_SECRET_ACCESS_KEY=your_s3_secret
 
 ```
 ${PROJECT_NAME}/
-├── tofu/              ***REMOVED*** OpenTofu: VPS, DNS, Object Storage
-│   ├── main.tf        ***REMOVED*** Resources (VPS, DNS records, buckets)
+├── tofu/              ***REMOVED*** OpenTofu: VPS + Object Storage
+│   ├── main.tf        ***REMOVED*** Resources (VPS, buckets)
+│   ├── dns-sync.sh    ***REMOVED*** scripts/dns-sync.sh — Porkbun DNS via direct API
 │   ├── provider.tf    ***REMOVED*** OVH + AWS S3 providers
 │   ├── variables.tf   ***REMOVED*** All configurable params
 │   ├── backend.tf     ***REMOVED*** S3-compatible object storage state backend
