@@ -1,45 +1,27 @@
 ***REMOVED*** Bitwarden Vault Structure for assistant
 ***REMOVED***
-<<<<<<< HEAD
 ***REMOVED*** Convention: all items use `assistant/<kebab-case>` naming.
 ***REMOVED*** One credential per BW item, all Login type (type 1) with value in the password field.
-***REMOVED*** Create these 13 items in your Bitwarden vault before running secrets.yml.
-||||||| parent of a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
-***REMOVED*** Create these 12 items in your Bitwarden vault before running secrets.yml
-=======
-***REMOVED*** Convention: all items use `assistant/<kebab-case>` naming.
-***REMOVED*** Create these 15 items in your Bitwarden vault before running secrets.yml.
->>>>>>> a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
+***REMOVED*** Create these 13 items in your Bitwarden vault before running secrets-render.yml.
 ***REMOVED***
 ***REMOVED*** Vault: "assistant"
+***REMOVED***
+***REMOVED*** The secrets-render.yml playbook (workstation-side) fetches these items and
+***REMOVED*** renders them to .rendered/ (gitignored). The secrets-apply.yml playbook
+***REMOVED*** (VPS-side) copies the rendered files to the VPS. The master password
+***REMOVED*** never touches the VPS.
 ***REMOVED***
 ***REMOVED*** Dropped 2026-07-27: assistant/openrouter-api-key (→ assistant/minimax-api-key),
 ***REMOVED*** assistant/lambda-cloud-api-key (Lambda Cloud unused), assistant/restic-backup-password
 ***REMOVED*** + assistant/ovh-access-key + assistant/ovh-secret-key (OVH backups deferred).
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-<<<<<<< HEAD
 ***REMOVED*** 1. assistant/minimax-api-key
-||||||| parent of a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
-***REMOVED*** 1. OpenRouter API Key
-=======
-***REMOVED*** 1. assistant/openrouter-api-key
->>>>>>> a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
-<<<<<<< HEAD
 ***REMOVED*** Name: "assistant/minimax-api-key"
 ***REMOVED*** Field: password → <your minimax.io API key>
 ***REMOVED*** Notes: Get from https://minimax.io/ (replaces OpenRouter)
-||||||| parent of a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
-***REMOVED*** Name: "OpenRouter API Key"
-***REMOVED*** Field: password → <your openrouter API key>
-***REMOVED*** Notes: Get from https://openrouter.ai/keys
-=======
-***REMOVED*** Name: "assistant/openrouter-api-key"
-***REMOVED*** Field: password → <your openrouter API key>
-***REMOVED*** Notes: Get from https://openrouter.ai/keys
->>>>>>> a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** 2. assistant/hermes-discord-token
@@ -80,28 +62,12 @@
 ***REMOVED*** Notes: From https://porkbun.com/account/api
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-<<<<<<< HEAD
 ***REMOVED*** 7. assistant/porkbun-secret-api-key
-||||||| parent of a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
-***REMOVED*** 7. Lambda Cloud API Key
-=======
-***REMOVED*** 7. assistant/lambda-cloud-api-key
->>>>>>> a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
-<<<<<<< HEAD
 ***REMOVED*** Name: "assistant/porkbun-secret-api-key"
 ***REMOVED*** Field: password → <Porkbun secret API key>
 ***REMOVED*** Notes: From https://porkbun.com/account/api
-||||||| parent of a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
-***REMOVED*** Name: "Lambda Cloud API Key"
-***REMOVED*** Field: password → <Lambda API key>
-***REMOVED*** Notes: From https://cloud.lambdalabs.com/api-keys
-=======
-***REMOVED*** Name: "assistant/lambda-cloud-api-key"
-***REMOVED*** Field: password → <Lambda API key>
-***REMOVED*** Notes: From https://cloud.lambdalabs.com/api-keys
->>>>>>> a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** 8. assistant/tailscale-authkey
@@ -120,61 +86,12 @@
 ***REMOVED*** Notes: Used for Caddy API admin endpoint
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
-<<<<<<< HEAD
 ***REMOVED*** 10. assistant/postgres-password
-||||||| parent of a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
-***REMOVED*** 10. Restic Backup Password
-=======
-***REMOVED*** 10. assistant/restic-backup-password
->>>>>>> a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-<<<<<<< HEAD
-***REMOVED*** Name: "assistant/postgres-password"
-||||||| parent of a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
-***REMOVED*** Name: "Restic Backup Password"
-***REMOVED*** Field: password → <restic repository password>
-***REMOVED*** Notes: Encryption key for restic backup repository
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 11. OVH Object Storage
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "OVH Object Storage"
-***REMOVED*** Custom fields:
-***REMOVED***   - access_key: <OVH S3 access key>
-***REMOVED***   - secret_key: <OVH S3 secret key>
-***REMOVED*** Notes: From OVHcloud Control Panel → Object Storage → S3 Credentials
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 12. Postgres Password
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "Postgres Password"
-=======
-***REMOVED*** Name: "assistant/restic-backup-password"
-***REMOVED*** Field: password → <restic repository password>
-***REMOVED*** Notes: Encryption key for restic backup repository
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 11. assistant/ovh-object-storage
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/ovh-object-storage"
-***REMOVED*** Custom fields:
-***REMOVED***   - access_key: <OVH S3 access key>
-***REMOVED***   - secret_key: <OVH S3 secret key>
-***REMOVED*** Notes: From OVHcloud Control Panel → Object Storage → S3 Credentials
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 12. assistant/postgres-password
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** Type: Login
 ***REMOVED*** Name: "assistant/postgres-password"
->>>>>>> a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
 ***REMOVED*** Field: password → <strong postgres password>
 ***REMOVED*** Notes: Used by n8n and Zitadel; generate with: openssl rand -base64 32
-<<<<<<< HEAD
 
 ***REMOVED*** ─────────────────────────────────────────────────────────────────
 ***REMOVED*** 11. assistant/vps-ssh-key
@@ -200,30 +117,3 @@
 ***REMOVED*** Notes body (JSON): arbitrary TF_VAR_* keys plus vps_host, vps_ssh_user, vps_ssh_port.
 ***REMOVED*** Also includes TOFU_STATE_* keys consumed by tofu/tofu-wrapper.sh for the S3 backend.
 ***REMOVED*** Also includes storage_access_key and storage_secret_key for the state bucket.
-||||||| parent of a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
-=======
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 13. assistant/vps-ssh-key
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: SSH Key (type 5)
-***REMOVED*** Name: "assistant/vps-ssh-key"
-***REMOVED*** Fields: .sshKey.privateKey, .sshKey.publicKey
-***REMOVED*** Notes: Generated once; public key registered in nixos/hosts/agent/default.nix
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 14. assistant/domain-config
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Secure Note (type 2)
-***REMOVED*** Name: "assistant/domain-config"
-***REMOVED*** Notes body (JSON):
-***REMOVED***   {"domain":"<your-domain>","subdomains":["hermes","status","n8n","auth"]}
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 15. assistant/tofu-inputs
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Secure Note (type 2)
-***REMOVED*** Name: "assistant/tofu-inputs"
-***REMOVED*** Notes body (JSON): arbitrary TF_VAR_* keys plus vps_host, vps_ssh_user, vps_ssh_port.
-***REMOVED*** Also includes TOFU_STATE_* keys consumed by tofu/tofu-wrapper.sh for the S3 backend.
->>>>>>> a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)

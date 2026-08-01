@@ -14,7 +14,8 @@
 ***REMOVED***   ./deploy.sh                    ***REMOVED*** full deploy (prompts before destructive steps)
 ***REMOVED***   ./deploy.sh --skip-tofu        ***REMOVED*** skip provisioning, go to nixos-infect
 ***REMOVED***   ./deploy.sh --skip-infect      ***REMOVED*** skip nixos-infect, go to ansible
-***REMOVED***   ./deploy.sh --skip-ansible     ***REMOVED*** skip ansible, go to nixos-rebuild
+***REMOVED***   ./deploy.sh --skip-ansible     ***REMOVED*** skip ansible bootstrap, go to nixos-rebuild
+***REMOVED***   ./deploy.sh --skip-secrets     ***REMOVED*** skip secrets render+apply (manifest-only deploy)
 ***REMOVED***   ./deploy.sh --skip-nixos       ***REMOVED*** skip nixos-rebuild, go to helmfile
 ***REMOVED***   ./deploy.sh --skip-helmfile    ***REMOVED*** skip helmfile, go to kubectl
 ***REMOVED***   ./deploy.sh --skip-tofu --skip-infect --skip-ansible --skip-nixos  ***REMOVED*** helmfile + kubectl only
@@ -296,23 +297,68 @@ phase_nixos() {
   ok "NixOS configuration applied (k3s, Caddy, Tailscale, firewall)."
 }
 
-phase_ansible() {
-  step "3/6 — Configure services with Ansible + Bitwarden"
+phase_bootstrap() {
+  step "Bootstrap VPS with Ansible"
   cd "$DIR/ansible"
-
-  ***REMOVED*** Ensure bitw login tokens exist
-  if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
-    info "Bitwarden login required."
-    bitw login
-  fi
 
   info "Running bootstrap playbook..."
   ansible-playbook -i "$INVENTORY" "$PLAYBOOKS/bootstrap.yml"
 
-  info "Running secrets sync playbook..."
-  ansible-playbook -i "$INVENTORY" "$PLAYBOOKS/secrets.yml"
+  ok "Bootstrap complete."
+}
 
-  ok "Ansible configuration complete."
+phase_secrets_render() {
+  step "Render secrets on workstation from Bitwarden"
+  cd "$DIR/ansible"
+
+  ***REMOVED*** Ensure bitw login tokens exist on workstation
+  if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
+    info "Bitwarden login required on workstation."
+    bitw login
+  fi
+
+  info "Running secrets-render playbook (localhost)..."
+  ansible-playbook -i "$INVENTORY" "$PLAYBOOKS/secrets-render.yml"
+
+  ***REMOVED*** Verify .rendered/ was produced
+  if [[ ! -d "$DIR/.rendered/k8s-secrets" ]]; then
+    err "Render failed: .rendered/k8s-secrets/ not found"
+    exit 1
+  fi
+  if [[ ! -d "$DIR/.rendered/host-files" ]]; then
+    err "Render failed: .rendered/host-files/ not found"
+    exit 1
+  fi
+
+  ok "Secrets rendered to .rendered/"
+}
+
+phase_secrets_apply() {
+  step "Apply rendered secrets to VPS"
+  cd "$DIR/ansible"
+
+  info "Running secrets-apply playbook (hosts: assistant)..."
+  ansible-playbook -i "$INVENTORY" "$PLAYBOOKS/secrets-apply.yml"
+
+  ok "Secrets applied to VPS."
+}
+
+phase_snapshot() {
+  ***REMOVED*** Post-tofu state snapshot to Bitwarden. Runs on workstation (tofu backend
+  ***REMOVED*** is local). Silently skips when tofu was skipped or snapshot script is
+  ***REMOVED*** unavailable (first deploy before BW item exists).
+  if [[ ! -x "$DIR/scripts/snapshot-state.sh" ]]; then
+    return 0
+  fi
+
+  step "Snapshot tofu state to Bitwarden"
+  if "$DIR/scripts/snapshot-state.sh" 2>&1; then
+    ok "Tofu state snapshotted."
+  else
+    warn "Tofu state snapshot failed (non-fatal — BW item may not exist yet)."
+    warn "Create it with:"
+    warn "  bitw create 'assistant/tofu-state-snapshot' --type 2 --notes '{\"schema_version\":1,\"snapshots\":[]}'"
+  fi
 }
 
 phase_helmfile() {
@@ -439,43 +485,67 @@ main() {
       ;;
     --skip-tofu)
       phase_infect
-      phase_ansible
+      phase_bootstrap
+      phase_secrets_render
+      phase_secrets_apply
       phase_nixos
       phase_helmfile
       phase_kubectl
       ;;
     --skip-infect)
       phase_tofu
-      phase_ansible
+      phase_snapshot
+      phase_bootstrap
+      phase_secrets_render
+      phase_secrets_apply
       phase_nixos
       phase_helmfile
       phase_kubectl
       ;;
     --skip-nixos)
       phase_tofu
+      phase_snapshot
       phase_infect
-      phase_ansible
+      phase_bootstrap
+      phase_secrets_render
+      phase_secrets_apply
       phase_helmfile
       phase_kubectl
       ;;
     --skip-ansible)
       phase_tofu
+      phase_snapshot
       phase_infect
+      phase_nixos
+      phase_helmfile
+      phase_kubectl
+      ;;
+    --skip-secrets)
+      phase_tofu
+      phase_snapshot
+      phase_infect
+      phase_bootstrap
       phase_nixos
       phase_helmfile
       phase_kubectl
       ;;
     --skip-helmfile)
       phase_tofu
+      phase_snapshot
       phase_infect
-      phase_ansible
+      phase_bootstrap
+      phase_secrets_render
+      phase_secrets_apply
       phase_nixos
       phase_kubectl
       ;;
     --skip-kubectl)
       phase_tofu
+      phase_snapshot
       phase_infect
-      phase_ansible
+      phase_bootstrap
+      phase_secrets_render
+      phase_secrets_apply
       phase_nixos
       phase_helmfile
       ;;
@@ -484,8 +554,11 @@ main() {
       ;;
     *)
       phase_tofu
+      phase_snapshot
       phase_infect
-      phase_ansible
+      phase_bootstrap
+      phase_secrets_render
+      phase_secrets_apply
       phase_nixos
       phase_helmfile
       phase_kubectl

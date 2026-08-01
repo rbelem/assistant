@@ -15,8 +15,8 @@
 ***REMOVED***   scripts/snapshot-state.sh --help       ***REMOVED*** this message
 ***REMOVED***
 ***REMOVED*** Environment:
-***REMOVED***   PASSWORD                optional (bitw reads it for master password)
-***REMOVED***                           On VPS: /etc/agent/bw_master_pw is read as fallback
+***REMOVED***   PASSWORD                optional (bitw reads it for master password from
+***REMOVED***                           libsecret keyring; this env var overrides if set)
 ***REMOVED***   SNAPSHOT_BW_ITEM        BW item name (default: assistant/tofu-state-snapshot)
 ***REMOVED***   SNAPSHOT_HISTORY_MAX    max snapshots to keep (default: 10)
 ***REMOVED***   TOFU_DIR                path to tofu/ directory (default: ../tofu relative to script)
@@ -77,11 +77,6 @@ need bitw
 need jq
 need python3
 need base64
-
-***REMOVED*** PASSWORD resolution: env first, then VPS file, then libsecret auto-unlock
-if [[ -z "${PASSWORD:-}" && -r /etc/agent/bw_master_pw ]]; then
-  export PASSWORD="$(cat /etc/agent/bw_master_pw)"
-fi
 
 ***REMOVED*** bitw preflight: verify login tokens exist
 if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then

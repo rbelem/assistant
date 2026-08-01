@@ -36,14 +36,9 @@ ssh root@$VPS_IP 'curl -sL https://raw.githubusercontent.com/elitak/nixos-infect
 
 **NixOS:** NixOS config lives in the separate `nix-config` repo (`~/Workspace/github.com/rbelem/nix-config`). Deploy with `nixos-rebuild switch --flake path:$NIX_CONFIG_DIR***REMOVED***agent --target-host root@$VPS_IP`.
 
-**Ansible requires** bitw login before running. On the VPS:
-```bash
-bitw login
-umask 077
-read -s -p "Master password: " pw; echo "$pw" > /root/.bw_master_pw
-```
+**Ansible secrets** are split into two playbooks: `secrets-render.yml` runs on the **workstation** (localhost, connection: local) and renders Bitwarden vault items to `.rendered/` (gitignored). `secrets-apply.yml` runs on the **VPS** and copies the pinned allowlist from `.rendered/` to the VPS. The master password never touches the VPS — bitw on the workstation uses libsecret (cached master password) or `PASSWORD` env. The VPS has no bitw binary, no `/root/.bw_master_pw`, no `/etc/agent/bw_master_pw`. Compromise of the VPS yields only rendered runtime secrets (bounded blast radius), not the master password (force multiplier).
 
-The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` (via `PASSWORD` env from `/root/.bw_master_pw`) and writes to k8s Secrets + `/etc/tailscale/authkey`.
+If the workstation is unavailable, the VPS cannot self-heal secrets. Recovery: new workstation → `bitw login` → libsecret store → re-render.
 
 **k8s manifests:** rsync to `/opt/k8s/` on VPS, then `kubectl apply -f /opt/k8s/manifests/hermes/` etc. Namespaces are managed by Ansible (`namespace_list` in `ansible/inventory/hosts.yml`).
 
@@ -53,7 +48,8 @@ The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` (via `PA
 |------|---------|
 | `tofu/main.tf` | OVH VPS + DNS A record (agent.${DOMAIN}) + S3 state bucket. Uses `plan = []` list syntax, not block syntax |
 | `tofu/variables.tf` | Uses `vps_display_name`, `vps_plan_code`, `vps_datacenter`, `ssh_public_key` + `vps_image_id` (both required together) |
-| `ansible/playbooks/secrets.yml` | Bitwarden → k8s Secret sync. Fetches 13 items, creates 4 secrets (hermes + n8n + postgres + zitadel; postgres-secrets duplicated to n8n+auth) |
+| `ansible/playbooks/secrets-render.yml` | Workstation-side: renders Bitwarden vault items to `.rendered/` (k8s Secret/ConfigMap manifests + host files). Runs on localhost with `connection: local` |
+| `ansible/playbooks/secrets-apply.yml` | VPS-side: copies pinned allowlist from `.rendered/` to VPS, applies k8s manifests. No bitw or master password needed |
 | `ansible/playbooks/deploy.yml` | kubectl apply from /opt/k8s/. Waits for rollout. Idempotent |
 | `k8s/helmfile.yaml` | Helm releases: PostgreSQL, n8n, Zitadel |
 | `k8s/helm/postgres-values.yaml` | Bitnami PostgreSQL values for shared n8n+Zitadel use |
@@ -68,13 +64,7 @@ The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` (via `PA
 
 ***REMOVED******REMOVED*** Secrets (Bitwarden vault: `${PROJECT_NAME}`)
 
-<<<<<<< HEAD
-13 items in vault (all named `assistant/<kebab-case>`, one credential per item). The `secrets.yml` playbook fetches them by name. See `ansible/vault.yml` for exact field names. Key items: `assistant/minimax-api-key`, `assistant/hermes-discord-token`, `assistant/tailscale-authkey`.
-||||||| parent of a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
-12 items in vault. The `secrets.yml` playbook fetches them by name. See `ansible/vault.yml` for exact field names. Key items: OpenRouter API Key, Hermes Discord token, Tailscale Auth Key, Restic password, S3-compatible object storage keys.
-=======
-15 items in vault (all named `assistant/<kebab-case>`). The `secrets.yml` playbook fetches them by name. See `ansible/vault.yml` for exact field names. Key items: `assistant/openrouter-api-key`, `assistant/hermes-discord-token`, `assistant/tailscale-authkey`, `assistant/restic-backup-password`, `assistant/ovh-object-storage`.
->>>>>>> a48dc0a (refactor(secrets): batch BW item rename to assistant/<kebab> convention)
+13 items in vault (all named `assistant/<kebab-case>`, one credential per item). The `secrets-render.yml` playbook fetches them by name on the workstation. See `ansible/vault.yml` for exact field names. Key items: `assistant/minimax-api-key`, `assistant/hermes-discord-token`, `assistant/tailscale-authkey`.
 
 ***REMOVED******REMOVED*** Operations
 
@@ -82,6 +72,7 @@ The `secrets.yml` playbook reads from Bitwarden vault `${PROJECT_NAME}` (via `PA
 - Update workloads: `ansible-playbook -i inventory/hosts.yml playbooks/update.yml` (does rollout restart)
 - NixOS update: `nixos-rebuild switch --flake path:$NIX_CONFIG_DIR***REMOVED***agent --target-host root@agent.${DOMAIN} --upgrade` (from nix-config repo)
 - Destroy: `./scripts/deploy.sh destroy`
+- Verify VPS clean: `scripts/verify-g3.sh` (asserts no master password artifacts on VPS)
 
 ***REMOVED******REMOVED*** OCR (Baidu Unlimited-OCR on Lambda Cloud) — DEFERRED
 
@@ -120,3 +111,8 @@ and say "extract text from this" — Hermes invokes the skill automatically.
 - **Headroom runs in two places**: local machine (wraps opencode via `headroom wrap opencode`) and VPS (k3s deployment that Hermes routes through).
 - **DNS propagation** on OVH is slow (hours). Use the raw IP for initial deploy.
 - **Lambda GPU instance is NOT always running** — Lambda Cloud dropped 2026-07-27. OCR skill stays as dead config.
+- **Master password never touches the VPS by design.** Do not re-add `/etc/agent/bw_master_pw` or a VPS-side bitw install to make state-snapshot unattended again. If unattended VPS-side vault access becomes a hard requirement, migrate to Bitwarden Organizations + service accounts.
+
+***REMOVED******REMOVED*** Deferred decisions
+
+- **Bitwarden Organizations + service accounts** would enable unattended VPS-side vault access with scoped permissions. Not currently needed (state-snapshot runs on workstation). Revisit if unattended VPS-side vault access becomes a hard requirement.
