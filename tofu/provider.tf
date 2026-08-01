@@ -1,17 +1,17 @@
-# -----------------------------------------------------------------------------
-# Provider Configuration — Hetzner Cloud + AWS S3 + Porkbun DNS
-# -----------------------------------------------------------------------------
-# Hetzner Cloud credentials are sourced from environment variables:
-#   HCLOUD_TOKEN
+#-----------------------------------------------------------------------------
+#Provider Configuration — Hetzner Cloud + AWS S3 + Porkbun DNS
+#-----------------------------------------------------------------------------
+#Hetzner Cloud credentials are sourced from environment variables:
+#HCLOUD_TOKEN
 #
-# AWS/S3 credentials for Object Storage:
-#   Passed via tofu-inputs variables: storage_access_key, storage_secret_key,
-#   storage_endpoint, storage_region (and vps_datacenter for AWS region).
+#AWS/S3 credentials for Object Storage:
+#Passed via tofu-inputs variables: storage_access_key, storage_secret_key,
+#storage_endpoint, storage_region (and vps_datacenter for AWS region).
 #
-# Porkbun DNS credentials:
-#   var.porkbun_api_key, var.porkbun_secret_api_key
-#   (sourced from Bitwarden via TF_VAR_* env vars)
-# -----------------------------------------------------------------------------
+#Porkbun DNS credentials:
+#var.porkbun_api_key, var.porkbun_secret_api_key
+#(sourced from Bitwarden via TF_VAR_* env vars)
+#-----------------------------------------------------------------------------
 
 terraform {
   required_version = ">= 1.6.0"
@@ -26,20 +26,15 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
-
-    porkbun = {
-      source  = "marcfrederick/porkbun"
-      version = "~> 1.3"
-    }
   }
 }
 
-# -----------------------------------------------------------------------------
-# AWS S3 Provider — configured for S3-compatible Object Storage
-# -----------------------------------------------------------------------------
-# Manages S3 buckets on an S3-compatible Object Storage backend (e.g. Hetzner, Backblaze B2, Wasabi).
-# Region, endpoint, and credentials are sourced from tofu-inputs variables.
-# -----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+#AWS S3 Provider — configured for S3-compatible Object Storage
+#-----------------------------------------------------------------------------
+#Manages S3 buckets on an S3-compatible Object Storage backend (e.g. Hetzner, Backblaze B2, Wasabi).
+#Region, endpoint, and credentials are sourced from tofu-inputs variables.
+#-----------------------------------------------------------------------------
 provider "aws" {
   region     = var.storage_region
   access_key = var.storage_access_key
@@ -56,33 +51,18 @@ provider "aws" {
   s3_use_path_style           = true
 }
 
-# -----------------------------------------------------------------------------
-# Porkbun DNS Provider
-# -----------------------------------------------------------------------------
-# Manages DNS records for the configured domain (registered at Porkbun).
-# Credentials sourced from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY env vars.
-# -----------------------------------------------------------------------------
-provider "porkbun" {
-  api_key        = var.porkbun_api_key
-  secret_api_key = var.porkbun_secret_api_key
-}
+#-----------------------------------------------------------------------------
+#Porkbun DNS is managed by scripts/dns-sync.sh (direct API) — the
+#marcfrederick/porkbun provider's create path is broken upstream
+#(record id returned as object, provider expects int64 — issue #35).
+#-----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# Hetzner Cloud Provider
-# -----------------------------------------------------------------------------
-# Manages the VPS, SSH keys, and DNS-adjacent resources via the Hetzner Cloud API.
-# Token sourced from var.hcloud_token (Bitwarden assistant/tofu-inputs).
-# -----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+#Hetzner Cloud Provider
+#-----------------------------------------------------------------------------
+#Manages the VPS, SSH keys, and DNS-adjacent resources via the Hetzner Cloud API.
+#Token sourced from var.hcloud_token (Bitwarden assistant/tofu-inputs).
+#-----------------------------------------------------------------------------
 provider "hcloud" {
-  token = var.hcloud_token
-}
-
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Hetzner Cloud Provider
-***REMOVED*** -----------------------------------------------------------------------------
-***REMOVED*** Manages the VPS, SSH keys, and DNS-adjacent resources via the Hetzner Cloud API.
-***REMOVED*** Token sourced from var.hcloud_token (Bitwarden assistant/tofu-inputs).
-***REMOVED*** -----------------------------------------------------------------------------
-provider "hetznercloud" {
   token = var.hcloud_token
 }

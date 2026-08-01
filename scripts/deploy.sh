@@ -361,6 +361,22 @@ phase_snapshot() {
   fi
 }
 
+phase_dns() {
+  # Sync Porkbun DNS A records (apex + subdomains) to the VPS IP via the
+  # direct API. Runs on the workstation after provisioning; idempotent.
+  if [[ ! -x "$DIR/scripts/dns-sync.sh" ]]; then
+    return 0
+  fi
+
+  step "Sync DNS records to VPS IP"
+  if "$DIR/scripts/dns-sync.sh" 2>&1; then
+    ok "DNS records synced."
+  else
+    err "DNS sync failed (see output above)."
+    exit 1
+  fi
+}
+
 phase_helmfile() {
   step "5/6 — Deploy Helm releases (Postgres, n8n, Zitadel)"
   if [[ -z "$VPS_IP" ]]; then
@@ -485,6 +501,7 @@ main() {
       ;;
     --skip-tofu)
       phase_infect
+      phase_dns
       phase_bootstrap
       phase_secrets_render
       phase_secrets_apply
@@ -494,6 +511,7 @@ main() {
       ;;
     --skip-infect)
       phase_tofu
+      phase_dns
       phase_snapshot
       phase_bootstrap
       phase_secrets_render
@@ -504,6 +522,7 @@ main() {
       ;;
     --skip-nixos)
       phase_tofu
+      phase_dns
       phase_snapshot
       phase_infect
       phase_bootstrap
@@ -514,6 +533,7 @@ main() {
       ;;
     --skip-ansible)
       phase_tofu
+      phase_dns
       phase_snapshot
       phase_infect
       phase_nixos
@@ -522,6 +542,7 @@ main() {
       ;;
     --skip-secrets)
       phase_tofu
+      phase_dns
       phase_snapshot
       phase_infect
       phase_bootstrap
@@ -531,6 +552,7 @@ main() {
       ;;
     --skip-helmfile)
       phase_tofu
+      phase_dns
       phase_snapshot
       phase_infect
       phase_bootstrap
@@ -541,6 +563,7 @@ main() {
       ;;
     --skip-kubectl)
       phase_tofu
+      phase_dns
       phase_snapshot
       phase_infect
       phase_bootstrap
@@ -554,6 +577,7 @@ main() {
       ;;
     *)
       phase_tofu
+      phase_dns
       phase_snapshot
       phase_infect
       phase_bootstrap
