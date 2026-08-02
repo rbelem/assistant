@@ -257,8 +257,13 @@ phase_infect() {
   prompt_confirm
 
   info "Running nixos-infect..."
+  ***REMOVED*** Ubuntu 24.04+ mounts /tmp as tmpfs, so nixos-infect's swapfile setup
+  ***REMOVED*** (swapon on /tmp/nixos-infect.*.swp) fails with "Invalid argument" and
+  ***REMOVED*** aborts under set -e. Route the swapfile to disk-backed /var/tmp instead.
   ssh -i "$SSH_KEY" "$EFFECTIVE_SSH_USER@$VPS_IP" \
     'curl -sL https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect \
+    | sed -e "s|mktemp /tmp/nixos-infect|mktemp /var/tmp/nixos-infect|" \
+          -e "s|rm -vf /tmp/nixos-infect|rm -vf /var/tmp/nixos-infect|" \
     | NIX_CHANNEL=nixos-unstable bash'
 
   ok "NixOS installed. The VPS will reboot."
