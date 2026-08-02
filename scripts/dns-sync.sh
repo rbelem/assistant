@@ -117,8 +117,12 @@ for name in "${TARGETS[@]}"; do
     continue
   fi
 
-  # create — name is the label (empty for apex)
-  label="${name%.$DOMAIN}"
+  # create — name is the label (empty for apex). ${name%.$DOMAIN} does not
+  # strip when name == domain (apex), so special-case it.
+  label=""
+  if [[ "$name" != "$DOMAIN" ]]; then
+    label="${name%.$DOMAIN}"
+  fi
   body="$(auth_json | jq --arg n "$label" --arg ip "$IP" --arg ttl "$TTL" \
     '. + {name: $n, type: "A", content: $ip, ttl: $ttl}')"
   resp="$(post "dns/create/$DOMAIN" "$body")"
