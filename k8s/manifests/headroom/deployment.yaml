@@ -24,7 +24,6 @@ spec:
           image: ghcr.io/chopratejas/headroom:latest
           imagePullPolicy: IfNotPresent
           args:
-            - "proxy"
             - "--port"
             - "8787"
           ports:
