@@ -22,10 +22,22 @@
         path: "{{ bootstrap_marker }}"
       register: bootstrap_stat
 
+    - name: Check if NixOS is already running
+      ansible.builtin.command: nixos-version
+      register: nixos_check
+      changed_when: false
+      failed_when: false
+
+    - name: Set NixOS fact
+      ansible.builtin.set_fact:
+        is_nixos: "{{ nixos_check.rc == 0 }}"
+
     - name: Set hostname
       ansible.builtin.hostname:
         name: "{{ vps_hostname }}"
-      when: not bootstrap_stat.stat.exists
+      when:
+        - not bootstrap_stat.stat.exists
+        - not is_nixos  ***REMOVED*** NixOS: hostname managed declaratively; /etc/machine-info is read-only
 
     - name: Update /etc/hosts with hostname
       ansible.builtin.lineinfile:
@@ -33,7 +45,9 @@
         regexp: "^127\\.0\\.1\\.1"
         line: "127.0.1.1 {{ vps_hostname }}"
         state: present
-      when: not bootstrap_stat.stat.exists
+      when:
+        - not bootstrap_stat.stat.exists
+        - not is_nixos  ***REMOVED*** NixOS: /etc/hosts managed declaratively (read-only)
 
     - name: Install base packages (apt-based)
       ansible.builtin.apt:
@@ -51,16 +65,6 @@
       when:
         - not bootstrap_stat.stat.exists
         - ansible_os_family == "Debian"
-
-    - name: Check if NixOS is already running
-      ansible.builtin.command: nixos-version
-      register: nixos_check
-      changed_when: false
-      failed_when: false
-
-    - name: Set NixOS fact
-      ansible.builtin.set_fact:
-        is_nixos: "{{ nixos_check.rc == 0 }}"
 
     - name: Note NixOS detected (k3s managed by NixOS module)
       ansible.builtin.debug:

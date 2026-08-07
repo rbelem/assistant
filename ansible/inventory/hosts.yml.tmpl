@@ -9,7 +9,7 @@ all:
       ansible_host: ${VPS_HOST}
       ansible_user: ${VPS_SSH_USER}
       ansible_port: ${VPS_SSH_PORT}
-      ansible_python_interpreter: /usr/bin/python3
+      ansible_python_interpreter: /usr/bin/env python3
   vars:
     namespace_list:
       - hermes
