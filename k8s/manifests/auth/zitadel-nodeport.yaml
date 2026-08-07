@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: zitadel-nodeport
+  namespace: auth
+  labels:
+    app.kubernetes.io/name: zitadel
+    app.kubernetes.io/part-of: ai-agent-stack
+spec:
+  # NodePort so host-level Caddy can proxy without k8s DNS resolution.
+  # Chart service is ClusterIP (helm chart ignores nodePort in values).
+  type: NodePort
+  selector:
+    app.kubernetes.io/instance: zitadel
+    app.kubernetes.io/component: start
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      nodePort: 30003
+      protocol: TCP
