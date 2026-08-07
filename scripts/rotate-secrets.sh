@@ -8,6 +8,8 @@
 # Uses the `bitw` CLI (rbelem fork). bitw auto-unlocks via libsecret keyring
 # (entry "bitwarden master-password"), or the PASSWORD env var, or an
 # interactive prompt. No session tokens, no BW_SESSION.
+# Rotated values are mirrored to Bitwarden Secrets Manager (bws) — SM is the
+# render source, so a failed SM sync is fatal.
 #
 # Usage:
 #   rotate-secrets.sh list                              # all items + last rotation
@@ -69,6 +71,8 @@ audit_log() {
 #--- source pure functions -----------------------------------------------------
 # shellcheck source=rotate-secrets.lib.sh
 source "$SCRIPT_DIR/rotate-secrets.lib.sh"
+# shellcheck source=lib/bws.sh
+source "$SCRIPT_DIR/lib/bws.sh"
 
 #--- arg parsing ---------------------------------------------------------------
 CMD=""
@@ -128,6 +132,7 @@ HISTORY_ITEM="$(echo "$CONFIG_JSON" | jq -r '.backup.history_item')"
 #--- preflight (skip for --help / dry-run list) --------------------------------
 preflight() {
   command -v bitw >/dev/null 2>&1 || { err "bitw CLI not found"; exit "$EXIT_BW_UNAVAILABLE"; }
+  command -v bws >/dev/null 2>&1 || { err "bws CLI not found (needed for SM sync)"; exit "$EXIT_BW_UNAVAILABLE"; }
   command -v jq >/dev/null 2>&1 || { err "jq not found"; exit "$EXIT_USAGE"; }
   command -v yq >/dev/null 2>&1 || { err "yq not found (https://github.com/mikefarah/yq)"; exit "$EXIT_USAGE"; }
   command -v openssl >/dev/null 2>&1 || { err "openssl not found"; exit "$EXIT_USAGE"; }
@@ -244,6 +249,49 @@ generate_value() {
     password) gen_password_diceware "$word_count" ;;
     *)        err "unknown generator: $generator"; return 1 ;;
   esac
+}
+
+#--- SM sync after rotation ---------------------------------------------------
+# Maps personal vault item names to SM key names and updates the SM secret.
+_bws_map_sm_key() {
+  local item_name="$1"
+  case "$item_name" in
+    assistant/zitadel-admin-password) echo "ZITADEL_ADMIN_PASSWORD" ;;
+    assistant/n8n-encryption-key)     echo "N8N_ENCRYPTION_KEY" ;;
+    assistant/postgres-password)      echo "POSTGRES_PASSWORD" ;;
+    assistant/zitadel-masterkey)      echo "ZITADEL_MASTERKEY" ;;
+    assistant/restic-backup-password) echo "RESTIC_BACKUP_PASSWORD" ;;
+    *)                                echo "" ;;
+  esac
+}
+
+_bws_sync_after_rotate() {
+  local item_name="$1" new_value="$2"
+  local sm_key
+  sm_key="$(_bws_map_sm_key "$item_name")"
+  [[ -z "$sm_key" ]] && return 0  # no SM mapping for this item
+
+  # Load token: env (BWS_ACCESS_TOKEN / legacy SM_ACCESS_TOKEN), else ~/.config/bitw/config
+  BWS_ACCESS_TOKEN="${BWS_ACCESS_TOKEN:-${SM_ACCESS_TOKEN:-}}"
+  export BWS_ACCESS_TOKEN
+  _bws_load_token
+  [[ -z "$BWS_ACCESS_TOKEN" ]] && { err "BWS_ACCESS_TOKEN not set — SM sync for $sm_key cannot proceed"; return 1; }
+
+  local pid sid
+  pid="$(bws project list -o json 2>/dev/null | jq -r '.[] | select(.name == "assistant") | .id')"
+  [[ -z "$pid" || "$pid" == "null" ]] && { warn "bws: assistant project not found — skipping SM sync for $sm_key"; return 1; }
+
+  sid="$(bws secret list -o json "$pid" 2>/dev/null | jq -r --arg k "$sm_key" '.[] | select(.key == $k) | .id')"
+  [[ -z "$sid" || "$sid" == "null" ]] && { warn "bws: SM secret $sm_key not found — skipping"; return 1; }
+
+  if bws secret edit "--value=$new_value" "$sid" 2>/dev/null; then
+    info "  SM synced: $sm_key"
+    audit_log "$item_name" "bws_sync" "success" "" ""
+  else
+    err "SM sync failed for $sm_key — update manually via bws secret edit"
+    audit_log "$item_name" "bws_sync" "failed" "" ""
+    return 1
+  fi
 }
 
 #--- rotation logic ------------------------------------------------------------
@@ -371,6 +419,13 @@ rotate_item() {
   ok "rotated: $item_name"
   audit_log "$item_name" "rotate" "success" "$age" "$new_rev"
 
+  # Sync the new value to the corresponding SM secret (fatal: SM is the render source)
+  if ! _bws_sync_after_rotate "$item_name" "$new_value"; then
+    err "SM sync failed for $item_name — SM is the render source, refusing to report success"
+    err "Fix by hand: bws secret edit <secret-id> --value=... then re-run"
+    exit "$EXIT_BW_UNAVAILABLE"
+  fi
+
   # Post-rotation handoff
   local ansible_cmd
   ansible_cmd="$(echo "$CONFIG_JSON" | jq -r '.deploy_handoff.ansible_cmd')"
@@ -385,6 +440,9 @@ rotate_item() {
   if [[ -n "$health_cmd" ]]; then
     info "  2. verify: $health_cmd"
   fi
+
+  # NOTE: The corresponding SM secret is synced automatically by
+  # _bws_sync_after_rotate() above. No manual update needed.
 }
 
 #--- subcommands ---------------------------------------------------------------

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# bws-check — verify SM access token works.
+# Exit code 0 = OK, 1 = fail.
+set -euo pipefail
+dir="$(cd "$(dirname "$0")" && pwd)"
+source "$dir/lib/bws.sh"
+bws_check

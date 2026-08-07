@@ -45,7 +45,7 @@ nix shell 'nixpkgs#git-filter-repo' --command git-filter-repo \
 
 # Strip ***REMOVED*** markers from script and tofu files
 echo "  Stripping ***REMOVED*** markers..."
-for f in scripts/fetch_vault.sh scripts/populate-vault.sh scripts/deploy.sh tofu/tofu-wrapper.sh; do
+for f in scripts/fetch_vault.sh scripts/populate-sm.sh scripts/deploy.sh tofu/tofu-wrapper.sh; do
   if [[ -f "$f" ]]; then
     sed -i -E "s/^( *)(\*\*\*REMOVED\*\*\* *)/\1#/" "$f"
   fi
@@ -93,14 +93,6 @@ echo "  ✓ gitleaks passed"
 
 # ---- Phase 5: render vault.env ----
 echo "==> Phase 5: render vault.env from Bitwarden"
-if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
-  echo
-  echo "bitw login tokens not found. Run:"
-  echo "  bitw login"
-  echo "Then re-run this script."
-  exit 1
-fi
-
 echo "  Fetching vault contents..."
 scripts/fetch_vault.sh
 echo "  ✓ vault.env rendered"
