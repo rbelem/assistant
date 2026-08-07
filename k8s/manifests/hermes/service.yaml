@@ -6,18 +6,20 @@ metadata:
   labels:
     app: hermes-agent
 spec:
-  ***REMOVED*** NodePort so host-level Caddy can proxy without k8s DNS resolution
+  # NodePort so host-level Caddy can proxy without k8s DNS resolution.
+  # 30080 → OpenAI-compatible API server (hermes.rclb.dev/v1/*)
+  # 30090 → web dashboard (hermes.rclb.dev/*)
   type: NodePort
   selector:
     app: hermes-agent
   ports:
     - name: api
-      port: 8080
+      port: 8642
       targetPort: api
       nodePort: 30080
       protocol: TCP
-    - name: health
-      port: 9090
-      targetPort: health
+    - name: dashboard
+      port: 9119
+      targetPort: dashboard
       nodePort: 30090
       protocol: TCP
