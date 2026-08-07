@@ -1,9 +1,9 @@
 #-----------------------------------------------------------------------------
-#Main Infrastructure — Hetzner Cloud VPS + Porkbun DNS + Object Storage
+#Main Infrastructure — Hetzner Cloud VPS + Cloudflare DNS + Object Storage
 #-----------------------------------------------------------------------------
 #Resources:
 #1. Hetzner Cloud server (Ubuntu 26.04 → converted to NixOS via nixos-infect)
-#2. Porkbun DNS A records: wildcard + subdomains → VPS public IP
+#2. Cloudflare DNS A/CNAME records (see dns.tf) → VPS IP + GitHub Pages
 #3. S3 buckets for OpenTofu state and restic backups
 #-----------------------------------------------------------------------------
 
@@ -45,12 +45,11 @@ resource "hcloud_server" "agent" {
 }
 
 #-----------------------------------------------------------------------------
-#DNS — managed by scripts/dns-sync.sh (direct Porkbun API)
+#DNS — managed by tofu/dns.tf (Cloudflare provider)
 #-----------------------------------------------------------------------------
-#DNS A records (apex + subdomains → server IP) are synced by
-#scripts/dns-sync.sh after provisioning. The tofu porkbun provider was
-#dropped because its create path is broken upstream (record id returned
-#as object; provider expects int64 — marcfrederick/porkbun issue #35).
+#Legacy: scripts/dns-sync.sh (Porkbun API) — replaced by Cloudflare provider
+#since the domain nameservers point to Cloudflare. See tofu/dns.tf for the
+#A record resources.
 
 #-----------------------------------------------------------------------------
 #Object Storage — State Bucket Only

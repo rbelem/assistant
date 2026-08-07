@@ -100,19 +100,6 @@ resource "cloudflare_record" "srv_autodiscover" {
   }
 }
 
-resource "cloudflare_record" "srv_matrix_identity" {
-  zone_id = data.cloudflare_zone.main.id
-  name    = "_matrix-identity._tcp"
-  type    = "SRV"
-  ttl     = 1
-  data {
-    priority = 10
-    weight   = 0
-    port     = 443
-    target   = "matrix.rclb.dev"
-  }
-}
-
 #--- TXT records ------------------------------------------------------------
 # NOTE: the apex SPF record (v=spf1 include:_spf.mx.cloudflare.net), the 3
 # MX records (amir/linda/isaac.mx.cloudflare.net), and the DKIM record
