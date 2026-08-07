@@ -27,7 +27,7 @@ nix shell 'nixpkgs***REMOVED***git-filter-repo' --command bash -c '
 '
 
 echo "[mirror-sync] strip ***REMOVED*** markers from scripts + tofu"
-for f in scripts/fetch_vault.sh scripts/populate-vault.sh scripts/deploy.sh scripts/devbox/*.sh tofu/tofu-wrapper.sh; do
+for f in scripts/fetch_vault.sh scripts/populate-sm.sh scripts/deploy.sh scripts/devbox/*.sh tofu/tofu-wrapper.sh; do
   [[ -f "$f" ]] || continue
   sed -i -E 's/^( *)(\*\*\*REMOVED\*\*\* *)/\1***REMOVED***/' "$f"
 done

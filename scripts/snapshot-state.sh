@@ -1,35 +1,34 @@
 ***REMOVED***!/usr/bin/env bash
-***REMOVED*** snapshot-state.sh — defensive backup of tofu state to Bitwarden
+***REMOVED*** snapshot-state.sh — defensive backup of tofu state to Bitwarden SM
 ***REMOVED***
 ***REMOVED*** Reads the current .tfstate from the live S3 backend, base64-encodes it,
-***REMOVED*** and appends it to a history chain in assistant/tofu-state-snapshot (BW
-***REMOVED*** Secure Note). Trims to SNAPSHOT_HISTORY_MAX entries (default 10) to keep
+***REMOVED*** and appends it to a history chain in TOFU_STATE_SNAPSHOT (Bitwarden SM
+***REMOVED*** secret). Trims to SNAPSHOT_HISTORY_MAX entries (default 10) to keep
 ***REMOVED*** note size bounded. Captures backend URL + git SHA for cross-reference.
 ***REMOVED***
-***REMOVED*** Uses the `bitw` CLI (rbelem fork). bitw auto-unlocks via libsecret keyring
-***REMOVED*** (entry "bitwarden master-password"), or the PASSWORD env var, or an
-***REMOVED*** interactive prompt. No session tokens, no BW_SESSION.
+***REMOVED*** Uses bws (official Bitwarden Secrets Manager CLI) via scripts/lib/bws.sh.
+***REMOVED*** No master password, no interactive login — only a BWS access token.
 ***REMOVED***
 ***REMOVED*** Usage:
 ***REMOVED***   scripts/snapshot-state.sh              ***REMOVED*** snapshot current state
 ***REMOVED***   scripts/snapshot-state.sh --help       ***REMOVED*** this message
 ***REMOVED***
 ***REMOVED*** Environment:
-***REMOVED***   PASSWORD                optional (bitw reads it for master password from
-***REMOVED***                           libsecret keyring; this env var overrides if set)
-***REMOVED***   SNAPSHOT_BW_ITEM        BW item name (default: assistant/tofu-state-snapshot)
-***REMOVED***   SNAPSHOT_HISTORY_MAX    max snapshots to keep (default: 10)
-***REMOVED***   TOFU_DIR                path to tofu/ directory (default: ../tofu relative to script)
+***REMOVED***   BWS_ACCESS_TOKEN            SM machine-account access token
+***REMOVED***   SNAPSHOT_BW_ITEM            SM secret key (default: TOFU_STATE_SNAPSHOT)
+***REMOVED***   SNAPSHOT_HISTORY_MAX        max snapshots to keep (default: 10)
+***REMOVED***   TOFU_DIR                    path to tofu/ directory (default: ../tofu relative to script)
 ***REMOVED***
 ***REMOVED*** Exit codes:
 ***REMOVED***   0  success
 ***REMOVED***   1  usage error
-***REMOVED***   2  BW unavailable
+***REMOVED***   2  bws unavailable
 ***REMOVED***   3  item missing
 ***REMOVED***   4  tofu state pull failed
-***REMOVED***   5  bitw write failed
+***REMOVED***   5  bws write failed
 
 set -euo pipefail
+source "$(dirname "$0")/lib/bws.sh"
 
 ***REMOVED***--- exit codes ----------------------------------------------------------------
 readonly EXIT_USAGE=1
@@ -41,7 +40,7 @@ readonly EXIT_BW_WRITE_FAILED=5
 ***REMOVED***--- config --------------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SNAPSHOT_BW_ITEM="${SNAPSHOT_BW_ITEM:-assistant/tofu-state-snapshot}"
+SNAPSHOT_BW_ITEM="${SNAPSHOT_BW_ITEM:-TOFU_STATE_SNAPSHOT}"
 SNAPSHOT_HISTORY_MAX="${SNAPSHOT_HISTORY_MAX:-10}"
 TOFU_DIR="${TOFU_DIR:-$REPO_ROOT/tofu}"
 
@@ -73,34 +72,24 @@ need() {
   command -v "$1" >/dev/null 2>&1 \
     || { err "missing required binary: $1"; exit "$EXIT_USAGE"; }
 }
-need bitw
 need jq
-need python3
 need base64
 
-***REMOVED*** bitw preflight: verify login tokens exist
-if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
-  err "bitw login tokens not found."
-  err "Run: bitw login"
-  err "Or store master password: secret-tool store --label=\"Bitwarden\" bitwarden master-password"
+***REMOVED*** bws preflight: verify SM access token
+bws_check || exit "$EXIT_BW_UNAVAILABLE"
+
+***REMOVED*** Resolve project ID once for this run
+BWS_PROJECT_ID="$(bws project list -o json 2>/dev/null | jq -r '.[] | select(.name == "assistant") | .id')"
+if [[ -z "$BWS_PROJECT_ID" || "$BWS_PROJECT_ID" == "null" ]]; then
+  err "bws: assistant project not found in SM"
   exit "$EXIT_BW_UNAVAILABLE"
 fi
 
-***REMOVED*** Sync vault cache (idempotent, fast)
-bitw sync 2>/dev/null || true
-
-***REMOVED*** Verify bitw can access the vault (doubles as session validity check)
-if ! bitw get --json "$SNAPSHOT_BW_ITEM" >/dev/null 2>&1; then
-  ***REMOVED*** Could be missing item or unlock failure — check status
-  if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
-    err "bitw session invalid or expired"
-    exit "$EXIT_BW_UNAVAILABLE"
-  fi
-fi
-
-***REMOVED*** Verify BW item exists (exit code 3 if missing, with first-run hint)
-if ! bitw get --json "$SNAPSHOT_BW_ITEM" >/dev/null 2>&1; then
-  err "BW item '$SNAPSHOT_BW_ITEM' not found. See first-run note in --help."
+***REMOVED*** Resolve secret ID for TOFU_STATE_SNAPSHOT
+SECRET_ID="$(bws secret list -o json "$BWS_PROJECT_ID" 2>/dev/null | jq -r --arg k "$SNAPSHOT_BW_ITEM" '.[] | select(.key == $k) | .id')"
+if [[ -z "$SECRET_ID" || "$SECRET_ID" == "null" ]]; then
+  err "SM secret '$SNAPSHOT_BW_ITEM' not found. Create it first with:"
+  err "  scripts/populate-sm.sh  ***REMOVED*** or create via Bitwarden SM web vault"
   exit "$EXIT_ITEM_MISSING"
 fi
 
@@ -173,13 +162,11 @@ SNAPSHOT_ENTRY="$(jq -n \
     byte_size: $byte_size
   }')"
 
-***REMOVED***--- read existing BW item notes -----------------------------------------------
-info "reading existing snapshot item: $SNAPSHOT_BW_ITEM..."
+***REMOVED***--- read existing SM secret value --------------------------------------------
+info "reading existing snapshot secret: $SNAPSHOT_BW_ITEM..."
 EXISTING_NOTES=""
-if ! EXISTING_NOTES="$(bitw get --field notes "$SNAPSHOT_BW_ITEM" 2>/dev/null)"; then
-  warn "item not found: $SNAPSHOT_BW_ITEM"
-  err "Create it first with:"
-  err "  bitw create '$SNAPSHOT_BW_ITEM' --type 2 --notes '{\"schema_version\":1,\"snapshots\":[]}'"
+if ! EXISTING_NOTES="$(bws_get "$SNAPSHOT_BW_ITEM" 2>/dev/null)"; then
+  err "SM secret '$SNAPSHOT_BW_ITEM' not found or not readable."
   exit "$EXIT_ITEM_MISSING"
 fi
 
@@ -202,11 +189,18 @@ NEW_NOTES="$(echo "$EXISTING_NOTES" | jq \
   --argjson max "$SNAPSHOT_HISTORY_MAX" \
   '.snapshots = ([$new_entry] + .snapshots) | .snapshots = .snapshots[0:$max]')"
 
-***REMOVED***--- write back to BW ----------------------------------------------------------
-info "writing updated snapshot to Bitwarden..."
+***REMOVED***--- write back to SM ----------------------------------------------------------
+***REMOVED*** bws secret edit takes the value as a single argv (no --stdin/--value-file in bws 2.1.0).
+***REMOVED*** Guard against E2BIG: Linux MAX_ARG_STRLEN is 128 KiB per argument.
+if (( ${***REMOVED***NEW_NOTES} > 100000 )); then
+  err "snapshot payload too large for bws argv: ${***REMOVED***NEW_NOTES} bytes (>100KiB)"
+  err "reduce SNAPSHOT_HISTORY_MAX (currently $SNAPSHOT_HISTORY_MAX) or use a smaller state"
+  exit "$EXIT_BW_WRITE_FAILED"
+fi
 
-if ! bitw edit --notes "$NEW_NOTES" "$SNAPSHOT_BW_ITEM"; then
-  err "bitw edit failed"
+info "writing updated snapshot to Secrets Manager..."
+if ! bws secret edit "--value=$NEW_NOTES" "$SECRET_ID" 2>/dev/null; then
+  err "bws secret edit failed"
   exit "$EXIT_BW_WRITE_FAILED"
 fi
 
@@ -226,6 +220,5 @@ echo "  scripts/restore-state.sh                    ***REMOVED*** most recent"
 echo "  scripts/restore-state.sh --index N          ***REMOVED*** specific entry"
 echo
 echo "=== First-run note ==="
-echo "If this is the first snapshot, ensure the BW Secure Note exists:"
-echo "  bitw get --json '$SNAPSHOT_BW_ITEM' >/dev/null 2>&1 || \\"
-echo "    bitw create '$SNAPSHOT_BW_ITEM' --type 2 --notes '{\"schema_version\":1,\"snapshots\":[]}'"
+echo "If this is the first snapshot, ensure the SM secret exists:"
+echo "  bws secret create '$SNAPSHOT_BW_ITEM' '{\"schema_version\":1,\"snapshots\":[]}' \"\$BWS_PROJECT_ID\""

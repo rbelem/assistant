@@ -1,14 +1,13 @@
 ***REMOVED***!/usr/bin/env bash
-***REMOVED*** restore-state.sh — restore tofu state from Bitwarden snapshot
+***REMOVED*** restore-state.sh — restore tofu state from Bitwarden SM snapshot
 ***REMOVED***
-***REMOVED*** Reads from assistant/tofu-state-snapshot (BW Secure Note), decodes the
+***REMOVED*** Reads from TOFU_STATE_SNAPSHOT (Bitwarden SM secret), decodes the
 ***REMOVED*** base64-encoded state, and writes it to a local file. Operator-driven:
 ***REMOVED*** never writes to a tofu backend automatically. Optional --push for backend
 ***REMOVED*** recovery (requires explicit confirmation).
 ***REMOVED***
-***REMOVED*** Uses the `bitw` CLI (rbelem fork). bitw auto-unlocks via libsecret keyring
-***REMOVED*** (entry "bitwarden master-password"), or the PASSWORD env var, or an
-***REMOVED*** interactive prompt. No session tokens, no BW_SESSION.
+***REMOVED*** Uses bws (official Bitwarden Secrets Manager CLI) via scripts/lib/bws.sh.
+***REMOVED*** No master password, no interactive login — only a BWS access token.
 ***REMOVED***
 ***REMOVED*** Usage:
 ***REMOVED***   scripts/restore-state.sh                    ***REMOVED*** restore most recent snapshot
@@ -19,20 +18,20 @@
 ***REMOVED***   scripts/restore-state.sh --help             ***REMOVED*** this message
 ***REMOVED***
 ***REMOVED*** Environment:
-***REMOVED***   PASSWORD                optional (bitw reads it for master password from
-***REMOVED***                           libsecret keyring; this env var overrides if set)
-***REMOVED***   SNAPSHOT_BW_ITEM        BW item name (default: assistant/tofu-state-snapshot)
-***REMOVED***   TOFU_DIR                path to tofu/ directory (default: ../tofu relative to script)
+***REMOVED***   BWS_ACCESS_TOKEN            SM machine-account access token
+***REMOVED***   SNAPSHOT_BW_ITEM            SM secret key (default: TOFU_STATE_SNAPSHOT)
+***REMOVED***   TOFU_DIR                    path to tofu/ directory (default: ../tofu relative to script)
 ***REMOVED***
 ***REMOVED*** Exit codes:
 ***REMOVED***   0  success
 ***REMOVED***   1  usage error
-***REMOVED***   2  BW unavailable
+***REMOVED***   2  bws unavailable
 ***REMOVED***   3  item missing
 ***REMOVED***   4  no snapshots
 ***REMOVED***   5  write failed
 
 set -euo pipefail
+source "$(dirname "$0")/lib/bws.sh"
 
 ***REMOVED***--- exit codes ----------------------------------------------------------------
 readonly EXIT_USAGE=1
@@ -44,7 +43,7 @@ readonly EXIT_WRITE_FAILED=5
 ***REMOVED***--- config --------------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SNAPSHOT_BW_ITEM="${SNAPSHOT_BW_ITEM:-assistant/tofu-state-snapshot}"
+SNAPSHOT_BW_ITEM="${SNAPSHOT_BW_ITEM:-TOFU_STATE_SNAPSHOT}"
 TOFU_DIR="${TOFU_DIR:-$REPO_ROOT/tofu}"
 DEFAULT_OUTPUT="./terraform.tfstate.restored"
 
@@ -84,29 +83,17 @@ need() {
   command -v "$1" >/dev/null 2>&1 \
     || { err "missing required binary: $1"; exit "$EXIT_USAGE"; }
 }
-need bitw
 need jq
-need python3
 need base64
 
-***REMOVED*** bitw preflight: verify login tokens exist
-if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
-  err "bitw login tokens not found."
-  err "Run: bitw login"
-  err "Or store master password: secret-tool store --label=\"Bitwarden\" bitwarden master-password"
-  exit "$EXIT_BW_UNAVAILABLE"
-fi
+***REMOVED*** bws preflight: verify SM access token
+bws_check || exit "$EXIT_BW_UNAVAILABLE"
 
-***REMOVED*** Sync vault cache
-bitw sync 2>/dev/null || true
-
-***REMOVED***--- read BW item --------------------------------------------------------------
-info "reading snapshot item: $SNAPSHOT_BW_ITEM..."
+***REMOVED***--- read SM secret ------------------------------------------------------------
+info "reading snapshot secret: $SNAPSHOT_BW_ITEM..."
 NOTES=""
-if ! NOTES="$(bitw get --field notes "$SNAPSHOT_BW_ITEM" 2>/dev/null)"; then
-  err "item not found: $SNAPSHOT_BW_ITEM"
-  err "Create it first with snapshot-state.sh or manually:"
-  err "  bitw create '$SNAPSHOT_BW_ITEM' --type 2 --notes '{\"schema_version\":1,\"snapshots\":[]}'"
+if ! NOTES="$(bws_get "$SNAPSHOT_BW_ITEM" 2>/dev/null)"; then
+  err "SM secret '$SNAPSHOT_BW_ITEM' not found."
   exit "$EXIT_ITEM_MISSING"
 fi
 

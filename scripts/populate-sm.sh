@@ -1,11 +1,12 @@
 ***REMOVED***!/usr/bin/env bash
-***REMOVED*** populate-vault.sh — Create the 3 Bitwarden items needed for the
-***REMOVED*** Bitwarden+template externalization architecture. Idempotent: skips items
-***REMOVED*** that already exist.
+***REMOVED*** populate-sm.sh — Create the Secrets Manager keys needed for the
+***REMOVED*** Bitwarden SM+template externalization architecture. Idempotent: skips
+***REMOVED*** keys that already exist.
 ***REMOVED***
-***REMOVED*** Uses the `bitw` CLI (rbelem fork). bitw auto-unlocks via libsecret keyring
-***REMOVED*** (entry "bitwarden master-password"), or the PASSWORD env var, or an
-***REMOVED*** interactive prompt. No session tokens, no BW_SESSION.
+***REMOVED*** Uses the `bws` CLI (official Bitwarden Secrets Manager CLI).
+***REMOVED*** Authentication is via a machine-account access token — no
+***REMOVED*** master password, no interactive login. Set BWS_ACCESS_TOKEN env or store
+***REMOVED*** the token in ~/.config/bitw/config (key: sm_access_token).
 ***REMOVED***
 ***REMOVED*** Required env vars:
 ***REMOVED***   VPS_HOST          — current VPS public IPv4
@@ -25,11 +26,12 @@
 ***REMOVED***     PROJECT_NAME=assistant \
 ***REMOVED***     SUBDOMAINS_JSON='["app","www"]' \
 ***REMOVED***     TOFU_INPUTS_JSON='{"vps_plan_code":"KVM 4","datacenter":"gra","vps_image_id":"...","state_bucket_name":"...-tofu-state","storage_region":"gra","storage_endpoint":"https://s3.gra.io.REDACTED-OVH-DOMAIN","storage_access_key":"...","storage_secret_key":"...","ssh_public_key":"...","vps_os":"debian-12","vps_display_name":"agent"}' \
-***REMOVED***     scripts/populate-vault.sh
+***REMOVED***     scripts/populate-sm.sh
 ***REMOVED***
 ***REMOVED*** After successful run: scripts/fetch_vault.sh --check  ***REMOVED*** validate schema
 
 set -euo pipefail
+source "$(dirname "$0")/lib/bws.sh"
 
 ***REMOVED***--- arg validation ------------------------------------------------------------
 : "${VPS_HOST:?must set VPS_HOST (VPS public IPv4)}"
@@ -48,7 +50,7 @@ need() {
   command -v "$1" >/dev/null 2>&1 \
     || { echo "missing required binary: $1" >&2; exit 1; }
 }
-need bitw
+need bws
 need jq
 
 ***REMOVED*** Validate JSON payloads up front
@@ -57,69 +59,54 @@ echo "$SUBDOMAINS_JSON" | jq -e . >/dev/null 2>&1 \
 echo "$TOFU_INPUTS_JSON" | jq -e . >/dev/null 2>&1 \
   || { echo "TOFU_INPUTS_JSON is not valid JSON: $TOFU_INPUTS_JSON" >&2; exit 1; }
 
-***REMOVED***--- bitw preflight: verify login tokens exist --------------------------------
-if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
-  cat >&2 <<EOF
-bitw login tokens not found. Two options:
-  1. Run \`bitw login\` (interactive) to store login tokens.
-  2. Store master password in keyring for auto-unlock:
-       secret-tool store --label="Bitwarden" bitwarden master-password
-     (bitw will use it automatically from then on)
-EOF
-  exit 1
-fi
+***REMOVED***--- SM preflight: verify Secrets Manager access token -------------------------
+bws_check || exit 1
 
-***REMOVED***--- item 1: assistant/vps-ssh-key (SSH key type) -----------------------------
-echo
-echo "Creating assistant/vps-ssh-key (SSH key type)..."
-if bitw get --json "assistant/vps-ssh-key" >/dev/null 2>&1; then
-  echo "  ⊘ assistant/vps-ssh-key (already exists — skip)"
-else
-  ***REMOVED*** Private key via stdin to avoid argv exposure
-  if ! printf '%s' "$SSH_PRIVATE_KEY" | bitw create --type 5 --ssh-private-key-stdin --ssh-public-key "$SSH_PUBLIC_KEY" "assistant/vps-ssh-key"; then
-    echo "  ✗ assistant/vps-ssh-key: bitw create failed" >&2
-    exit 1
+***REMOVED***--- helper: create SM secret idempotently -------------------------------------
+***REMOVED*** If `bws_get <key>` succeeds, the secret exists → skip.
+***REMOVED*** Otherwise, create it with `bws_create <key> <value>`.
+sm_create_if_missing() {
+  local key="$1" value="$2"
+  if bws_get "$key" >/dev/null 2>&1; then
+    echo "  ⊘ $key (already exists — skip)"
+    return 0
   fi
-  echo "  ✓ assistant/vps-ssh-key (created)"
-fi
+  if ! bws_create "$key" "$value" 2>/dev/null; then
+    echo "  ✗ $key: bws_create failed" >&2
+    return 1
+  fi
+  echo "  ✓ $key (created)"
+}
 
-***REMOVED***--- item 2: assistant/domain-config (Secure Note + JSON) ------------------
+***REMOVED***--- key 1: VPS_SSH_KEY (SSH private key, raw) ----------------------
 echo
-echo "Creating assistant/domain-config (Secure Note)..."
-if bitw get --json "assistant/domain-config" >/dev/null 2>&1; then
-  echo "  ⊘ assistant/domain-config (already exists — skip)"
-else
-  DOMAIN_NOTES="$(jq -n --arg domain "$DOMAIN" --argjson subdomains "$SUBDOMAINS_JSON" '{domain:$domain, subdomains:$subdomains}' | jq -c .)"
-  if ! bitw create --type 2 --notes "$DOMAIN_NOTES" "assistant/domain-config"; then
-    echo "  ✗ assistant/domain-config: bitw create failed" >&2
-    exit 1
-  fi
-  echo "  ✓ assistant/domain-config (created)"
-fi
+echo "Creating VPS_SSH_KEY (SSH private key)..."
+sm_create_if_missing "VPS_SSH_KEY" "$SSH_PRIVATE_KEY" \
+  || exit 1
 
-***REMOVED***--- item 3: assistant/tofu-inputs (Secure Note + JSON) --------------------
+***REMOVED***--- key 2: DOMAIN_CONFIG (JSON) ------------------------------------
 echo
-echo "Creating assistant/tofu-inputs (Secure Note)..."
-if bitw get --json "assistant/tofu-inputs" >/dev/null 2>&1; then
-  echo "  ⊘ assistant/tofu-inputs (already exists — skip)"
-else
-  TOFU_NOTES="$(jq -n --argjson inputs "$TOFU_INPUTS_JSON" --arg project "$PROJECT_NAME" --arg domain "$DOMAIN" --arg host "$VPS_HOST" --arg user "$SSH_USER" --argjson port "$SSH_PORT" '{project_name:$project, domain:$domain, vps_host:$host, vps_ssh_user:$user, vps_ssh_port:$port} + $inputs' | jq -c .)"
-  if ! bitw create --type 2 --notes "$TOFU_NOTES" "assistant/tofu-inputs"; then
-    echo "  ✗ assistant/tofu-inputs: bitw create failed" >&2
-    exit 1
-  fi
-  echo "  ✓ assistant/tofu-inputs (created)"
-fi
+echo "Creating DOMAIN_CONFIG (JSON)..."
+DOMAIN_JSON="$(jq -n --arg domain "$DOMAIN" --argjson subdomains "$SUBDOMAINS_JSON" '{domain:$domain, subdomains:$subdomains}' | jq -c .)"
+sm_create_if_missing "DOMAIN_CONFIG" "$DOMAIN_JSON" \
+  || exit 1
+
+***REMOVED***--- key 3: TOFU_INPUTS (JSON) --------------------------------------
+echo
+echo "Creating TOFU_INPUTS (JSON)..."
+TOFU_JSON="$(jq -n --argjson inputs "$TOFU_INPUTS_JSON" --arg project "$PROJECT_NAME" --arg domain "$DOMAIN" --arg host "$VPS_HOST" --arg user "$SSH_USER" --argjson port "$SSH_PORT" '{project_name:$project, domain:$domain, vps_host:$host, vps_ssh_user:$user, vps_ssh_port:$port} + $inputs' | jq -c .)"
+sm_create_if_missing "TOFU_INPUTS" "$TOFU_JSON" \
+  || exit 1
 
 ***REMOVED***--- verify -------------------------------------------------------------------
 echo
-echo "Verifying items are retrievable..."
+echo "Verifying SM keys are retrievable..."
 all_ok=1
-for name in assistant/vps-ssh-key assistant/domain-config assistant/tofu-inputs; do
-  if bitw get --json "$name" >/dev/null 2>&1; then
-    echo "  ✓ $name retrievable"
+for key in VPS_SSH_KEY DOMAIN_CONFIG TOFU_INPUTS; do
+  if bws_get "$key" >/dev/null 2>&1; then
+    echo "  ✓ $key retrievable"
   else
-    echo "  ✗ $name NOT retrievable" >&2
+    echo "  ✗ $key NOT retrievable" >&2
     all_ok=0
   fi
 done
@@ -128,13 +115,14 @@ done
 
 ***REMOVED***--- summary ------------------------------------------------------------------
 echo
-echo "All 3 items created/verified."
+echo "All 3 SM keys created/verified."
 echo
 echo "Next step: validate the schema + render end-to-end:"
 echo "  scripts/fetch_vault.sh --check"
 echo
-echo "To update values later, edit the items in Bitwarden or via bitw CLI:"
-echo "  bitw get --json 'assistant/tofu-inputs' | jq -r '.notes | fromjson'"
+echo "To update values later:"
+echo "  bws_get 'TOFU_INPUTS'   ***REMOVED*** read current value (via lib/bws.sh)"
+echo "  bws secret edit <ID> --value='...'  ***REMOVED*** update value (raw CLI)"
 echo
 echo "Required TOFU_INPUTS_JSON keys (for full deploy):"
 echo '  vps_plan_code, datacenter, vps_image_id, vps_os, vps_display_name,'

@@ -1,0 +1,8 @@
+***REMOVED***!/usr/bin/env bash
+***REMOVED*** bws-get — get a single SM secret value.
+***REMOVED*** Usage: bws-get KEY
+***REMOVED*** Reads BWS_ACCESS_TOKEN from env or ~/.config/bitw/config.
+set -euo pipefail
+dir="$(cd "$(dirname "$0")" && pwd)"
+source "$dir/lib/bws.sh"
+bws_get "${1?usage: bws-get KEY}"

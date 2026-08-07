@@ -62,7 +62,7 @@ bws_check || exit 1
 ***REMOVED*** Fetch a raw SM secret value by key. Delegates to bws_get from lib/bws.sh.
 sm_get() {
   local key="$1"
-  bws_get "$key" 2>/dev/null
+  bws_get "$key" 2>/dev/null || true
 }
 
 assert_non_empty() {
