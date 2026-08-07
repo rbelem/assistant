@@ -1,14 +1,26 @@
 global:
+  security:
+    allowInsecureImages: true  ***REMOVED*** bitnamilegacy registry is not in Bitnami's OCI allowlist → must allow unvetted images
   postgresql:
     auth:
       existingSecret: postgres-secrets
       secretKeys:
         adminPasswordKey: postgres-password
       database: postgres    ***REMOVED*** default DB; n8n + zitadel DBs created via initdbScripts below
+***REMOVED*** Bitnami moved images off Docker Hub (2025-08): pull from bitnamilegacy
+image:
+  registry: docker.io/bitnamilegacy
+  repository: postgresql
+  tag: 17.6.0-debian-12-r4
 persistence:
   size: 5Gi
   storageClass: local-path
 primary:
+  initdb:
+    scripts:
+      create-dbs.sql: |
+        CREATE DATABASE n8n;
+        CREATE DATABASE zitadel;
   service:
     type: ClusterIP
   resources:
@@ -18,7 +30,3 @@ primary:
     limits:
       memory: 512Mi
       cpu: 500m
-initdbScripts:
-  create-dbs.sql: |
-    CREATE DATABASE n8n;
-    CREATE DATABASE zitadel;

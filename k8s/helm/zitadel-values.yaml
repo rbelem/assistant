@@ -6,29 +6,22 @@ zitadel:
     ExternalSecure: true
     TLS:
       Enabled: false  ***REMOVED*** Caddy handles TLS
-    Database:
-      postgres:
-        Host: postgres-postgresql.n8n
-        Port: 5432
-        Database: zitadel
-        User:
-          Username: postgres
-          Password:
-            SecretRef: postgres-secrets
-            SecretKey: postgres-password
-        Admin:
-          Username: postgres
-          Password:
-            SecretRef: postgres-secrets
-            SecretKey: postgres-password
 
   masterkeySecretName: zitadel-secrets
   masterkeySecretKey: masterkey
 
+***REMOVED*** DB credentials via DSN from rendered secret (configmapConfig holds plain strings only)
+env:
+  - name: ZITADEL_DATABASE_POSTGRES_DSN
+    valueFrom:
+      secretKeyRef:
+        name: zitadel-secrets
+        key: db_dsn
+
 service:
-  type: NodePort
+  ***REMOVED*** ClusterIP — Caddy proxies via manifest-managed NodePort service (k8s/manifests/auth/zitadel-nodeport.yaml)
+  type: ClusterIP
   port: 8080
-  nodePort: 30003
 
 resources:
   requests:
