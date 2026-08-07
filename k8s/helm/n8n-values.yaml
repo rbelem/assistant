@@ -50,7 +50,7 @@ env:
   - name: N8N_SECURE_COOKIE
     value: "true"
 
-***REMOVED*** OIDC via Zitadel — configured after Zitadel is running
+# OIDC via Zitadel — configured after Zitadel is running
 extraEnv:
   - name: N8N_SSO_OIDC_ENABLED
     value: "true"

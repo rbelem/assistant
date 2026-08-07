@@ -1,37 +1,37 @@
-***REMOVED***!/usr/bin/env bash
-***REMOVED*** ─────────────────────────────────────────────────────────────
-***REMOVED*** ocr — Baidu Unlimited-OCR on Lambda GPU Cloud
-***REMOVED*** ─────────────────────────────────────────────────────────────
-***REMOVED*** Spins up a GPU instance, deploys the Unlimited-OCR model via
-***REMOVED*** vLLM Docker, sends your file (image/pdf), returns text, then
-***REMOVED*** optionally tears down.
-***REMOVED***
-***REMOVED*** Usage:
-***REMOVED***   ./ocr.sh image.png                    ***REMOVED*** OCR a single image
-***REMOVED***   ./ocr.sh document.pdf                 ***REMOVED*** OCR a PDF (all pages)
-***REMOVED***   ./ocr.sh image.png --keep             ***REMOVED*** keep instance running after
-***REMOVED***   ./ocr.sh --status                     ***REMOVED*** check if instance is alive
-***REMOVED***   ./ocr.sh --kill                       ***REMOVED*** terminate the GPU instance
-***REMOVED***
-***REMOVED*** Supported formats: png, jpg, jpeg, webp, bmp, tiff, pdf
-***REMOVED***
-***REMOVED*** Requires:
-***REMOVED***   - tofu (OpenTofu) in PATH
-***REMOVED***   - LAMBDA_CLOUD_API_KEY env var set
-***REMOVED***   - tofu/lambda.tf configured with your SSH key
-***REMOVED***   - rsync + ssh for file transfer
-***REMOVED*** ─────────────────────────────────────────────────────────────
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────
+# ocr — Baidu Unlimited-OCR on Lambda GPU Cloud
+# ─────────────────────────────────────────────────────────────
+# Spins up a GPU instance, deploys the Unlimited-OCR model via
+# vLLM Docker, sends your file (image/pdf), returns text, then
+# optionally tears down.
+#
+# Usage:
+#   ./ocr.sh image.png                    # OCR a single image
+#   ./ocr.sh document.pdf                 # OCR a PDF (all pages)
+#   ./ocr.sh image.png --keep             # keep instance running after
+#   ./ocr.sh --status                     # check if instance is alive
+#   ./ocr.sh --kill                       # terminate the GPU instance
+#
+# Supported formats: png, jpg, jpeg, webp, bmp, tiff, pdf
+#
+# Requires:
+#   - tofu (OpenTofu) in PATH
+#   - LAMBDA_CLOUD_API_KEY env var set
+#   - tofu/lambda.tf configured with your SSH key
+#   - rsync + ssh for file transfer
+# ─────────────────────────────────────────────────────────────
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
 TOFU_DIR="$DIR/tofu"
 
-***REMOVED*** ── Config ──────────────────────────────────────────────────
+# ── Config ──────────────────────────────────────────────────
 OCR_SSH_USER="${OCR_SSH_USER:-ubuntu}"
 OCR_MODEL_PORT="${OCR_MODEL_PORT:-10000}"
-OCR_IDLE_TIMEOUT="${OCR_IDLE_TIMEOUT:-300}"  ***REMOVED*** auto-terminate after 5min idle
+OCR_IDLE_TIMEOUT="${OCR_IDLE_TIMEOUT:-300}"  # auto-terminate after 5min idle
 VIRTUALENV_DIR="$DIR/.ocr-venv"
 
-***REMOVED*** ── Colors ──────────────────────────────────────────────────
+# ── Colors ──────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; NC='\033[0m'
 info()  { echo -e "${BLUE}[INFO]${NC}  $*"; }
@@ -39,7 +39,7 @@ ok()    { echo -e "${GREEN}[OK]${NC}    $*"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 err()   { echo -e "${RED}[ERR]${NC}   $*"; }
 
-***REMOVED*** ── Helpers ─────────────────────────────────────────────────
+# ── Helpers ─────────────────────────────────────────────────
 tofu_output() {
   cd "$TOFU_DIR"
   tofu output -raw "$1" 2>/dev/null || echo ""
@@ -74,7 +74,7 @@ wait_for_model() {
   ok "Model ready."
 }
 
-***REMOVED*** ── Commands ────────────────────────────────────────────────
+# ── Commands ────────────────────────────────────────────────
 
 cmd_launch() {
   info "Launching GPU instance..."
@@ -84,7 +84,7 @@ cmd_launch() {
 
   local ip; ip=$(tofu_output ocr_instance_ip 2>/dev/null || echo "")
   if [[ -z "$ip" ]]; then
-    ***REMOVED*** Refresh outputs
+    # Refresh outputs
     tofu apply -auto-approve -target=data.lambda_instance.ocr_running 2>/dev/null || true
     ip=$(tofu_output ocr_instance_ip 2>/dev/null || echo "")
   fi
@@ -139,8 +139,8 @@ cmd_ocr() {
     return 1
   fi
 
-  ***REMOVED*** Detect file type
-  local ext="${file***REMOVED******REMOVED****.}"
+  # Detect file type
+  local ext="${file##*.}"
   ext=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
   local mime=""
   case "$ext" in
@@ -152,7 +152,7 @@ cmd_ocr() {
       ;;
   esac
 
-  ***REMOVED*** Get or launch instance
+  # Get or launch instance
   local ip
   ip=$(get_instance_ip)
   if [[ -z "$ip" ]] || ! is_instance_running; then
@@ -167,12 +167,12 @@ cmd_ocr() {
     ok "Using existing instance at $ip"
   fi
 
-  ***REMOVED*** Upload file
+  # Upload file
   local basename; basename=$(basename "$file")
   info "Uploading $basename..."
   rsync -avz -e "ssh -o StrictHostKeyChecking=no" "$file" "$OCR_SSH_USER@$ip:/tmp/$basename" >/dev/null 2>&1
 
-  ***REMOVED*** Build the API request
+  # Build the API request
   local prompt="Extract all text from this document. Return exactly what you see, preserving layout, paragraphs, and line breaks. Do not summarize, do not comment."
   local image_mode="base"
   [[ "$mime" == "application/pdf" ]] && image_mode="base"
@@ -198,7 +198,7 @@ cmd_ocr() {
 EOF
 )
 
-  ***REMOVED*** For PDF, use the infer.py approach on the instance
+  # For PDF, use the infer.py approach on the instance
   if [[ "$mime" == "application/pdf" ]]; then
     info "PDF detected — using batch PDF OCR on instance..."
     result=$(ssh "$OCR_SSH_USER@$ip" \
@@ -207,10 +207,10 @@ EOF
         --output_dir /tmp/ocr-output \
         --concurrency 4 \
         --image_mode base 2>/dev/null" 2>/dev/null || true)
-    ***REMOVED*** Read the result
+    # Read the result
     result=$(ssh "$OCR_SSH_USER@$ip" "cat /tmp/ocr-output/$(basename $file .pdf).txt 2>/dev/null || cat /tmp/ocr-output/*.txt 2>/dev/null || echo 'No output generated'" 2>/dev/null)
   else
-    ***REMOVED*** Single image — direct API call
+    # Single image — direct API call
     result=$(ssh "$OCR_SSH_USER@$ip" \
       "curl -s http://localhost:$OCR_MODEL_PORT/v1/chat/completions \
         -H 'Content-Type: application/json' \
@@ -261,11 +261,11 @@ cmd_deploy_only() {
   wait_for_model "$ip"
 }
 
-***REMOVED*** ── Main ─────────────────────────────────────────────────────
+# ── Main ─────────────────────────────────────────────────────
 main() {
   cd "$DIR"
 
-  ***REMOVED*** Check for required credentials
+  # Check for required credentials
   if [[ -z "${LAMBDA_CLOUD_API_KEY:-}" ]]; then
     err "LAMBDA_CLOUD_API_KEY not set. Get one at https://cloud.lambda.ai/api-keys"
     exit 1

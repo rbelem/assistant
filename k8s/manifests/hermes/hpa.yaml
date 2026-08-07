@@ -1,7 +1,7 @@
-***REMOVED*** Optional HorizontalPodAutoscaler for Hermes Agent
-***REMOVED*** NOTE: Hermes is stateful — scaling beyond 1 replica requires shared storage
-***REMOVED*** and careful handling of memory/skills directories. Keep min=max=1 for now.
-***REMOVED*** This manifest is prepared for future use if stateless mode is supported.
+# Optional HorizontalPodAutoscaler for Hermes Agent
+# NOTE: Hermes is stateful — scaling beyond 1 replica requires shared storage
+# and careful handling of memory/skills directories. Keep min=max=1 for now.
+# This manifest is prepared for future use if stateless mode is supported.
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

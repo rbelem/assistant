@@ -1,7 +1,7 @@
-***REMOVED*** Dev-time gitleaks hook.
-***REMOVED*** Install once after cloning: `pip install pre-commit && pre-commit install`
-***REMOVED*** The GitHub Action (.github/workflows/gitleaks.yml) is the authoritative gate;
-***REMOVED*** this hook is fast feedback at commit time only.
+# Dev-time gitleaks hook.
+# Install once after cloning: `pip install pre-commit && pre-commit install`
+# The GitHub Action (.github/workflows/gitleaks.yml) is the authoritative gate;
+# this hook is fast feedback at commit time only.
 
 repos:
   - repo: https://github.com/gitleaks/gitleaks

@@ -25,7 +25,7 @@
       register: cluster_info
       changed_when: false
 
-    ***REMOVED*** ── Create namespaces ─────────────────────────────────────────
+    # ── Create namespaces ─────────────────────────────────────────
     - name: Ensure k8s namespaces exist
       kubernetes.core.k8s:
         state: present
@@ -36,7 +36,7 @@
             name: "{{ item }}"
       loop: "{{ namespace_list }}"
 
-    ***REMOVED*** ── Ensure manifest directories exist ─────────────────────────
+    # ── Ensure manifest directories exist ─────────────────────────
     - name: Ensure manifest directories exist
       ansible.builtin.file:
         path: "{{ k8s_manifests_base }}/{{ item }}"
@@ -49,7 +49,7 @@
         - headroom
         - monitoring
 
-    ***REMOVED*** ── Deploy Hermes Agent ───────────────────────────────────────
+    # ── Deploy Hermes Agent ───────────────────────────────────────
     - name: Check for Hermes manifests
       ansible.builtin.find:
         paths: "{{ k8s_manifests_base }}/hermes"
@@ -70,7 +70,7 @@
         msg: "No manifests found in {{ k8s_manifests_base }}/hermes — skipping"
       when: hermes_manifests.files | length == 0
 
-    ***REMOVED*** ── Deploy Headroom ───────────────────────────────────────────
+    # ── Deploy Headroom ───────────────────────────────────────────
     - name: Check for Headroom manifests
       ansible.builtin.find:
         paths: "{{ k8s_manifests_base }}/headroom"
@@ -91,7 +91,7 @@
         msg: "No manifests found in {{ k8s_manifests_base }}/headroom — skipping"
       when: headroom_manifests.files | length == 0
 
-    ***REMOVED*** ── Deploy Uptime Kuma ────────────────────────────────────────
+    # ── Deploy Uptime Kuma ────────────────────────────────────────
     - name: Check for monitoring manifests
       ansible.builtin.find:
         paths: "{{ k8s_manifests_base }}/monitoring"
@@ -112,7 +112,7 @@
         msg: "No manifests found in {{ k8s_manifests_base }}/monitoring — skipping"
       when: monitoring_manifests.files | length == 0
 
-    ***REMOVED*** ── Wait for pods ─────────────────────────────────────────────
+    # ── Wait for pods ─────────────────────────────────────────────
     - name: Wait for Hermes pods to be ready
       ansible.builtin.command: >
         kubectl wait --for=condition=ready pod
@@ -146,7 +146,7 @@
       failed_when: false
       when: monitoring_manifests.files | length > 0
 
-    ***REMOVED*** ── Print status ──────────────────────────────────────────────
+    # ── Print status ──────────────────────────────────────────────
     - name: Get all pods across namespaces
       ansible.builtin.command: >
         kubectl get pods -A -o wide

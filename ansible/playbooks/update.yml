@@ -20,7 +20,7 @@
       changed_when: false
       failed_when: k3s_status.rc != 0
 
-    ***REMOVED*** ── Pre-update backup ─────────────────────────────────────────
+    # ── Pre-update backup ─────────────────────────────────────────
     - name: Run pre-update restic backup
       ansible.builtin.shell: |
         set -o allexport
@@ -34,7 +34,7 @@
       ansible.builtin.debug:
         msg: "{{ pre_backup.stdout_lines[-5:] | default(['skipped']) }}"
 
-    ***REMOVED*** ── Pull latest images and restart ────────────────────────────
+    # ── Pull latest images and restart ────────────────────────────
     - name: Restart deployments to pull latest images
       kubernetes.core.k8s:
         state: present
@@ -53,7 +53,7 @@
       loop_control:
         label: "{{ item.name }}/{{ item.deployment }}"
 
-    ***REMOVED*** ── Wait for rollouts ─────────────────────────────────────────
+    # ── Wait for rollouts ─────────────────────────────────────────
     - name: Wait for Hermes rollout
       ansible.builtin.command: >
         kubectl rollout status deployment/hermes
@@ -72,7 +72,7 @@
       changed_when: false
       failed_when: false
 
-    ***REMOVED*** ── Post-update backup ────────────────────────────────────────
+    # ── Post-update backup ────────────────────────────────────────
     - name: Run post-update restic backup
       ansible.builtin.shell: |
         set -o allexport
@@ -82,7 +82,7 @@
       changed_when: false
       failed_when: false
 
-    ***REMOVED*** ── Report status ─────────────────────────────────────────────
+    # ── Report status ─────────────────────────────────────────────
     - name: Get pod status
       ansible.builtin.command: >
         kubectl get pods -n hermes -n headroom -o wide

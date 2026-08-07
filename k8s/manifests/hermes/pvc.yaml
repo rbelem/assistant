@@ -8,7 +8,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  ***REMOVED*** k3s default storage class — provisions local-path volumes
+  # k3s default storage class — provisions local-path volumes
   storageClassName: local-path
   resources:
     requests:

@@ -1,62 +1,62 @@
-***REMOVED*** Headroom VPS Proxy Config
-***REMOVED*** Deployed alongside Hermes Agent on k3s
-***REMOVED***
-***REMOVED*** This proxy sits between Hermes and the upstream LLM API (minimax.io).
-***REMOVED*** All traffic is compressed before hitting the LLM, saving 60-95% of tokens.
+# Headroom VPS Proxy Config
+# Deployed alongside Hermes Agent on k3s
+#
+# This proxy sits between Hermes and the upstream LLM API (minimax.io).
+# All traffic is compressed before hitting the LLM, saving 60-95% of tokens.
 
 proxy:
-  ***REMOVED*** Listen on all interfaces so k3s services can reach it
+  # Listen on all interfaces so k3s services can reach it
   port: 8787
   host: 0.0.0.0
 
-  ***REMOVED*** Upstream LLM endpoints to compress traffic for.
-  ***REMOVED*** The proxy forwards compressed requests to these endpoints.
+  # Upstream LLM endpoints to compress traffic for.
+  # The proxy forwards compressed requests to these endpoints.
   upstreams:
     - name: minimax
       base_url: https://api.minimax.io/v1
       default: true
 
 compression:
-  ***REMOVED*** Individual compressor toggles.
-  ***REMOVED*** Disable any compressor that causes issues for your workload.
-  code: true           ***REMOVED*** AST-aware code compression — preserves structure, strips redundancy
-  json: true           ***REMOVED*** JSON smart crushing — collapses verbose payloads
-  text: true           ***REMOVED*** Kompress-base prose compression — summarizes long text
-  image: true          ***REMOVED*** Image compression — 40-90% reduction on vision inputs
+  # Individual compressor toggles.
+  # Disable any compressor that causes issues for your workload.
+  code: true           # AST-aware code compression — preserves structure, strips redundancy
+  json: true           # JSON smart crushing — collapses verbose payloads
+  text: true           # Kompress-base prose compression — summarizes long text
+  image: true          # Image compression — 40-90% reduction on vision inputs
 
-  ***REMOVED*** Aggressiveness level (1-10).
-  ***REMOVED*** 1 = minimal compression, nearly lossless.
-  ***REMOVED*** 10 = maximum compression, may lose some nuance.
-  ***REMOVED*** 7 is a good default for production — aggressive but safe.
+  # Aggressiveness level (1-10).
+  # 1 = minimal compression, nearly lossless.
+  # 10 = maximum compression, may lose some nuance.
+  # 7 is a good default for production — aggressive but safe.
   level: 7
 
 memory:
-  ***REMOVED*** Cross-agent shared memory.
-  ***REMOVED*** Allows multiple agents (e.g., Hermes + a secondary agent) to share context.
+  # Cross-agent shared memory.
+  # Allows multiple agents (e.g., Hermes + a secondary agent) to share context.
   enabled: true
-  store_type: sqlite   ***REMOVED*** lightweight; no external deps needed
+  store_type: sqlite   # lightweight; no external deps needed
   path: /data/headroom/memory
 
-  ***REMOVED*** Auto-learn from agent failures and successes.
-  ***REMOVED*** Headroom analyzes past sessions to improve future compression.
+  # Auto-learn from agent failures and successes.
+  # Headroom analyzes past sessions to improve future compression.
   learn_enabled: true
   learn_path: /data/headroom/learnings
 
 output_shaping:
-  ***REMOVED*** Reduce LLM output verbosity on routine turns.
-  ***REMOVED*** Saves output tokens — the LLM produces shorter, more focused responses.
+  # Reduce LLM output verbosity on routine turns.
+  # Saves output tokens — the LLM produces shorter, more focused responses.
   enabled: true
-  verbosity: concise   ***REMOVED*** terse / concise / normal / verbose
-  effort_routing: true ***REMOVED*** reduce thinking/reasoning effort on low-complexity turns
+  verbosity: concise   # terse / concise / normal / verbose
+  effort_routing: true # reduce thinking/reasoning effort on low-complexity turns
 
 ccr:
-  ***REMOVED*** Reversible compression.
-  ***REMOVED*** Caches original (uncompressed) content so it can be retrieved later if needed.
-  ***REMOVED*** Useful for debugging or when the LLM needs the full context back.
+  # Reversible compression.
+  # Caches original (uncompressed) content so it can be retrieved later if needed.
+  # Useful for debugging or when the LLM needs the full context back.
   enabled: true
-  ttl: 86400           ***REMOVED*** cache TTL in seconds (24 hours)
+  ttl: 86400           # cache TTL in seconds (24 hours)
   cache_path: /data/headroom/ccr
 
 logging:
-  level: info          ***REMOVED*** debug / info / warn / error
-  format: json         ***REMOVED*** json for structured logging, text for human-readable
+  level: info          # debug / info / warn / error
+  format: json         # json for structured logging, text for human-readable

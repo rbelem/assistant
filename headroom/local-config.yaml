@@ -1,12 +1,12 @@
-***REMOVED*** Headroom Local Proxy Config
-***REMOVED*** Wraps opencode on the local machine
-***REMOVED***
-***REMOVED*** This config is used by `headroom wrap opencode`.
-***REMOVED*** The proxy only listens on localhost — not reachable from the network.
+# Headroom Local Proxy Config
+# Wraps opencode on the local machine
+#
+# This config is used by `headroom wrap opencode`.
+# The proxy only listens on localhost — not reachable from the network.
 
 proxy:
   port: 8787
-  host: 127.0.0.1      ***REMOVED*** local only — no external access
+  host: 127.0.0.1      # local only — no external access
 
   upstreams:
     - name: minimax
@@ -14,24 +14,24 @@ proxy:
       default: true
 
 compression:
-  code: true            ***REMOVED*** AST-aware code compression
-  json: true            ***REMOVED*** JSON smart crushing
-  text: true            ***REMOVED*** prose compression
-  image: false          ***REMOVED*** skip on local — adds latency for minimal gain on code tasks
-  level: 5              ***REMOVED*** balanced — good compression without being too aggressive
+  code: true            # AST-aware code compression
+  json: true            # JSON smart crushing
+  text: true            # prose compression
+  image: false          # skip on local — adds latency for minimal gain on code tasks
+  level: 5              # balanced — good compression without being too aggressive
 
 memory:
   enabled: true
   store_type: sqlite
   path: ~/.headroom/memory
-  learn_enabled: true   ***REMOVED*** learn from your sessions over time
+  learn_enabled: true   # learn from your sessions over time
 
 output_shaping:
   enabled: true
-  verbosity: concise    ***REMOVED*** terse / concise / normal / verbose
-  effort_routing: true  ***REMOVED*** reduce thinking effort on routine turns
+  verbosity: concise    # terse / concise / normal / verbose
+  effort_routing: true  # reduce thinking effort on routine turns
 
 ccr:
   enabled: true
-  ttl: 43200            ***REMOVED*** cache TTL in seconds (12 hours — shorter than VPS since local disk is smaller)
+  ttl: 43200            # cache TTL in seconds (12 hours — shorter than VPS since local disk is smaller)
   cache_path: ~/.headroom/ccr
