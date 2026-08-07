@@ -20,11 +20,10 @@ spec:
     spec:
       containers:
         - name: headroom
-          ***REMOVED*** Token compression proxy for AI agents
+          # Token compression proxy for AI agents
           image: ghcr.io/chopratejas/headroom:latest
           imagePullPolicy: IfNotPresent
           args:
-            - "proxy"
             - "--port"
             - "8787"
           ports:
@@ -32,8 +31,8 @@ spec:
               containerPort: 8787
               protocol: TCP
           envFrom:
-            ***REMOVED*** Secrets created by Ansible from Bitwarden
-            ***REMOVED*** (e.g., HEADROOM_API_KEY, upstream LLM credentials)
+            # Secrets created by Ansible from Bitwarden
+            # (e.g., HEADROOM_API_KEY, upstream LLM credentials)
             - secretRef:
                 name: headroom-secrets
           env:
