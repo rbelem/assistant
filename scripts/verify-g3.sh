@@ -4,9 +4,11 @@
 ***REMOVED*** Asserts that the VPS is clean of:
 ***REMOVED***   - /etc/agent/bw_master_pw (systemd EnvironmentFile for bitw PASSWORD)
 ***REMOVED***   - /root/.bw_session.sh (session helper script)
-***REMOVED***   - ~/.config/bitw/ (bitw config directory)
-***REMOVED***   - ~/.local/share/bitw/ (bitw data directory)
+***REMOVED***   - ~/.config/bitw (SM token config)
+***REMOVED***   - ~/.local/share/bitw (data)
 ***REMOVED***   - bitw binary (VPS should not have bitw installed)
+***REMOVED***   - bws binary (VPS should not have the SM CLI installed)
+***REMOVED***   - BWS_ACCESS_TOKEN env var (SM access token never touches the VPS)
 ***REMOVED***
 ***REMOVED*** This is a security gate: the master password never touches the VPS.
 ***REMOVED*** Secrets are rendered on the workstation and applied via ansible.
@@ -115,14 +117,20 @@ check_vps "/etc/agent/bw_master_pw does not exist" \
 check_vps "/root/.bw_session.sh does not exist" \
   "test ! -f /root/.bw_session.sh"
 
-check_vps "~/.config/bitw/ does not exist" \
-  "test ! -d ~/.config/bitw/"
+check_vps "/root/.config/bitw does not exist" \
+  "test ! -d ~/.config/bitw"
 
-check_vps "~/.local/share/bitw/ does not exist" \
-  "test ! -d ~/.local/share/bitw/"
+check_vps "/root/.local/share/bitw does not exist" \
+  "test ! -d ~/.local/share/bitw"
 
-check_vps "bitw binary is not installed" \
-  "! which bitw >/dev/null 2>&1"
+check_vps "bws binary not installed" \
+  "! command -v bws >/dev/null 2>&1"
+
+check_vps "bitw binary not installed" \
+  "! command -v bitw >/dev/null 2>&1"
+
+check_vps "BWS_ACCESS_TOKEN not in environment" \
+  "test -z \"\$BWS_ACCESS_TOKEN\""
 
 echo
 if [[ "$FAILURES" -eq 0 ]]; then
@@ -130,11 +138,10 @@ if [[ "$FAILURES" -eq 0 ]]; then
   exit 0
 else
   err "VPS-DIRTY: $FAILURES check(s) failed."
-  err "The VPS should not have bitw installed or master password files."
+  err "The VPS should not have master password files."
   err "If this is a fresh VPS, run the deploy pipeline."
   err "If this is an existing VPS, manually remove the artifacts:"
   err "  ssh $SSH_USER@$VPS_IP"
-  err "  sudo rm -f /etc/agent/bw_master_pw /root/.bw_session.sh"
-  err "  sudo rm -rf ~/.config/bitw ~/.local/share/bitw"
+  err "  sudo rm -f /etc/agent/bw_master_pw /root/.bw_session.sh; sudo rm -rf ~/.config/bitw ~/.local/share/bitw"
   exit 1
 fi
