@@ -6,39 +6,15 @@ metadata:
   labels:
     app: hermes-agent
 data:
+  ***REMOVED*** Mounted at /opt/data/config.yaml (HERMES_HOME). Secrets come from
+  ***REMOVED*** hermes-secrets env vars; dashboard auth via HERMES_DASHBOARD_BASIC_AUTH_*.
   config.yaml: |
-    agent:
-      model: "minimax/MiniMax-M3"
-      temperature: 0.7
-      max_tokens: 4096
-      system_prompt: |
-        You are Hermes, a personal AI agent running on a self-hosted
-        infrastructure. You have persistent memory, scheduling, and
-        access to various skills including OCR for extracting text
-        from images and PDFs.
-
-    platforms:
-      discord:
-        enabled: true
-        ***REMOVED*** Token comes from HERMES_DISCORD_TOKEN env var (in secret)
-      api:
-        enabled: true
-        host: "0.0.0.0"
-        port: 8080
-
-    skills:
-      enabled:
-        - web_search
-        - file_operations
-        - shell_commands
-        - memory_recall
-        - scheduling
-        - ocr
-
-    scheduler:
-      enabled: true
-      jobs: []
-
-    memory:
+    model:
+      provider: opencode-go
+      default: deepseek-v4-flash
+    fallback_providers:
+      - provider: openrouter
+        model: deepseek/deepseek-v4-flash
+    terminal:
       backend: local
-      max_memories: 10000
+      timeout: 180

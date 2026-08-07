@@ -23,50 +23,57 @@ spec:
     spec:
       containers:
         - name: hermes-agent
-          ***REMOVED*** Nous Research Hermes Agent — self-hosted AI agent
-          image: ghcr.io/nousresearch/hermes-agent:latest
+          ***REMOVED*** Nous Research Hermes Agent — self-hosted AI agent (Discord gateway)
+          image: nousresearch/hermes-agent:latest
           imagePullPolicy: IfNotPresent
+          args:
+            - "gateway"
+            - "run"
           ports:
             - name: api
-              containerPort: 8080
+              containerPort: 8642
               protocol: TCP
-            - name: health
-              containerPort: 9090
+            - name: dashboard
+              containerPort: 9119
               protocol: TCP
           envFrom:
-            ***REMOVED*** Secrets created by Ansible from Bitwarden
+            ***REMOVED*** Secrets created by Ansible from Bitwarden:
+            ***REMOVED*** DISCORD_BOT_TOKEN, DISCORD_ALLOWED_USERS, OPENCODE_GO_API_KEY,
+            ***REMOVED*** OPENROUTER_API_KEY, API_SERVER_KEY,
+            ***REMOVED*** HERMES_DASHBOARD_BASIC_AUTH_USERNAME/_PASSWORD_HASH/_SECRET
             - secretRef:
                 name: hermes-secrets
           env:
-            - name: HERMES_LLM_PROVIDER
-              value: "minimax"
-            - name: HERMES_MINIMAX_BASE_URL
-              value: "https://api.minimax.io/v1"
-            - name: HERMES_MEMORY_DIR
-              value: "/data/memory"
-            - name: HERMES_SKILLS_DIR
-              value: "/data/skills"
-            - name: HERMES_CONFIG_DIR
-              value: "/data/config"
+            - name: HERMES_HOME
+              value: "/opt/data"
+            - name: API_SERVER_ENABLED
+              value: "true"
+            - name: API_SERVER_HOST
+              value: "0.0.0.0"
+            - name: HERMES_DASHBOARD
+              value: "1"
+            - name: HERMES_DASHBOARD_HOST
+              value: "0.0.0.0"
             - name: TZ
               value: "REDACTED-TZ"
           volumeMounts:
             - name: hermes-data
-              mountPath: /data
+              mountPath: /opt/data
             - name: hermes-config
-              mountPath: /etc/hermes
+              mountPath: /opt/data/config.yaml
+              subPath: config.yaml
           livenessProbe:
             httpGet:
               path: /health
-              port: health
+              port: api
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /ready
-              port: health
+              path: /health
+              port: api
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5

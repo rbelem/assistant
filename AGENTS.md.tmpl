@@ -59,7 +59,7 @@ If the workstation is unavailable, the VPS cannot self-heal secrets. Recovery: n
 | `k8s/helm/zitadel-values.yaml` | Zitadel Helm chart values |
 | `ansible/inventory/hosts.yml` | Ansible inventory with `namespace_list` (source of truth for k8s namespaces) |
 | `k8s/manifests/hermes/deployment.yaml` | Hermes: 1 replica, Recreate strategy (PVC), probes, 2CPU/4Gi limits |
-| `k8s/manifests/hermes/configmap.yaml` | Hermes config: Discord gateway, MiniMax-M3 model, OCR skill |
+| `k8s/manifests/hermes/configmap.yaml` | Hermes config: Discord gateway, opencode-go model `deepseek-v4-flash` (fallback: openrouter), OCR skill |
 | `k8s/manifests/headroom/service.yaml` | ClusterIP in hermes namespace |
 | `k8s/manifests/hermes/service.yaml` | NodePort 30080 |
 | `scripts/deploy.sh` | Phase-aware deploy pipeline. Source of truth for deploy order |
