@@ -56,7 +56,7 @@ Infrastructure-as-code for my personal AI agent — a self-hosted runtime on OVH
 | **Headroom** | Token compression proxy (60-95% savings) | Both local + VPS |
 | **Caddy** | Reverse proxy with automatic TLS | VPS (host level) |
 | **Tailscale** | Secure overlay VPN for admin access | VPS |
-| **Ansible** | Bootstrap, secrets from Bitwarden, deploy services | Local → VPS |
+| **Ansible** | Bootstrap, secrets from Bitwarden SM, deploy services | Local → VPS |
 | **Uptime Kuma** | Uptime monitoring dashboard | k3s |
 | **Restic** | Encrypted daily backups (DEFERRED — OVH Object Storage dropped) | VPS (host level) |
 
@@ -65,14 +65,14 @@ Infrastructure-as-code for my personal AI agent — a self-hosted runtime on OVH
 ***REMOVED******REMOVED******REMOVED*** Accounts & Credentials
 - [OVHcloud](https://ovhcloud.com) account — VPS + DNS + Object Storage (state bucket only)
 - [minimax.io](https://minimax.io) API key — LLM access
-- [Bitwarden](https://bitwarden.com) vault with secrets (see `ansible/vault.yml`)
+- [Bitwarden](https://bitwarden.com) Secrets Manager with access token (see `ansible/vault.yml`)
 - [Tailscale](https://tailscale.com) account — VPN
 - Domain: `${DOMAIN}` managed by OVH DNS
 
 ***REMOVED******REMOVED******REMOVED*** Local Tools
 - [OpenTofu](https://opentofu.org) ≥ 1.6
 - [Ansible](https://docs.ansible.com) ≥ 9.0
-- [Bitwarden CLI](https://bitwarden.com/help/cli/) (`bitw` — rbelem fork)
+- [Bitwarden CLI](https://bitwarden.com/help/cli/) (`bitw` — rbelem fork, with `bitw sm` subcommand)
 - [rsync](https://rsync.samba.org/)
 - SSH key uploaded to OVH account
 
@@ -90,10 +90,10 @@ export AWS_SECRET_ACCESS_KEY=your_s3_secret
 
 ```
 ${PROJECT_NAME}/
-├── tofu/              ***REMOVED*** OpenTofu: VPS + Object Storage
+├── tofu/              ***REMOVED*** OpenTofu: VPS + Object Storage + Cloudflare DNS
 │   ├── main.tf        ***REMOVED*** Resources (VPS, buckets)
-│   ├── dns-sync.sh    ***REMOVED*** scripts/dns-sync.sh — Porkbun DNS via direct API
-│   ├── provider.tf    ***REMOVED*** OVH + AWS S3 providers
+│   ├── dns.tf         ***REMOVED*** Cloudflare DNS A records (replaces dns-sync.sh)
+│   ├── provider.tf    ***REMOVED*** Hetzner + AWS S3 + Cloudflare providers
 │   ├── variables.tf   ***REMOVED*** All configurable params
 │   ├── backend.tf     ***REMOVED*** S3-compatible object storage state backend
 │   └── outputs.tf     ***REMOVED*** vps_ip, dns_fqdn, storage_endpoint
@@ -110,10 +110,10 @@ ${PROJECT_NAME}/
 │   ├── ansible.cfg
 │   ├── requirements.yml
 │   ├── inventory/hosts.yml
-│   ├── vault.yml      ***REMOVED*** Bitwarden vault template
+│   ├── vault.yml      ***REMOVED*** Bitwarden Secrets Manager key layout
 │   └── playbooks/
 │       ├── bootstrap.yml  ***REMOVED*** Initial server setup
-│       ├── secrets-render.yml ***REMOVED*** Workstation: Bitwarden → .rendered/
+│       ├── secrets-render.yml ***REMOVED*** Workstation: Bitwarden SM → .rendered/
 │       ├── secrets-apply.yml  ***REMOVED*** VPS: .rendered/ → k8s + host files
 │       ├── deploy.yml     ***REMOVED*** Deploy workloads to k3s
 │       └── update.yml     ***REMOVED*** Rolling update workflow
@@ -183,7 +183,7 @@ ssh root@$VPS_IP 'nixos-rebuild switch --flake /etc/nixos***REMOVED***agent'
 ***REMOVED*** Phase 4 — Render + apply secrets (workstation renders, VPS applies)
 cd ansible
 ansible-playbook -i inventory/hosts.yml playbooks/bootstrap.yml
-ansible-playbook -i inventory/hosts.yml playbooks/secrets-render.yml   ***REMOVED*** localhost: Bitwarden → .rendered/
+ansible-playbook -i inventory/hosts.yml playbooks/secrets-render.yml   ***REMOVED*** localhost: Bitwarden SM → .rendered/
 ansible-playbook -i inventory/hosts.yml playbooks/secrets-apply.yml    ***REMOVED*** VPS: .rendered/ → k8s + host files
 
 ***REMOVED*** Phase 5 — Deploy workloads
@@ -193,18 +193,28 @@ ssh root@$VPS_IP 'kubectl apply -f /opt/k8s/headroom/'
 ssh root@$VPS_IP 'kubectl apply -f /opt/k8s/monitoring/'
 ```
 
-***REMOVED******REMOVED******REMOVED*** 4. Set Up Bitwarden Secrets
+***REMOVED******REMOVED******REMOVED*** 4. Set Up Bitwarden Secrets Manager
 
-Create a Bitwarden vault named `${PROJECT_NAME}` with these items:
+Create a Bitwarden Secrets Manager machine account and configure the access token:
 
-| Field | Description |
-|-------|-------------|
-| `minimax_api_key` | minimax.io API key |
-| `hermes_discord_token` | Discord bot token |
-| `tailscale_auth_key` | Tailscale pre-auth key (one-time use) |
-| `caddy_admin_password` | Caddy admin endpoint password |
+```bash
+export SM_ACCESS_TOKEN="your-sm-access-token"
+# Or store in ~/.config/bitw/config (key: sm_access_token)
+```
 
-See `ansible/vault.yml` for the template.
+Then create the required SM keys (see `ansible/vault.yml` for the full list):
+
+| SM Key | Description |
+|--------|-------------|
+| `assistant/minimax-api-key` | minimax.io API key |
+| `assistant/hermes-discord-token` | Discord bot token |
+| `assistant/tailscale-authkey` | Tailscale pre-auth key (one-time use) |
+| `assistant/caddy-admin-password` | Caddy admin endpoint password |
+| `assistant/vps-ssh-key` | SSH private key (PEM) |
+| `assistant/domain-config` | JSON: {domain, subdomains} |
+| `assistant/tofu-inputs` | JSON: vps_host, vps_ssh_user, vps_ssh_port, TF vars |
+
+See `ansible/vault.yml` for the full key table.
 
 ***REMOVED******REMOVED*** Daily Operations
 

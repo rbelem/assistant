@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-#Provider Configuration — Hetzner Cloud + AWS S3 + Porkbun DNS
+#Provider Configuration — Hetzner Cloud + AWS S3 + Cloudflare DNS
 #-----------------------------------------------------------------------------
 #Hetzner Cloud credentials are sourced from environment variables:
 #HCLOUD_TOKEN
@@ -8,9 +8,9 @@
 #Passed via tofu-inputs variables: storage_access_key, storage_secret_key,
 #storage_endpoint, storage_region (and vps_datacenter for AWS region).
 #
-#Porkbun DNS credentials:
-#var.porkbun_api_key, var.porkbun_secret_api_key
-#(sourced from Bitwarden via TF_VAR_* env vars)
+#Cloudflare DNS (current):
+#var.cloudflare_api_token — sourced from Bitwarden Secrets Manager
+#(RCLB_DEV_CLOUDFLARE_API_KEY). Requires Zone:Read + Zone:DNS:Edit.
 #-----------------------------------------------------------------------------
 
 terraform {
@@ -25,6 +25,11 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
+    }
+
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
     }
   }
 }
@@ -52,9 +57,8 @@ provider "aws" {
 }
 
 #-----------------------------------------------------------------------------
-#Porkbun DNS is managed by scripts/dns-sync.sh (direct API) — the
-#marcfrederick/porkbun provider's create path is broken upstream
-#(record id returned as object, provider expects int64 — issue #35).
+#Porkbun DNS is no longer used — the domain is delegated to Cloudflare.
+#The scripts/dns-sync.sh and Porkbun API keys are kept for reference only.
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
@@ -65,4 +69,15 @@ provider "aws" {
 #-----------------------------------------------------------------------------
 provider "hcloud" {
   token = var.hcloud_token
+}
+
+#-----------------------------------------------------------------------------
+#Cloudflare Provider — DNS record management
+#-----------------------------------------------------------------------------
+#API token sourced from var.cloudflare_api_token (Bitwarden SM key:
+#RCLB_DEV_CLOUDFLARE_API_KEY). Must have Zone:Read + Zone:DNS:Edit
+#permissions for the domain zone.
+#-----------------------------------------------------------------------------
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
 }

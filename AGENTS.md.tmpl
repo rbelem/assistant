@@ -36,9 +36,9 @@ ssh root@$VPS_IP 'curl -sL https://raw.githubusercontent.com/elitak/nixos-infect
 
 **NixOS:** NixOS config lives in the separate `nix-config` repo (`~/Workspace/github.com/rbelem/nix-config`). Deploy with `nixos-rebuild switch --flake path:$NIX_CONFIG_DIR#agent --target-host root@$VPS_IP`.
 
-**Ansible secrets** are split into two playbooks: `secrets-render.yml` runs on the **workstation** (localhost, connection: local) and renders Bitwarden vault items to `.rendered/` (gitignored). `secrets-apply.yml` runs on the **VPS** and copies the pinned allowlist from `.rendered/` to the VPS. The master password never touches the VPS — bitw on the workstation uses libsecret (cached master password) or `PASSWORD` env. The VPS has no bitw binary, no `/root/.bw_master_pw`, no `/etc/agent/bw_master_pw`. Compromise of the VPS yields only rendered runtime secrets (bounded blast radius), not the master password (force multiplier).
+**Ansible secrets** are split into two playbooks: `secrets-render.yml` runs on the **workstation** (localhost, connection: local) and renders Bitwarden Secrets Manager keys to `.rendered/` (gitignored). `secrets-apply.yml` runs on the **VPS** and copies the pinned allowlist from `.rendered/` to the VPS. The SM access token never touches the VPS — bitw on the workstation reads SM via `bitw sm get` using a machine-account token (SM_ACCESS_TOKEN env or ~/.config/bitw/config). The VPS has no bitw binary, no SM token, no master password. Compromise of the VPS yields only rendered runtime secrets (bounded blast radius), not the SM access token (force multiplier).
 
-If the workstation is unavailable, the VPS cannot self-heal secrets. Recovery: new workstation → `bitw login` → libsecret store → re-render.
+If the workstation is unavailable, the VPS cannot self-heal secrets. Recovery: new workstation → configure SM access token → re-render.
 
 **k8s manifests:** rsync to `/opt/k8s/` on VPS, then `kubectl apply -f /opt/k8s/manifests/hermes/` etc. Namespaces are managed by Ansible (`namespace_list` in `ansible/inventory/hosts.yml`).
 
@@ -47,10 +47,11 @@ If the workstation is unavailable, the VPS cannot self-heal secrets. Recovery: n
 | Path | Purpose |
 |------|---------|
 | `tofu/main.tf` | Hetzner VPS + S3 state bucket. Uses `plan = []` list syntax, not block syntax |
-| `scripts/dns-sync.sh` | Porkbun DNS A records (apex + subdomains → VPS IP) via direct API. Replaces the tofu porkbun provider (create/edit broken upstream — marcfrederick/porkbun issue #35) |
+| `tofu/dns.tf`           | Cloudflare DNS A records (apex + subdomains → VPS IP) via `cloudflare/cloudflare` provider. Replaces legacy `scripts/dns-sync.sh` (Porkbun). Token needs Zone:DNS:Edit + Zone:Read. |
+| `scripts/dns-sync.sh` | Legacy Porkbun DNS — replaced by `tofu/dns.tf` (Cloudflare provider). Kept for reference only. |
 | `tofu/variables.tf` | Uses `vps_display_name`, `vps_plan_code`, `vps_datacenter`, `ssh_public_key` + `vps_image_id` (both required together) |
-| `ansible/playbooks/secrets-render.yml` | Workstation-side: renders Bitwarden vault items to `.rendered/` (k8s Secret/ConfigMap manifests + host files). Runs on localhost with `connection: local` |
-| `ansible/playbooks/secrets-apply.yml` | VPS-side: copies pinned allowlist from `.rendered/` to VPS, applies k8s manifests. No bitw or master password needed |
+| `ansible/playbooks/secrets-render.yml` | Workstation-side: renders Bitwarden Secrets Manager keys to `.rendered/` (k8s Secret/ConfigMap manifests + host files). Runs on localhost with `connection: local` |
+| `ansible/playbooks/secrets-apply.yml` | VPS-side: copies pinned allowlist from `.rendered/` to VPS, applies k8s manifests. No bitw or SM token needed |
 | `ansible/playbooks/deploy.yml` | kubectl apply from /opt/k8s/. Waits for rollout. Idempotent |
 | `k8s/helmfile.yaml` | Helm releases: PostgreSQL, n8n, Zitadel |
 | `k8s/helm/postgres-values.yaml` | Bitnami PostgreSQL values for shared n8n+Zitadel use |
@@ -63,9 +64,11 @@ If the workstation is unavailable, the VPS cannot self-heal secrets. Recovery: n
 | `k8s/manifests/hermes/service.yaml` | NodePort 30080 |
 | `scripts/deploy.sh` | Phase-aware deploy pipeline. Source of truth for deploy order |
 
-***REMOVED******REMOVED*** Secrets (Bitwarden vault: `${PROJECT_NAME}`)
+***REMOVED******REMOVED*** Secrets (Bitwarden Secrets Manager)
 
-13 items in vault (all named `assistant/<kebab-case>`, one credential per item). The `secrets-render.yml` playbook fetches them by name on the workstation. See `ansible/vault.yml` for exact field names. Key items: `assistant/minimax-api-key`, `assistant/hermes-discord-token`, `assistant/tailscale-authkey`.
+Secrets live in Bitwarden Secrets Manager, accessed via a machine-account access token (`SM_ACCESS_TOKEN` env or `~/.config/bitw/config` key `sm_access_token`). All keys namespaced under `assistant/`. The `secrets-render.yml` playbook fetches them by key on the workstation. See `ansible/vault.yml` for the full key table. Key items: `assistant/minimax-api-key`, `assistant/hermes-discord-token`, `assistant/tailscale-authkey`, `assistant/vps-ssh-key`, `assistant/domain-config`, `assistant/tofu-inputs`.
+
+One item stays in the **personal vault** (not SM): `assistant/tofu-state-snapshot` — written by `scripts/snapshot-state.sh` (SM is read-only for this repo's automation).
 
 ***REMOVED******REMOVED*** Operations
 
@@ -73,7 +76,7 @@ If the workstation is unavailable, the VPS cannot self-heal secrets. Recovery: n
 - Update workloads: `ansible-playbook -i inventory/hosts.yml playbooks/update.yml` (does rollout restart)
 - NixOS update: `nixos-rebuild switch --flake path:$NIX_CONFIG_DIR#agent --target-host root@agent.${DOMAIN} --upgrade` (from nix-config repo)
 - Destroy: `./scripts/deploy.sh destroy`
-- Verify VPS clean: `scripts/verify-g3.sh` (asserts no master password artifacts on VPS)
+- Verify VPS clean: `scripts/verify-g3.sh` (asserts no SM token or master password artifacts on VPS)
 
 ***REMOVED******REMOVED*** OCR (Baidu Unlimited-OCR on Lambda Cloud) — DEFERRED
 
@@ -110,10 +113,10 @@ and say "extract text from this" — Hermes invokes the skill automatically.
 - **Don't run `tofu apply` in CI** — OVH API rate-limits aggressively.
 - **NixOS locale** uses `en_GB.UTF-8` default with `pt_BR.UTF-8` overrides for regional fields. This matches the user's nix-config convention.
 - **Headroom runs in two places**: local machine (wraps opencode via `headroom wrap opencode`) and VPS (k3s deployment that Hermes routes through).
-- **DNS propagation** at Porkbun is fast, but TTL is 600s minimum. Use the raw IP for initial deploy if needed.
+- **DNS records managed via `tofu/dns.tf`** (Cloudflare provider), not `scripts/dns-sync.sh`. The script is kept for reference only. After `tofu apply`, records appear in Cloudflare dashboard — no script needed.
 - **Lambda GPU instance is NOT always running** — Lambda Cloud dropped 2026-07-27. OCR skill stays as dead config.
-- **Master password never touches the VPS by design.** Do not re-add `/etc/agent/bw_master_pw` or a VPS-side bitw install to make state-snapshot unattended again. If unattended VPS-side vault access becomes a hard requirement, migrate to Bitwarden Organizations + service accounts.
+- **SM access token never touches the VPS by design.** Do not re-add `/etc/agent/bw_master_pw`, a VPS-side bitw install, or an SM token to the VPS. The VPS receives only rendered runtime secrets via `secrets-apply.yml`.
 
 ***REMOVED******REMOVED*** Deferred decisions
 
-- **Bitwarden Organizations + service accounts** would enable unattended VPS-side vault access with scoped permissions. Not currently needed (state-snapshot runs on workstation). Revisit if unattended VPS-side vault access becomes a hard requirement.
+- **Bitwarden Secrets Manager machine accounts** — resolved. The repo now uses SM machine-account access tokens for workstation-side secret rendering. No master password needed at render time. The personal vault is used only for `assistant/tofu-state-snapshot` (written by `scripts/snapshot-state.sh`).
