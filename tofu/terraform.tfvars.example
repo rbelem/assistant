@@ -36,3 +36,7 @@ storage_region     = "<your-region>"
 storage_endpoint   = "<your-storage-endpoint>"
 storage_access_key = "my-access-key"
 storage_secret_key = "my-secret-key"
+
+***REMOVED*** Cloudflare API token for DNS (Zone:Read + Zone:DNS:Edit for domain)
+***REMOVED*** Source: Bitwarden SM RCLB_DEV_CLOUDFLARE_API_KEY
+cloudflare_api_token = "your-cloudflare-api-token"

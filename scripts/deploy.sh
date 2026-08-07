@@ -6,9 +6,9 @@
 ***REMOVED***
 ***REMOVED*** Prerequisites:
 ***REMOVED***   - OVH API credentials (OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY)
-***REMOVED***   - Porkbun API credentials (PORKBUN_API_KEY, PORKBUN_SECRET_API_KEY)
+***REMOVED***   - Cloudflare API token (RCLB_DEV_CLOUDFLARE_API_KEY in Bitwarden SM)
 ***REMOVED***   - SSH key uploaded to OVH account
-***REMOVED***   - Bitwarden CLI installed and logged in
+***REMOVED***   - Bitwarden CLI installed with Secrets Manager access token configured
 ***REMOVED***
 ***REMOVED*** Usage:
 ***REMOVED***   ./deploy.sh                    ***REMOVED*** full deploy (prompts before destructive steps)
@@ -24,6 +24,7 @@
 ***REMOVED*** ─────────────────────────────────────────────────────────────
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
+source "$DIR/scripts/lib/bws.sh"
 
 ***REMOVED*** ── Config ──────────────────────────────────────────────────
 VPS_IP="${VPS_IP:-}"
@@ -41,7 +42,7 @@ HELMFILE_DIR="$DIR/k8s"
 HELMFILE_BIN="${HELMFILE_BIN:-helmfile}"
 
 ***REMOVED*** ── Source vault environment ────────────────────────────────
-***REMOVED*** Load Bitwarden-derived secrets (SSH_PRIVATE_KEY, VPS_HOST, etc.) if available.
+***REMOVED*** Load Secrets Manager-derived secrets (SSH_PRIVATE_KEY, VPS_HOST, etc.) if available.
 ***REMOVED*** shellcheck disable=SC1091
 [[ -f "$DIR/.rendered/vault.env" ]] && . "$DIR/.rendered/vault.env"
 
@@ -56,8 +57,8 @@ err()   { echo -e "${RED}[ERR]${NC}   $*"; }
 step()  { echo; echo -e "${BLUE}═══ $* ═══${NC}"; }
 
 ***REMOVED*** === SSH key setup =============================================================
-***REMOVED*** The SSH private key lives in Bitwarden (assistant/vps-ssh-key, SSH key
-***REMOVED*** type 5). fetch_vault.sh exports SSH_PRIVATE_KEY into .rendered/vault.env.
+***REMOVED*** The SSH private key lives in Bitwarden Secrets Manager (assistant/vps-ssh-key).
+***REMOVED*** fetch_vault.sh exports SSH_PRIVATE_KEY into .rendered/vault.env.
 ***REMOVED*** We write it to a temp file and load it into ssh-agent for all SSH operations.
 ***REMOVED*** Falls back to ~/.ssh/id_ed25519 if SSH_PRIVATE_KEY is empty.
 ||||||| parent of 28e82a5 (fix(deploy): address oracle review blockers)
@@ -90,7 +91,7 @@ trap 'rm -f "$SSH_KEY_FILE"' EXIT
 if [[ -n "${SSH_PRIVATE_KEY:-}" ]]; then
   printf '%s\n' "$SSH_PRIVATE_KEY" > "$SSH_KEY_FILE"
   ssh_add_output=$(ssh-add "$SSH_KEY_FILE" 2>&1 || true)
-  info "Loaded SSH key from Bitwarden into ssh-agent ($(echo "$ssh_add_output" | head -1))"
+  info "Loaded SSH key from Secrets Manager into ssh-agent ($(echo "$ssh_add_output" | head -1))"
 elif [[ -f "${HOME}/.ssh/id_ed25519" ]]; then
   SSH_KEY_FILE="${HOME}/.ssh/id_ed25519"
   info "Using existing local SSH key ${SSH_KEY_FILE} (no Bitwarden key set)"
@@ -166,7 +167,7 @@ phase_inventory_render() {
     exit 1
   fi
 
-  ***REMOVED*** Pull deployment config from Bitwarden into .rendered/vault.env.
+  ***REMOVED*** Pull deployment config from Secrets Manager into .rendered/vault.env.
   "$DIR/scripts/fetch_vault.sh"
 
   ***REMOVED*** Source only the vault-generated exports. set -a auto-exports every variable
@@ -229,7 +230,7 @@ phase_tofu() {
   info "VPS IP: $VPS_IP"
   export VPS_IP
 
-  ***REMOVED*** Inventory is now rendered from Bitwarden vault by phase_inventory_render()
+  ***REMOVED*** Inventory is now rendered from Secrets Manager by phase_inventory_render()
   ***REMOVED*** before the Ansible phase runs. VPS_IP is captured above for SSH use.
 }
 
@@ -313,13 +314,14 @@ phase_bootstrap() {
 }
 
 phase_secrets_render() {
-  step "Render secrets on workstation from Bitwarden"
+  step "Render secrets on workstation from Secrets Manager"
   cd "$DIR/ansible"
 
-  ***REMOVED*** Ensure bitw login tokens exist on workstation
-  if ! bitw status 2>/dev/null | grep -q 'token_valid.*valid'; then
-    info "Bitwarden login required on workstation."
-    bitw login
+  ***REMOVED*** Ensure SM access token is configured on workstation.
+  ***REMOVED*** SM has no interactive login — the token must be set via BWS_ACCESS_TOKEN
+  ***REMOVED*** env or ~/.config/bitw/config (key: sm_access_token).
+  if ! bws_check; then
+    exit 1
   fi
 
   info "Running secrets-render playbook (localhost)..."
@@ -360,26 +362,19 @@ phase_snapshot() {
   if "$DIR/scripts/snapshot-state.sh" 2>&1; then
     ok "Tofu state snapshotted."
   else
-    warn "Tofu state snapshot failed (non-fatal — BW item may not exist yet)."
-    warn "Create it with:"
-    warn "  bitw create 'assistant/tofu-state-snapshot' --type 2 --notes '{\"schema_version\":1,\"snapshots\":[]}'"
+    warn "Tofu state snapshot failed (non-fatal — SM secret may not exist yet)."
+    warn "Create it in Secrets Manager (SM) with:"
+    warn "  bws secret create 'TOFU_STATE_SNAPSHOT' '{\"schema_version\":1,\"snapshots\":[]}' <assistant-project-id>"
   fi
 }
 
 phase_dns() {
-  ***REMOVED*** Sync Porkbun DNS A records (apex + subdomains) to the VPS IP via the
-  ***REMOVED*** direct API. Runs on the workstation after provisioning; idempotent.
-  if [[ ! -x "$DIR/scripts/dns-sync.sh" ]]; then
-    return 0
-  fi
-
-  step "Sync DNS records to VPS IP"
-  if "$DIR/scripts/dns-sync.sh" 2>&1; then
-    ok "DNS records synced."
-  else
-    err "DNS sync failed (see output above)."
-    exit 1
-  fi
+  ***REMOVED*** DNS records are managed by OpenTofu via the Cloudflare provider
+  ***REMOVED*** (tofu/dns.tf). The tofu apply phase already created/updated them;
+  ***REMOVED*** this phase is a no-op that verifies the legacy script's replacement.
+  ***REMOVED*** Legacy scripts/dns-sync.sh (Porkbun) is kept for reference only.
+  step "DNS records — managed by tofu/dns.tf (Cloudflare provider)"
+  ok "DNS records managed via tofu apply (see tofu/dns.tf)."
 }
 
 phase_helmfile() {
@@ -491,7 +486,7 @@ main() {
   cd "$DIR"
 
   ***REMOVED*** Render vault-driven templates for all deployment paths. status/destroy/help
-  ***REMOVED*** do not need the vault, so skip them to avoid unnecessary Bitwarden calls.
+  ***REMOVED*** do not need the vault, so skip them to avoid unnecessary Secrets Manager calls.
   case "${1:-}" in
     status|destroy|help|--help|-h) : ;;
     *) phase_inventory_render ;;

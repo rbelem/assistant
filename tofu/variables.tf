@@ -80,7 +80,7 @@ variable "ssh_public_key" {
 ***REMOVED***-----------------------------------------------------------------------------
 
 variable "domain_name" {
-  description = "Base domain name (managed by Porkbun DNS). Source: Bitwarden assistant/domain-config"
+  description = "Base domain name (managed by Cloudflare DNS). Source: Bitwarden assistant/domain-config"
   type        = string
 
   validation {
@@ -96,6 +96,17 @@ variable "subdomains" {
   validation {
     condition     = length(var.subdomains) > 0 && alltrue([for s in var.subdomains : length(s) > 0 && !can(regex("\\.", s))])
     error_message = "subdomains must be a non-empty list of single-label hostnames (no dots)."
+  }
+}
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token for DNS record management. Source: Bitwarden SM RCLB_DEV_CLOUDFLARE_API_KEY."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.cloudflare_api_token) > 0
+    error_message = "cloudflare_api_token must not be empty."
   }
 }
 

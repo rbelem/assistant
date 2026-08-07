@@ -9,9 +9,9 @@ The OVHcloud VPS that runs all services. Hostname: `${VPS_HOSTNAME}`.
 OS-level services running directly on NixOS (not in k3s): Caddy, Tailscale, firewall, restic.
 
 ***REMOVED******REMOVED*** DNS scheme
-Every service gets a flat subdomain on `${DOMAIN}` with a public A record pointing to the VPS IP. Domain registered at Porkbun. DNS records managed via `marcfrederick/porkbun` OpenTofu provider.
+Every service gets a flat subdomain on `${DOMAIN}` with a public A record pointing to the VPS IP. Domain registered at Cloudflare. DNS records managed via `cloudflare/cloudflare` OpenTofu provider in `tofu/dns.tf`.
 
-TLS via Caddy Let's Encrypt using **DNS-01 challenge** with Porkbun API — wildcard cert `*.${DOMAIN}` covers all current and future services. No port 80 dependency. Access control enforced by Caddy IP allowlist for non-public services.
+TLS via Caddy Let's Encrypt using **DNS-01 challenge** with Cloudflare API — wildcard cert `*.${DOMAIN}` covers all current and future services. No port 80 dependency. Access control enforced by Caddy IP allowlist for non-public services.
 
 | Service | Domain | Access |
 |---------|--------|--------|
@@ -27,10 +27,10 @@ Self-hosted AI agent by Nous Research. Agentic tasks: memory, skills, scheduling
 Token compression proxy for LLM calls. Runs as an internal ClusterIP-only service inside the `hermes` namespace — consumed by Hermes via `MINIMAX_BASE_URL`. No external exposure.
 
 ***REMOVED******REMOVED*** n8n
-Self-hosted workflow automation (node-based编排, 400+ integrations). Additive to Hermes — handles external API integrations, notifications, data pipelines while Hermes handles agentic tasks. Runs in k3s namespace `n8n`. Deployed via Helm chart (managed through Helmfile). 2Gi PVC for workflow data. PostgreSQL via shared Bitnami chart (5Gi PVC, shared with Zitadel). Encryption key stored in Bitwarden vault. Authenticated via Zitadel OIDC.
+Self-hosted workflow automation (node-based编排, 400+ integrations). Additive to Hermes — handles external API integrations, notifications, data pipelines while Hermes handles agentic tasks. Runs in k3s namespace `n8n`. Deployed via Helm chart (managed through Helmfile). 2Gi PVC for workflow data. PostgreSQL via shared Bitnami chart (5Gi PVC, shared with Zitadel). Encryption key stored in Bitwarden Secrets Manager. Authenticated via Zitadel OIDC.
 
 ***REMOVED******REMOVED*** Zitadel
-Identity provider (Go-based, OIDC/OAuth2, WebAuthn). Provides auth for n8n and future expansion to professional multi-user use. ~500MB total with DB. Deployed via Helmfile in k3s, namespace `auth`. Shares PostgreSQL with n8n (Bitnami chart, separate database, database created via Helm hook job). Masterkey and admin password stored in Bitwarden vault.
+Identity provider (Go-based, OIDC/OAuth2, WebAuthn). Provides auth for n8n and future expansion to professional multi-user use. ~500MB total with DB. Deployed via Helmfile in k3s, namespace `auth`. Shares PostgreSQL with n8n (Bitnami chart, separate database, database created via Helm hook job). Masterkey and admin password stored in Bitwarden Secrets Manager.
 
 ***REMOVED******REMOVED*** Uptime Kuma
 Uptime monitoring dashboard. Runs in k3s namespace `monitoring`.

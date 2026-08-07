@@ -1,119 +1,73 @@
-***REMOVED*** Bitwarden Vault Structure for assistant
+***REMOVED*** Bitwarden Secrets Manager (SM) Layout for assistant
 ***REMOVED***
-***REMOVED*** Convention: all items use `assistant/<kebab-case>` naming.
-***REMOVED*** One credential per BW item, all Login type (type 1) with value in the password field.
-***REMOVED*** Create these 13 items in your Bitwarden vault before running secrets-render.yml.
+***REMOVED*** Secrets live in Bitwarden Secrets Manager, accessed via a machine-account
+***REMOVED*** access token. No master password, no interactive login.
 ***REMOVED***
-***REMOVED*** Vault: "assistant"
+***REMOVED*** ── Access token ──────────────────────────────────────────────────────────────
+***REMOVED*** The SM access token authenticates `bws` commands. It must be configured on the
+***REMOVED*** **workstation only** — never on the VPS.
 ***REMOVED***
-***REMOVED*** The secrets-render.yml playbook (workstation-side) fetches these items and
-***REMOVED*** renders them to .rendered/ (gitignored). The secrets-apply.yml playbook
-***REMOVED*** (VPS-side) copies the rendered files to the VPS. The master password
-***REMOVED*** never touches the VPS.
+***REMOVED*** Configuration (checked in order):
+***REMOVED***   1. BWS_ACCESS_TOKEN env var (same token value as SM_ACCESS_TOKEN)
+***REMOVED***   2. ~/.config/bitw/config (key: sm_access_token)
 ***REMOVED***
-***REMOVED*** Dropped 2026-07-27: assistant/openrouter-api-key (→ assistant/minimax-api-key),
-***REMOVED*** assistant/lambda-cloud-api-key (Lambda Cloud unused), assistant/restic-backup-password
-***REMOVED*** + assistant/ovh-access-key + assistant/ovh-secret-key (OVH backups deferred).
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 1. assistant/minimax-api-key
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/minimax-api-key"
-***REMOVED*** Field: password → <your minimax.io API key>
-***REMOVED*** Notes: Get from https://minimax.io/ (replaces OpenRouter)
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 2. assistant/hermes-discord-token
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/hermes-discord-token"
-***REMOVED*** Field: password → <discord bot token>
-***REMOVED*** Notes: From Discord Developer Portal → Bot → Token
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 3. assistant/n8n-encryption-key
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/n8n-encryption-key"
-***REMOVED*** Field: password → <32+ char random hex string>
-***REMOVED*** Generate with: openssl rand -hex 32
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 4. assistant/zitadel-masterkey
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/zitadel-masterkey"
-***REMOVED*** Field: password → <32+ char random key>
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 5. assistant/zitadel-admin-password
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/zitadel-admin-password"
-***REMOVED*** Field: password → <strong admin password>
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 6. assistant/porkbun-api-key
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/porkbun-api-key"
-***REMOVED*** Field: password → <Porkbun API key>
-***REMOVED*** Notes: From https://porkbun.com/account/api
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 7. assistant/porkbun-secret-api-key
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/porkbun-secret-api-key"
-***REMOVED*** Field: password → <Porkbun secret API key>
-***REMOVED*** Notes: From https://porkbun.com/account/api
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 8. assistant/tailscale-authkey
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/tailscale-authkey"
-***REMOVED*** Field: password → <tailscale auth key>
-***REMOVED*** Notes: From https://login.tailscale.com/admin/settings/keys
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 9. assistant/caddy-admin-password
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/caddy-admin-password"
-***REMOVED*** Field: password → <caddy admin password>
-***REMOVED*** Notes: Used for Caddy API admin endpoint
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 10. assistant/postgres-password
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Login
-***REMOVED*** Name: "assistant/postgres-password"
-***REMOVED*** Field: password → <strong postgres password>
-***REMOVED*** Notes: Used by n8n and Zitadel; generate with: openssl rand -base64 32
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 11. assistant/vps-ssh-key
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: SSH Key (type 5)
-***REMOVED*** Name: "assistant/vps-ssh-key"
-***REMOVED*** Fields: .sshKey.privateKey, .sshKey.publicKey
-***REMOVED*** Notes: Generated once; public key registered in nixos/hosts/agent/default.nix
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 12. assistant/domain-config
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Secure Note (type 2)
-***REMOVED*** Name: "assistant/domain-config"
-***REMOVED*** Notes body (JSON):
-***REMOVED***   {"domain":"<your-domain>","subdomains":["hermes","status","n8n","auth"]}
-
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** 13. assistant/tofu-inputs
-***REMOVED*** ─────────────────────────────────────────────────────────────────
-***REMOVED*** Type: Secure Note (type 2)
-***REMOVED*** Name: "assistant/tofu-inputs"
-***REMOVED*** Notes body (JSON): arbitrary TF_VAR_* keys plus vps_host, vps_ssh_user, vps_ssh_port.
-***REMOVED*** Also includes TOFU_STATE_* keys consumed by tofu/tofu-wrapper.sh for the S3 backend.
-***REMOVED*** Also includes storage_access_key and storage_secret_key for the state bucket.
+***REMOVED*** Get a token: Bitwarden Secrets Manager web vault → Organization → Machine
+***REMOVED*** Accounts → create a machine account → copy the access token.
+***REMOVED***
+***REMOVED*** ── SM key layout ─────────────────────────────────────────────────────────────
+***REMOVED*** All keys live under the `assistant` project in Bitwarden Secrets Manager.
+***REMOVED*** Uppercase snake_case names — the project provides namespace.
+***REMOVED***
+***REMOVED*** | SM Key                  | Value                          | Source / Notes                          |
+***REMOVED*** |-------------------------|--------------------------------|-----------------------------------------|
+***REMOVED*** | VPS_SSH_KEY             | SSH private key (PEM, raw)     | Generated once; public key derived      |
+***REMOVED*** | DOMAIN_CONFIG           | JSON: {domain, subdomains}     | e.g. {"domain":"example.com","subdomains":["hermes","status"]} |
+***REMOVED*** | TOFU_INPUTS             | JSON: vps_host, vps_ssh_user,  | Composed by populate-sm.sh              |
+***REMOVED*** |                         |   vps_ssh_port, TF vars,       |                                         |
+***REMOVED*** |                         |   storage creds, etc.          |                                         |
+***REMOVED*** | MINIMAX_API_KEY         | minimax.io API key (raw)       | https://minimax.io/                     |
+***REMOVED*** | DISCORD_BOT_TOKEN       | Discord bot token (raw)        | Discord Developer Portal → Bot → Token  |
+***REMOVED*** | DISCORD_ALLOWED_USERS   | Comma-separated user IDs (raw) | Discord user IDs allowed to talk to Hermes |
+***REMOVED*** | N8N_ENCRYPTION_KEY      | 32+ char random hex (raw)      | `openssl rand -hex 32`                  |
+***REMOVED*** | ZITADEL_MASTERKEY       | 32+ char random key (raw)      | Zitadel Helm install                    |
+***REMOVED*** | ZITADEL_ADMIN_PASSWORD  | Strong admin password (raw)    | Zitadel initial admin                   |
+***REMOVED*** | RCLB_DEV_CLOUDFLARE_API_KEY  | Cloudflare API token (cfat_*, raw)  | Zone:Read + Zone:DNS:Edit |
+***REMOVED*** | TAILSCALE_AUTHKEY       | Tailscale auth key (raw)       | https://login.tailscale.com/admin/settings/keys |
+***REMOVED*** | CADDY_ADMIN_PASSWORD    | Caddy admin password (raw)     | Caddy API admin endpoint                |
+***REMOVED*** | POSTGRES_PASSWORD       | Strong postgres password (raw) | `openssl rand -base64 32`; shared by n8n + Zitadel |
+***REMOVED*** | OPENCODE_GO_API_KEY     | opencode-go API key (raw)      |                                         |
+***REMOVED*** | HERMES_API_SERVER_KEY   | Hermes API server key (raw)    |                                         |
+***REMOVED*** | DASHBOARD_PASSWORD      | Hermes dashboard password (raw)|                                         |
+***REMOVED*** | DASHBOARD_USERNAME      | Hermes dashboard username (raw)|                                         |
+***REMOVED*** | DASHBOARD_SECRET        | Hermes dashboard secret (raw)  |                                         |
+***REMOVED*** | OPENROUTER_API_KEY      | OpenRouter API key (raw)       | Superseded by minimax-api-key; kept for reference |
+***REMOVED*** | VPS_ROOT_PASSWORD       | VPS root password (raw)        | OVH emailed password or reset           |
+***REMOVED*** | VPS_SUDO_PASSWORD       | VPS sudo password (raw)        |                                         |
+***REMOVED*** | RESTIC_BACKUP_PASSWORD  | Restic backup encryption password (raw) | Backups deferred (2026-07-27) |
+***REMOVED***
+***REMOVED*** ── SM snapshot ────────────────────────────────────────────────────────────────
+***REMOVED*** The tofu state snapshot moved from the personal vault to SM as
+***REMOVED*** TOFU_STATE_SNAPSHOT. Read/written by scripts/snapshot-state.sh and
+***REMOVED*** scripts/restore-state.sh using bws_get / bws secret edit.
+***REMOVED***
+***REMOVED*** sm_access_token in ~/.config/bitw/config is shared between bitw and bws.
+***REMOVED*** The personal vault item (assistant/tofu-state-snapshot) is no longer used.
+***REMOVED***
+***REMOVED*** ── Render flow ───────────────────────────────────────────────────────────────
+***REMOVED*** 1. Workstation: `scripts/fetch_vault.sh` reads SM keys via `bws` (via
+***REMOVED***    scripts/lib/bws.sh) and renders to .rendered/ (vault.env, terraform.tfvars,
+***REMOVED***    runtime-config.json).
+***REMOVED*** 2. Workstation: `ansible/playbooks/secrets-render.yml` reads SM keys via
+***REMOVED***    `scripts/bws-get` and renders k8s Secret/ConfigMap manifests + host files
+***REMOVED***    to .rendered/.
+***REMOVED*** 3. VPS: `ansible/playbooks/secrets-apply.yml` copies the pinned allowlist
+***REMOVED***    from .rendered/ to the VPS. No SM token, no bws binary on the VPS.
+***REMOVED***
+***REMOVED*** Compromise of the VPS yields only rendered runtime secrets (bounded blast
+***REMOVED*** radius), not the SM access token (force multiplier).
+***REMOVED***
+***REMOVED*** ── Bootstrap ─────────────────────────────────────────────────────────────────
+***REMOVED*** First-time setup: `scripts/populate-sm.sh` creates the 3 structural SM keys
+***REMOVED*** (VPS_SSH_KEY, DOMAIN_CONFIG, TOFU_INPUTS).
+***REMOVED*** The remaining keys (API keys, passwords, tokens) are created manually in
+***REMOVED*** the Bitwarden Secrets Manager web vault.

@@ -1,5 +1,5 @@
 ***REMOVED***-----------------------------------------------------------------------------
-***REMOVED***Provider Configuration — Hetzner Cloud + AWS S3 + Porkbun DNS
+***REMOVED***Provider Configuration — Hetzner Cloud + AWS S3 + Cloudflare DNS
 ***REMOVED***-----------------------------------------------------------------------------
 ***REMOVED***Hetzner Cloud credentials are sourced from environment variables:
 ***REMOVED***HCLOUD_TOKEN
@@ -8,9 +8,9 @@
 ***REMOVED***Passed via tofu-inputs variables: storage_access_key, storage_secret_key,
 ***REMOVED***storage_endpoint, storage_region (and vps_datacenter for AWS region).
 ***REMOVED***
-***REMOVED***Porkbun DNS credentials:
-***REMOVED***var.porkbun_api_key, var.porkbun_secret_api_key
-***REMOVED***(sourced from Bitwarden via TF_VAR_* env vars)
+***REMOVED***Cloudflare DNS (current):
+***REMOVED***var.cloudflare_api_token — sourced from Bitwarden Secrets Manager
+***REMOVED***(RCLB_DEV_CLOUDFLARE_API_KEY). Requires Zone:Read + Zone:DNS:Edit.
 ***REMOVED***-----------------------------------------------------------------------------
 
 terraform {
@@ -25,6 +25,11 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
+    }
+
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
     }
   }
 }
@@ -52,9 +57,8 @@ provider "aws" {
 }
 
 ***REMOVED***-----------------------------------------------------------------------------
-***REMOVED***Porkbun DNS is managed by scripts/dns-sync.sh (direct API) — the
-***REMOVED***marcfrederick/porkbun provider's create path is broken upstream
-***REMOVED***(record id returned as object, provider expects int64 — issue ***REMOVED***35).
+***REMOVED***Porkbun DNS is no longer used — the domain is delegated to Cloudflare.
+***REMOVED***The scripts/dns-sync.sh and Porkbun API keys are kept for reference only.
 ***REMOVED***-----------------------------------------------------------------------------
 
 ***REMOVED***-----------------------------------------------------------------------------
@@ -65,4 +69,15 @@ provider "aws" {
 ***REMOVED***-----------------------------------------------------------------------------
 provider "hcloud" {
   token = var.hcloud_token
+}
+
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***Cloudflare Provider — DNS record management
+***REMOVED***-----------------------------------------------------------------------------
+***REMOVED***API token sourced from var.cloudflare_api_token (Bitwarden SM key:
+***REMOVED***RCLB_DEV_CLOUDFLARE_API_KEY). Must have Zone:Read + Zone:DNS:Edit
+***REMOVED***permissions for the domain zone.
+***REMOVED***-----------------------------------------------------------------------------
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
 }
