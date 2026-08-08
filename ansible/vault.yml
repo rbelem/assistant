@@ -1,4 +1,4 @@
-# Bitwarden Secrets Manager (SM) Layout for assistant
+# Bitwarden Secrets Manager (SM) Layout for zet
 #
 # Secrets live in Bitwarden Secrets Manager, accessed via a machine-account
 # access token. No master password, no interactive login.
@@ -15,7 +15,7 @@
 # Accounts → create a machine account → copy the access token.
 #
 # ── SM key layout ─────────────────────────────────────────────────────────────
-# All keys live under the `assistant` project in Bitwarden Secrets Manager.
+# All keys live under the `zet` project in Bitwarden Secrets Manager.
 # Uppercase snake_case names — the project provides namespace.
 #
 # | SM Key                  | Value                          | Source / Notes                          |
@@ -27,19 +27,18 @@
 # |                         |   storage creds, etc.          |                                         |
 # | MINIMAX_API_KEY         | minimax.io API key (raw)       | https://minimax.io/                     |
 # | DISCORD_BOT_TOKEN       | Discord bot token (raw)        | Discord Developer Portal → Bot → Token  |
-# | DISCORD_ALLOWED_USERS   | Comma-separated user IDs (raw) | Discord user IDs allowed to talk to Hermes |
+# | DISCORD_ALLOWED_USERS   | Comma-separated user IDs (raw) | Discord user IDs allowed to talk to Zet |
 # | N8N_ENCRYPTION_KEY      | 32+ char random hex (raw)      | `openssl rand -hex 32`                  |
 # | ZITADEL_MASTERKEY       | 32+ char random key (raw)      | Zitadel Helm install                    |
 # | ZITADEL_ADMIN_PASSWORD  | Strong admin password (raw)    | Zitadel initial admin                   |
 # | RCLB_DEV_CLOUDFLARE_API_KEY  | Cloudflare API token (cfat_*, raw)  | Zone:Read + Zone:DNS:Edit |
 # | TAILSCALE_AUTHKEY       | Tailscale auth key (raw)       | https://login.tailscale.com/admin/settings/keys |
-# | CADDY_ADMIN_PASSWORD    | Caddy admin password (raw)     | Caddy API admin endpoint                |
 # | POSTGRES_PASSWORD       | Strong postgres password (raw) | `openssl rand -base64 32`; shared by n8n + Zitadel |
 # | OPENCODE_GO_API_KEY     | opencode-go API key (raw)      |                                         |
-# | HERMES_API_SERVER_KEY   | Hermes API server key (raw)    |                                         |
-# | DASHBOARD_PASSWORD      | Hermes dashboard password (raw)|                                         |
-# | DASHBOARD_USERNAME      | Hermes dashboard username (raw)|                                         |
-# | DASHBOARD_SECRET        | Hermes dashboard secret (raw)  |                                         |
+# | HERMES_API_SERVER_KEY   | Hermes API server key (raw)    | API key for the agent's own OpenAI-compatible API server (upstream hermes-agent product, unchanged by project rename) |
+# | DASHBOARD_PASSWORD      | Zet dashboard password (raw)   |                                         |
+# | DASHBOARD_USERNAME      | Zet dashboard username (raw)   |                                         |
+# | DASHBOARD_SECRET        | Zet dashboard secret (raw)     |                                         |
 # | OPENROUTER_API_KEY      | OpenRouter API key (raw)       | Superseded by minimax-api-key; kept for reference |
 # | VPS_ROOT_PASSWORD       | VPS root password (raw)        | OVH emailed password or reset           |
 # | VPS_SUDO_PASSWORD       | VPS sudo password (raw)        |                                         |
@@ -51,7 +50,7 @@
 # scripts/restore-state.sh using bws_get / bws secret edit.
 #
 # sm_access_token in ~/.config/bitw/config is shared between bitw and bws.
-# The personal vault item (assistant/tofu-state-snapshot) is no longer used.
+# The personal vault item (zet/tofu-state-snapshot) is no longer used.
 #
 # ── Render flow ───────────────────────────────────────────────────────────────
 # 1. Workstation: `scripts/fetch_vault.sh` reads SM keys via `bws` (via

@@ -7,14 +7,20 @@
 # The cloudflare_api_token must have Zone:Read + Zone:DNS:Edit permissions.
 #
 # Apex + www point to GitHub Pages (rbelem.github.io). Service subdomains
-# (hermes, status, n8n, auth) point to the Hetzner VPS IP. Mail records (MX,
-# SPF, DKIM cf2024-1) are owned by Cloudflare Email Routing and excluded
-# (API rejects edits with error 1046).
+# (hermes, status, n8n, auth) live under the project domain (zet.rclb.dev) —
+# host zet.rclb.dev points to the VPS IP, and each service X resolves at
+# X.zet.rclb.dev. Mail records (MX, SPF, DKIM cf2024-1) are owned by Cloudflare
+# Email Routing and excluded (API rejects edits with error 1046).
 #-----------------------------------------------------------------------------
 
 #--- Zone lookup (zone already exists in the account) -------------------------
 data "cloudflare_zone" "main" {
-  name = var.domain_name
+  name = var.zone_name
+}
+
+# Project label = domain minus zone (e.g. domain zet.rclb.dev, zone rclb.dev → "zet")
+locals {
+  project_label = trimprefix(var.domain_name, "${var.zone_name}.")
 }
 
 #--- Apex + www → GitHub Pages -----------------------------------------------
@@ -22,7 +28,7 @@ data "cloudflare_zone" "main" {
 
 resource "cloudflare_record" "apex" {
   zone_id = data.cloudflare_zone.main.id
-  name    = var.domain_name
+  name    = var.zone_name
   type    = "CNAME"
   content = "rbelem.github.io"
   proxied = true
@@ -38,17 +44,27 @@ resource "cloudflare_record" "www" {
   ttl     = 1
 }
 
-#--- VPS A records (agent services) ------------------------------------------
+#--- VPS A records (zet services) ----------------------------------------------
 # DNS-only (proxied=false) — Caddy on the VPS terminates TLS directly.
+# Host `zet` → VPS IP; each service X in var.subdomains → X.zet → VPS IP.
 
 resource "cloudflare_record" "subdomains" {
   for_each = toset(var.subdomains)
   zone_id  = data.cloudflare_zone.main.id
-  name     = each.value
+  name     = "${each.value}.${local.project_label}"
   type     = "A"
-  content  = hcloud_server.agent.ipv4_address
+  content  = hcloud_server.zet.ipv4_address
   proxied  = false
   ttl      = 600
+}
+
+resource "cloudflare_record" "zet" {
+  zone_id = data.cloudflare_zone.main.id
+  name    = local.project_label
+  type    = "A"
+  content = hcloud_server.zet.ipv4_address
+  proxied = false
+  ttl     = 600
 }
 
 #--- Remaining A/CNAME records -----------------------------------------------

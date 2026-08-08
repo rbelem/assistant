@@ -1,15 +1,15 @@
 ---
 - name: Update VPS services
-  hosts: assistant
+  hosts: zet
   become: yes
   gather_facts: no
 
   vars:
     namespaces_to_update:
-      - name: hermes
-        deployment: hermes
+      - name: zet
+        deployment: zet-agent
         image_pull_policy: Always
-      - name: headroom
+      - name: zet
         deployment: headroom
         image_pull_policy: Always
 
@@ -54,19 +54,19 @@
         label: "{{ item.name }}/{{ item.deployment }}"
 
     # ── Wait for rollouts ─────────────────────────────────────────
-    - name: Wait for Hermes rollout
+    - name: Wait for Zet rollout
       ansible.builtin.command: >
-        kubectl rollout status deployment/hermes
-        -n hermes
+        kubectl rollout status deployment/zet-agent
+        -n zet
         --timeout=180s
-      register: hermes_rollout
+      register: zet_rollout
       changed_when: false
       failed_when: false
 
     - name: Wait for Headroom rollout
       ansible.builtin.command: >
         kubectl rollout status deployment/headroom
-        -n headroom
+        -n zet
         --timeout=180s
       register: headroom_rollout
       changed_when: false
@@ -85,13 +85,13 @@
     # ── Report status ─────────────────────────────────────────────
     - name: Get pod status
       ansible.builtin.command: >
-        kubectl get pods -n hermes -n headroom -o wide
+        kubectl get pods -n zet -o wide
       register: pod_status
       changed_when: false
 
     - name: Get recent events
       ansible.builtin.command: >
-        kubectl get events -A --sort-by='.lastTimestamp' -n hermes -n headroom
+        kubectl get events -A --sort-by='.lastTimestamp' -n zet
       register: recent_events
       changed_when: false
       failed_when: false
@@ -104,8 +104,8 @@
           ═══════════════════════════════════════════
 
           Rollout status:
-            hermes:    {{ 'OK' if hermes_rollout.rc == 0 else 'ISSUES' }}
-            headroom:  {{ 'OK' if headroom_rollout.rc == 0 else 'ISSUES' }}
+            zet:      {{ 'OK' if zet_rollout.rc == 0 else 'ISSUES' }}
+            headroom: {{ 'OK' if headroom_rollout.rc == 0 else 'ISSUES' }}
 
           Pod status:
           {{ pod_status.stdout }}

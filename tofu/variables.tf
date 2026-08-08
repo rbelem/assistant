@@ -12,7 +12,7 @@
 #-----------------------------------------------------------------------------
 
 variable "hcloud_token" {
-  description = "Hetzner Cloud API token. Source: Bitwarden assistant/tofu-inputs (hcloud_token key)"
+  description = "Hetzner Cloud API token. Source: Bitwarden zet/tofu-inputs (hcloud_token key)"
   type        = string
   sensitive   = true
 
@@ -23,7 +23,7 @@ variable "hcloud_token" {
 }
 
 variable "hcloud_server_type" {
-  description = "Hetzner Cloud server type. CX33 = 8 vCPU / 16 GB / 160 GB / ~€34/mo. Source: Bitwarden assistant/tofu-inputs"
+  description = "Hetzner Cloud server type. CX33 = 8 vCPU / 16 GB / 160 GB / ~€34/mo. Source: Bitwarden zet/tofu-inputs"
   type        = string
   default     = "cx33"
 
@@ -55,7 +55,7 @@ variable "hcloud_image" {
 #-----------------------------------------------------------------------------
 
 variable "vps_display_name" {
-  description = "Display name for the VPS in Hetzner Cloud console. Source: Bitwarden assistant/tofu-inputs"
+  description = "Display name for the VPS in Hetzner Cloud console. Source: Bitwarden zet/tofu-inputs"
   type        = string
 
   validation {
@@ -65,7 +65,7 @@ variable "vps_display_name" {
 }
 
 variable "ssh_public_key" {
-  description = "SSH public key to pre-install on the VPS (full key string, e.g. 'ssh-ed25519 AAAA...'). Source: Bitwarden assistant/tofu-inputs"
+  description = "SSH public key to pre-install on the VPS (full key string, e.g. 'ssh-ed25519 AAAA...'). Source: Bitwarden zet/tofu-inputs"
   type        = string
   sensitive   = true
 
@@ -80,18 +80,28 @@ variable "ssh_public_key" {
 #-----------------------------------------------------------------------------
 
 variable "domain_name" {
-  description = "Base domain name (managed by Cloudflare DNS). Source: Bitwarden assistant/domain-config"
+  description = "Project base domain (managed via Cloudflare DNS records). Source: Bitwarden zet/domain-config"
   type        = string
 
   validation {
     condition     = length(regexall("\\.", var.domain_name)) > 0
-    error_message = "Domain name must contain at least one dot (e.g. example.com)."
+    error_message = "Domain name must contain at least one dot (e.g. zet.rclb.dev)."
+  }
+}
+
+variable "zone_name" {
+  description = "Cloudflare zone name (apex, e.g. rclb.dev). Source: Bitwarden zet/domain-config"
+  type        = string
+
+  validation {
+    condition     = length(regexall("\\.", var.zone_name)) > 0
+    error_message = "Zone name must contain at least one dot (e.g. rclb.dev)."
   }
 }
 
 variable "subdomains" {
   type        = list(string)
-  description = "Subdomain list (per-service A records). Source: Bitwarden assistant/domain-config"
+  description = "Subdomain list (per-service A records). Source: Bitwarden zet/domain-config"
 
   validation {
     condition     = length(var.subdomains) > 0 && alltrue([for s in var.subdomains : length(s) > 0 && !can(regex("\\.", s))])
@@ -110,7 +120,7 @@ variable "cloudflare_api_token" {
   }
 }
 
-#vps_ip removed (unused — DNS A records use hcloud_server.agent.ipv4_address output).
+#vps_ip removed (unused — DNS A records use hcloud_server.zet.ipv4_address output).
 #Previously validated as IPv4 which blocked first deploy when VPS didn't exist yet.
 
 #-----------------------------------------------------------------------------
@@ -118,7 +128,7 @@ variable "cloudflare_api_token" {
 #-----------------------------------------------------------------------------
 
 variable "ssh_user" {
-  description = "SSH user for the VPS (used by deploy scripts). Source: Bitwarden assistant/tofu-inputs"
+  description = "SSH user for the VPS (used by deploy scripts). Source: Bitwarden zet/tofu-inputs"
   type        = string
 
   validation {
@@ -128,7 +138,7 @@ variable "ssh_user" {
 }
 
 variable "ssh_port" {
-  description = "SSH port for the VPS (used by deploy scripts). Source: Bitwarden assistant/tofu-inputs"
+  description = "SSH port for the VPS (used by deploy scripts). Source: Bitwarden zet/tofu-inputs"
   type        = number
 
   validation {
@@ -144,7 +154,7 @@ variable "ssh_port" {
 #-----------------------------------------------------------------------------
 
 variable "state_bucket_name" {
-  description = "S3 bucket name for OpenTofu remote state. Source: Bitwarden assistant/tofu-inputs"
+  description = "S3 bucket name for OpenTofu remote state. Source: Bitwarden zet/tofu-inputs"
   type        = string
 
   validation {
@@ -154,7 +164,7 @@ variable "state_bucket_name" {
 }
 
 variable "storage_region" {
-  description = "S3-compatible Object Storage region identifier (e.g. eu-central-1). Source: Bitwarden assistant/tofu-inputs"
+  description = "S3-compatible Object Storage region identifier (e.g. eu-central-1). Source: Bitwarden zet/tofu-inputs"
   type        = string
 
   validation {
@@ -164,7 +174,7 @@ variable "storage_region" {
 }
 
 variable "storage_endpoint" {
-  description = "S3-compatible Object Storage HTTPS endpoint URL. Source: Bitwarden assistant/tofu-inputs"
+  description = "S3-compatible Object Storage HTTPS endpoint URL. Source: Bitwarden zet/tofu-inputs"
   type        = string
 
   validation {
@@ -174,7 +184,7 @@ variable "storage_endpoint" {
 }
 
 variable "storage_access_key" {
-  description = "Access key for S3-compatible Object Storage. Source: Bitwarden assistant/tofu-inputs"
+  description = "Access key for S3-compatible Object Storage. Source: Bitwarden zet/tofu-inputs"
   type        = string
   sensitive   = true
 
@@ -185,7 +195,7 @@ variable "storage_access_key" {
 }
 
 variable "storage_secret_key" {
-  description = "Secret key for S3-compatible Object Storage. Source: Bitwarden assistant/tofu-inputs"
+  description = "Secret key for S3-compatible Object Storage. Source: Bitwarden zet/tofu-inputs"
   type        = string
   sensitive   = true
 

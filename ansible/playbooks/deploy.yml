@@ -1,6 +1,6 @@
 ---
 - name: Deploy services to k3s
-  hosts: assistant
+  hosts: zet
   become: yes
   gather_facts: no
 
@@ -45,30 +45,30 @@
         group: root
         mode: "0755"
       loop:
-        - hermes
+        - zet
         - headroom
         - monitoring
 
-    # ── Deploy Hermes Agent ───────────────────────────────────────
-    - name: Check for Hermes manifests
+    # ── Deploy Zet Agent ────────────────────────────────────────
+    - name: Check for Zet manifests
       ansible.builtin.find:
-        paths: "{{ k8s_manifests_base }}/hermes"
+        paths: "{{ k8s_manifests_base }}/zet"
         patterns: "*.yml,*.yaml"
-      register: hermes_manifests
+      register: zet_manifests
 
-    - name: Deploy Hermes Agent
+    - name: Deploy Zet Agent
       kubernetes.core.k8s:
         state: present
         src: "{{ item.path }}"
-      loop: "{{ hermes_manifests.files }}"
+      loop: "{{ zet_manifests.files }}"
       loop_control:
         label: "{{ item.path }}"
-      when: hermes_manifests.files | length > 0
+      when: zet_manifests.files | length > 0
 
-    - name: Skip Hermes if no manifests found
+    - name: Skip Zet if no manifests found
       ansible.builtin.debug:
-        msg: "No manifests found in {{ k8s_manifests_base }}/hermes — skipping"
-      when: hermes_manifests.files | length == 0
+        msg: "No manifests found in {{ k8s_manifests_base }}/zet — skipping"
+      when: zet_manifests.files | length == 0
 
     # ── Deploy Headroom ───────────────────────────────────────────
     - name: Check for Headroom manifests
@@ -113,22 +113,22 @@
       when: monitoring_manifests.files | length == 0
 
     # ── Wait for pods ─────────────────────────────────────────────
-    - name: Wait for Hermes pods to be ready
+    - name: Wait for Zet pods to be ready
       ansible.builtin.command: >
         kubectl wait --for=condition=ready pod
-        -l app=hermes-agent
-        -n hermes
+        -l app=zet-agent
+        -n zet
         --timeout=120s
-      register: hermes_ready
+      register: zet_ready
       changed_when: false
       failed_when: false
-      when: hermes_manifests.files | length > 0
+      when: zet_manifests.files | length > 0
 
     - name: Wait for Headroom pods to be ready
       ansible.builtin.command: >
         kubectl wait --for=condition=ready pod
         -l app=headroom
-        -n hermes
+        -n zet
         --timeout=120s
       register: headroom_ready
       changed_when: false

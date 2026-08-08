@@ -1,19 +1,19 @@
-# Optional HorizontalPodAutoscaler for Hermes Agent
-# NOTE: Hermes is stateful — scaling beyond 1 replica requires shared storage
+# Optional HorizontalPodAutoscaler for Zet Agent
+# NOTE: Zet is stateful — scaling beyond 1 replica requires shared storage
 # and careful handling of memory/skills directories. Keep min=max=1 for now.
 # This manifest is prepared for future use if stateless mode is supported.
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: hermes-agent-hpa
-  namespace: hermes
+  name: zet-agent-hpa
+  namespace: zet
   labels:
-    app: hermes-agent
+    app: zet-agent
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: hermes-agent
+    name: zet-agent
   minReplicas: 1
   maxReplicas: 2
   metrics:

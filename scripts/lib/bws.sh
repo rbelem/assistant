@@ -11,7 +11,7 @@
 set -euo pipefail
 
 #--- constants ------------------------------------------------------------------
-# The `assistant` SM project UUID (resolved once at first use)
+# The `zet` SM project UUID (resolved once at first use)
 _BWS_PROJECT_ID=""
 
 #--- helpers --------------------------------------------------------------------
@@ -34,9 +34,9 @@ _bws_resolve_project() {
   _bws_load_token
   if [[ -z "$_BWS_PROJECT_ID" ]]; then
     _BWS_PROJECT_ID="$(bws project list -o json 2>/dev/null \
-      | jq -r '.[] | select(.name == "assistant") | .id')"
+      | jq -r '.[] | select(.name == "zet") | .id')"
     if [[ -z "$_BWS_PROJECT_ID" || "$_BWS_PROJECT_ID" == "null" ]]; then
-      echo "bws: assistant project not found in SM" >&2
+      echo "bws: zet project not found in SM" >&2
       return 1
     fi
   fi

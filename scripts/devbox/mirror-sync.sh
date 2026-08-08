@@ -15,11 +15,11 @@ REMOTE="${1:-target}"
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
 
-echo "[mirror-sync] clone worktree → /tmp/assistant-scrub"
-rm -rf /tmp/assistant-scrub
-git clone "$REPO_ROOT" /tmp/assistant-scrub
-cd /tmp/assistant-scrub
-git remote add target "https://github.com/rbelem/assistant.git" 2>/dev/null || git remote set-url target "https://github.com/rbelem/assistant.git"
+echo "[mirror-sync] clone worktree → /tmp/zet-scrub"
+rm -rf /tmp/zet-scrub
+git clone "$REPO_ROOT" /tmp/zet-scrub
+cd /tmp/zet-scrub
+git remote add target "https://github.com/rbelem/zet.git" 2>/dev/null || git remote set-url target "https://github.com/rbelem/zet.git"
 
 echo "[mirror-sync] git filter-repo (apply replacements.txt)"
 nix shell 'nixpkgs#git-filter-repo' --command bash -c '
@@ -46,4 +46,4 @@ git push "$REMOTE" --mirror --force
 
 echo
 echo "[mirror-sync] done. The push triggered gitleaks in CI."
-echo "  Watch with:  gh run watch --repo rbelem/assistant"
+echo "  Watch with:  gh run watch --repo rbelem/zet"

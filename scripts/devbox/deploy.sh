@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# deploy.sh — one-command deploy cycle for the assistant repo.
+# deploy.sh — one-command deploy cycle for the zet repo.
 #
 # This script consolidates the entire deploy flow into a single command:
 # 1. Re-scrub the mirror (filter-repo) + post-scrub fix
@@ -25,7 +25,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
 
-MIRROR_DIR="/tmp/assistant-scrub"
+MIRROR_DIR="/tmp/zet-scrub"
 
 # ---- Phase 1: re-scrub the mirror with post-scrub fix ----
 echo "==> Phase 1: re-scrub the mirror"
@@ -36,7 +36,7 @@ fi
 
 git clone "$REPO_ROOT" "$MIRROR_DIR"
 cd "$MIRROR_DIR"
-git remote set-url origin https://github.com/rbelem/assistant.git 2>/dev/null || true
+git remote set-url origin https://github.com/rbelem/zet.git 2>/dev/null || true
 
 echo "  Running git filter-repo..."
 nix shell 'nixpkgs#git-filter-repo' --command git-filter-repo \
@@ -82,10 +82,10 @@ read -p "Press Enter when the push is done..."
 # ---- Phase 4: wait for gitleaks to pass ----
 echo "==> Phase 4: watch gitleaks"
 echo "  Watching GitHub Actions for gitleaks to pass..."
-if ! nix shell 'nixpkgs#gh' --command gh run watch --repo rbelem/assistant; then
+if ! nix shell 'nixpkgs#gh' --command gh run watch --repo rbelem/zet; then
   echo
   echo "  ! gitleaks failed — check the run log:"
-  echo "    nix shell 'nixpkgs#gh' --command gh run list --repo rbelem/assistant --workflow gitleaks --limit=1"
+  echo "    nix shell 'nixpkgs#gh' --command gh run list --repo rbelem/zet --workflow gitleaks --limit=1"
   echo "  Fix the leak, re-run this script, and try again."
   exit 1
 fi
@@ -132,14 +132,14 @@ echo "  ✓ VPS provisioned"
 # ---- Phase 7: initial deploy (nixos-infect + first nixos-rebuild as root) ----
 echo "==> Phase 7: initial deploy (nixos-infect + first nixos-rebuild)"
 echo
-echo "The nix-config agent host must have these pre-applied:"
+echo "The nix-config zet host must have these pre-applied:"
 echo "  - services.openssh.settings.PermitRootLogin = \"no\""
 echo "  - users.users.rodrigo = { ... openssh.authorizedKeys.keys = [ \"<your-pubkey>\" ] }"
 echo
-read -p "Is the nix-config agent host ready? (y/N) " -n 1 -r
+read -p "Is the nix-config zet host ready? (y/N) " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-  echo "  skipped initial deploy — make sure the nix-config agent host is ready, then re-run"
+  echo "  skipped initial deploy — make sure the nix-config zet host is ready, then re-run"
   exit 0
 fi
 
@@ -160,7 +160,7 @@ else
 fi
 echo
 echo "  2. Check the public repo:"
-echo "     nix shell 'nixpkgs#gh' --command gh api repos/rbelem/assistant/contents/AGENTS.md --jq .content | head -50"
+echo "     nix shell 'nixpkgs#gh' --command gh api repos/rbelem/zet/contents/AGENTS.md --jq .content | head -50"
 echo
 echo "  3. SSH into the VPS and check k3s:"
 VPS_IP=$(tofu output -raw vps_ip 2>/dev/null || echo "<vps-ip>")
@@ -170,7 +170,7 @@ echo "  4. Verify VPS has no master password artifacts:"
 echo "     scripts/verify-g3.sh"
 echo
 echo "  5. Check the services:"
-echo "     curl -I https://hermes.\$(jq -r .domain .rendered/runtime-config.json)"
+echo "     curl -I https://hermes.$(jq -r .domain .rendered/runtime-config.json)"
 echo
 echo "Deploy complete! 🚀"
 echo

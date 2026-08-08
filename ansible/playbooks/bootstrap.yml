@@ -1,6 +1,6 @@
 ---
-- name: Bootstrap VPS for k3s + Hermes Agent
-  hosts: assistant
+- name: Bootstrap VPS for k3s + Zet Agent
+  hosts: zet
   become: yes
   gather_facts: no
 

@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: hermes-data-pvc
-  namespace: hermes
+  name: zet-data-pvc
+  namespace: zet
   labels:
-    app: hermes-agent
+    app: zet-agent
 spec:
   accessModes:
     - ReadWriteOnce

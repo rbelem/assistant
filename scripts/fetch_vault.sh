@@ -75,12 +75,12 @@ assert_non_empty() {
     echo "    5. MINIMAX_API_KEY             6. DISCORD_BOT_TOKEN" >&2
     echo "    7. N8N_ENCRYPTION_KEY         8. ZITADEL_MASTERKEY" >&2
     echo "    9. ZITADEL_ADMIN_PASSWORD    10. TAILSCALE_AUTHKEY" >&2
-    echo "   11. CADDY_ADMIN_PASSWORD      12. POSTGRES_PASSWORD" >&2
-    echo "   13. OPENCODE_GO_API_KEY       14. HERMES_API_SERVER_KEY" >&2
-    echo "   15. DASHBOARD_PASSWORD        16. DASHBOARD_USERNAME" >&2
-    echo "   17. DASHBOARD_SECRET          18. OPENROUTER_API_KEY" >&2
-    echo "   19. VPS_ROOT_PASSWORD         20. VPS_SUDO_PASSWORD" >&2
-    echo "   21. RESTIC_BACKUP_PASSWORD    22. DISCORD_ALLOWED_USERS" >&2
+    echo "   11. POSTGRES_PASSWORD         12. OPENCODE_GO_API_KEY" >&2
+    echo "   13. HERMES_API_SERVER_KEY     14. DASHBOARD_PASSWORD" >&2
+    echo "   15. DASHBOARD_USERNAME        16. DASHBOARD_SECRET" >&2
+    echo "   17. OPENROUTER_API_KEY        18. VPS_ROOT_PASSWORD" >&2
+    echo "   19. VPS_SUDO_PASSWORD         20. RESTIC_BACKUP_PASSWORD" >&2
+    echo "   21. DISCORD_ALLOWED_USERS" >&2
     exit 1
   fi
 }
@@ -121,9 +121,11 @@ echo "$DOMAIN_JSON" | jq -e . >/dev/null 2>&1 \
   || { echo "$SM_KEY_DOMAIN value is not valid JSON: $DOMAIN_JSON" >&2; exit 1; }
 
 DOMAIN="$(echo "$DOMAIN_JSON" | jq -r '.domain')"
+ZONE="$(echo "$DOMAIN_JSON" | jq -r '.zone')"
 SUBDOMAINS_JSON="$(echo "$DOMAIN_JSON" | jq -c '.subdomains')"
 SUBDOMAINS_CSV="$(echo "$DOMAIN_JSON" | jq -r '.subdomains | join(",")')"
 assert_non_empty "$SM_KEY_DOMAIN.domain"     "$DOMAIN"
+assert_non_empty "$SM_KEY_DOMAIN.zone"       "$ZONE"
 assert_non_empty "$SM_KEY_DOMAIN.subdomains" "$SUBDOMAINS_JSON"
 
 # Tofu Inputs (SM raw value → JSON body, optional)
@@ -173,6 +175,7 @@ tmp="$(mktemp)"
   printf 'export %s=%q\n' VPS_SSH_USER "$VPS_SSH_USER"
   printf 'export %s=%q\n' VPS_SSH_PORT "$VPS_SSH_PORT"
   printf 'export %s=%q\n' DOMAIN       "$DOMAIN"
+  printf 'export %s=%q\n' ZONE         "$ZONE"
   printf 'export %s=%q\n' SUBDOMAINS_JSON "$SUBDOMAINS_JSON"
   printf 'export %s=%q\n' SSH_PRIVATE_KEY "$SSH_PRIVATE_KEY"
 
@@ -225,8 +228,8 @@ tmp="$(mktemp)"
   printf '# Regenerate at deploy time. Pass to tofu via:\n'
   printf '#   tofu apply -var-file=.rendered/terraform.tfvars\n\n'
   printf 'domain_name = %s\n' "$(jq -Rn --arg v "$DOMAIN" '$v')"
+  printf 'zone_name   = %s\n' "$(jq -Rn --arg v "$ZONE" '$v')"
   printf 'ssh_user    = %s\n' "$(jq -Rn --arg v "$VPS_SSH_USER" '$v')"
-  printf 'vps_ip      = %s\n' "$(jq -Rn --arg v "$VPS_HOST" '$v')"
   printf 'ssh_port    = %d\n' "$VPS_SSH_PORT"
   printf 'subdomains  = %s\n' "$SUBDOMAINS_JSON"
 
@@ -257,7 +260,7 @@ tmp="$(mktemp)"
   printf 'storage_region    = %s\n' "$(jq -n --arg v "$STATE_REGION" '$v')"
   printf 'storage_endpoint  = %s\n' "$(jq -n --arg v "$STATE_ENDPOINT" '$v')"
   printf 'ssh_public_key    = %s\n' "$(jq -n --arg v "$SSH_PUBLIC_KEY" '$v')"
-  VPS_DISPLAY_NAME="$(echo "$TOFU_JSON" | jq -r '.vps_display_name // "agent"')"
+  VPS_DISPLAY_NAME="$(echo "$TOFU_JSON" | jq -r '.vps_display_name // "zet"')"
   printf 'vps_display_name  = %s\n' "$(jq -n --arg v "$VPS_DISPLAY_NAME" '$v')"
   printf 'cloudflare_api_token = %s\n' "$(jq -n --arg v "$CLOUDFLARE_API_TOKEN" '$v')"
 } > "$tmp"
@@ -270,6 +273,7 @@ chmod 600 "$TFVARS_FILE"
 
 jq -n \
   --arg domain "$DOMAIN" \
+  --arg zone "$ZONE" \
   --arg vps_host "$VPS_HOST" \
   --arg ssh_user "$VPS_SSH_USER" \
   --argjson ssh_port "$VPS_SSH_PORT" \
@@ -278,6 +282,7 @@ jq -n \
   --arg ssh_private_key "$SSH_PRIVATE_KEY" \
   '{
      domain:     $domain,
+     zone:       $zone,
      subdomains: $subdomains,
      vps_host:   $vps_host,
      ssh_user:   $ssh_user,
@@ -302,4 +307,4 @@ echo
 echo "Next steps:"
 echo "  source $ENV_FILE                       # loads VPS_HOST, DOMAIN, etc."
 echo "  tofu apply -var-file=$TFVARS_FILE      # Tofu with SM-driven inputs"
-echo "  nixos-rebuild build --flake path:\$NIX_CONFIG_DIR#agent  # Nix reads runtime-config.json"
+echo "  nixos-rebuild build --flake path:\$NIX_CONFIG_DIR#zet  # Nix reads runtime-config.json"

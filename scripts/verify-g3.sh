@@ -2,7 +2,7 @@
 # verify-g3.sh — verify VPS has no Bitwarden master password artifacts.
 #
 # Asserts that the VPS is clean of:
-#   - /etc/agent/bw_master_pw (systemd EnvironmentFile for bitw PASSWORD)
+#   - /etc/zet/bw_master_pw (systemd EnvironmentFile for bitw PASSWORD)
 #   - /root/.bw_session.sh (session helper script)
 #   - ~/.config/bitw (SM token config)
 #   - ~/.local/share/bitw (data)
@@ -111,8 +111,8 @@ check_vps() {
   fi
 }
 
-check_vps "/etc/agent/bw_master_pw does not exist" \
-  "test ! -f /etc/agent/bw_master_pw"
+check_vps "/etc/zet/bw_master_pw does not exist" \
+  "test ! -f /etc/zet/bw_master_pw"
 
 check_vps "/root/.bw_session.sh does not exist" \
   "test ! -f /root/.bw_session.sh"
@@ -142,6 +142,6 @@ else
   err "If this is a fresh VPS, run the deploy pipeline."
   err "If this is an existing VPS, manually remove the artifacts:"
   err "  ssh $SSH_USER@$VPS_IP"
-  err "  sudo rm -f /etc/agent/bw_master_pw /root/.bw_session.sh; sudo rm -rf ~/.config/bitw ~/.local/share/bitw"
+  err "  sudo rm -f /etc/zet/bw_master_pw /root/.bw_session.sh; sudo rm -rf ~/.config/bitw ~/.local/share/bitw"
   exit 1
 fi

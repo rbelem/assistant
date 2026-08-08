@@ -1,7 +1,7 @@
 # Headroom VPS Proxy Config
-# Deployed alongside Hermes Agent on k3s
+# Deployed alongside Zet Agent on k3s
 #
-# This proxy sits between Hermes and the upstream LLM API (minimax.io).
+# This proxy sits between Zet and the upstream LLM API (minimax.io).
 # All traffic is compressed before hitting the LLM, saving 60-95% of tokens.
 
 proxy:
@@ -32,7 +32,7 @@ compression:
 
 memory:
   # Cross-agent shared memory.
-  # Allows multiple agents (e.g., Hermes + a secondary agent) to share context.
+  # Allows multiple agents (e.g., Zet + a secondary agent) to share context.
   enabled: true
   store_type: sqlite   # lightweight; no external deps needed
   path: /data/headroom/memory

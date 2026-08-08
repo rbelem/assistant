@@ -204,14 +204,14 @@ setup() {
   local config_json
   config_json="$(parse_config "$BATS_TEST_DIRNAME/../scripts/rotate-secrets.conf")"
 
-  is_manual_item "$config_json" "assistant/restic-backup-password"
+  is_manual_item "$config_json" "zet/restic-backup-password"
 }
 
 @test "is_manual_item: returns 1 for auto category" {
   local config_json
   config_json="$(parse_config "$BATS_TEST_DIRNAME/../scripts/rotate-secrets.conf")"
 
-  run is_manual_item "$config_json" "assistant/zitadel-admin-password"
+  run is_manual_item "$config_json" "zet/zitadel-admin-password"
   [[ "$status" -eq 1 ]]
 }
 
@@ -221,10 +221,10 @@ setup() {
   config_json="$(parse_config "$BATS_TEST_DIRNAME/../scripts/rotate-secrets.conf")"
 
   local result
-  result="$(get_item_config "$config_json" "assistant/zitadel-admin-password")"
+  result="$(get_item_config "$config_json" "zet/zitadel-admin-password")"
 
   [[ -n "$result" ]]
-  echo "$result" | jq -e '.name == "assistant/zitadel-admin-password"' >/dev/null
+  echo "$result" | jq -e '.name == "zet/zitadel-admin-password"' >/dev/null
   echo "$result" | jq -e '.generator == "password"' >/dev/null
   echo "$result" | jq -e '.category == "auto"' >/dev/null
 }

@@ -79,9 +79,9 @@ need base64
 bws_check || exit "$EXIT_BW_UNAVAILABLE"
 
 # Resolve project ID once for this run
-BWS_PROJECT_ID="$(bws project list -o json 2>/dev/null | jq -r '.[] | select(.name == "assistant") | .id')"
+BWS_PROJECT_ID="$(bws project list -o json 2>/dev/null | jq -r '.[] | select(.name == "zet") | .id')"
 if [[ -z "$BWS_PROJECT_ID" || "$BWS_PROJECT_ID" == "null" ]]; then
-  err "bws: assistant project not found in SM"
+  err "bws: zet project not found in SM"
   exit "$EXIT_BW_UNAVAILABLE"
 fi
 
@@ -107,9 +107,9 @@ if [[ -f "$REPO_ROOT/.rendered/backend.conf" ]]; then
 fi
 
 #--- get git SHA ---------------------------------------------------------------
-ASSISTANT_REPO_SHA=""
+ZET_REPO_SHA=""
 if command -v git >/dev/null 2>&1 && git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
-  ASSISTANT_REPO_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
+  ZET_REPO_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
 fi
 
 #--- pull tofu state -----------------------------------------------------------
@@ -150,14 +150,14 @@ SNAPSHOT_ENTRY="$(jq -n \
   --argjson schema_version 1 \
   --arg timestamp_utc "$TIMESTAMP_UTC" \
   --arg backend "$BACKEND_URL" \
-  --arg assistant_repo_sha "$ASSISTANT_REPO_SHA" \
+  --arg zet_repo_sha "$ZET_REPO_SHA" \
   --arg state_b64 "$STATE_B64" \
   --argjson byte_size "$STATE_BYTE_SIZE" \
   '{
     schema_version: $schema_version,
     timestamp_utc: $timestamp_utc,
     backend: $backend,
-    assistant_repo_sha: $assistant_repo_sha,
+    zet_repo_sha: $zet_repo_sha,
     state_b64: $state_b64,
     byte_size: $byte_size
   }')"
@@ -210,7 +210,7 @@ ok "snapshot complete"
 echo
 echo "  timestamp:  $TIMESTAMP_UTC"
 echo "  backend:    ${BACKEND_URL:-<unknown>}"
-echo "  repo SHA:   ${ASSISTANT_REPO_SHA:-<unknown>}"
+echo "  repo SHA:   ${ZET_REPO_SHA:-<unknown>}"
 echo "  state size: $STATE_BYTE_SIZE bytes"
 echo "  history:    $SNAPSHOT_COUNT snapshot(s)"
 echo

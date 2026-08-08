@@ -2,11 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: headroom
-  namespace: hermes
+  namespace: zet
   labels:
     app: headroom
     app.kubernetes.io/name: headroom
-    app.kubernetes.io/part-of: ai-agent-stack
+    app.kubernetes.io/part-of: zet-stack
 spec:
   replicas: 1
   selector:

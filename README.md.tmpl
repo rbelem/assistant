@@ -30,7 +30,7 @@ Infrastructure-as-code for my personal AI agent — a self-hosted runtime on OVH
 │  │  k3s (single-node Kubernetes)                        │   │
 │  │                                                      │   │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌────────────┐  │   │
-│  │  │  Hermes      │  │  Headroom    │  │  Uptime    │  │   │
+│  │  │  Zet         │  │  Headroom    │  │  Uptime    │  │   │
 │  │  │  Agent       │  │  (proxy)     │  │  Kuma      │  │   │
 │  │  │  (AI agent)  │  │  (compressor)│  │  (monitor) │  │   │
 │  │  └──────┬───────┘  └──────┬───────┘  └────────────┘  │   │
@@ -52,7 +52,7 @@ Infrastructure-as-code for my personal AI agent — a self-hosted runtime on OVH
 | **OpenTofu** | Provision Hetzner VPS + Object Storage (state bucket) | Local machine |
 | **NixOS** | Immutable OS with k3s, Caddy, Tailscale, firewall | VPS |
 | **k3s** | Lightweight Kubernetes for service orchestration | VPS |
-| **Hermes Agent** | Self-hosted AI agent with memory, skills, multi-platform gateways | k3s |
+| **Zet Agent** | Self-hosted AI agent with memory, skills, multi-platform gateways | k3s |
 | **Headroom** | Token compression proxy (60-95% savings) | Both local + VPS |
 | **Caddy** | Reverse proxy with automatic TLS | VPS (host level) |
 | **Tailscale** | Secure overlay VPN for admin access | VPS |
@@ -118,7 +118,7 @@ ${PROJECT_NAME}/
 │       ├── deploy.yml     ***REMOVED*** Deploy workloads to k3s
 │       └── update.yml     ***REMOVED*** Rolling update workflow
 ├── k8s/               ***REMOVED*** Kubernetes manifests
-│   ├── hermes/
+│   ├── zet/
 │   │   ├── deployment.yaml
 │   │   ├── service.yaml
 │   │   ├── pvc.yaml
@@ -178,7 +178,7 @@ ssh root@$VPS_IP 'curl -sL https://raw.githubusercontent.com/elitak/nixos-infect
 ***REMOVED*** Wait for reboot, then:
 ***REMOVED*** Phase 3 — Apply NixOS config
 rsync -avz nix/ root@$VPS_IP:/etc/nixos/
-ssh root@$VPS_IP 'nixos-rebuild switch --flake /etc/nixos***REMOVED***agent'
+ssh root@$VPS_IP 'nixos-rebuild switch --flake /etc/nixos***REMOVED***zet'
 
 ***REMOVED*** Phase 4 — Render + apply secrets (workstation renders, VPS applies)
 cd ansible
@@ -188,7 +188,7 @@ ansible-playbook -i inventory/hosts.yml playbooks/secrets-apply.yml    ***REMOVE
 
 ***REMOVED*** Phase 5 — Deploy workloads
 rsync -avz k8s/ root@$VPS_IP:/opt/k8s/
-ssh root@$VPS_IP 'kubectl apply -f /opt/k8s/hermes/'
+ssh root@$VPS_IP 'kubectl apply -f /opt/k8s/zet/'
 ssh root@$VPS_IP 'kubectl apply -f /opt/k8s/headroom/'
 ssh root@$VPS_IP 'kubectl apply -f /opt/k8s/monitoring/'
 ```
@@ -206,13 +206,12 @@ Then create the required SM keys (see `ansible/vault.yml` for the full list):
 
 | SM Key | Description |
 |--------|-------------|
-| `assistant/minimax-api-key` | minimax.io API key |
-| `assistant/hermes-discord-token` | Discord bot token |
-| `assistant/tailscale-authkey` | Tailscale pre-auth key (one-time use) |
-| `assistant/caddy-admin-password` | Caddy admin endpoint password |
-| `assistant/vps-ssh-key` | SSH private key (PEM) |
-| `assistant/domain-config` | JSON: {domain, subdomains} |
-| `assistant/tofu-inputs` | JSON: vps_host, vps_ssh_user, vps_ssh_port, TF vars |
+| `zet/minimax-api-key` | minimax.io API key |
+| `zet/hermes-discord-token` | Discord bot token |
+| `zet/tailscale-authkey` | Tailscale pre-auth key (one-time use) |
+| `zet/vps-ssh-key` | SSH private key (PEM) |
+| `zet/domain-config` | JSON: {domain, subdomains} |
+| `zet/tofu-inputs` | JSON: vps_host, vps_ssh_user, vps_ssh_port, TF vars |
 
 See `ansible/vault.yml` for the full key table.
 
@@ -231,16 +230,16 @@ ansible-playbook -i inventory/hosts.yml playbooks/update.yml
 
 ***REMOVED******REMOVED******REMOVED*** Update NixOS
 ```bash
-ssh root@agent.${DOMAIN} 'nixos-rebuild switch --flake /etc/nixos***REMOVED***agent --upgrade'
+ssh root@${DOMAIN} 'nixos-rebuild switch --flake /etc/nixos***REMOVED***zet --upgrade'
 ```
 
 ***REMOVED******REMOVED******REMOVED*** View Logs
 ```bash
-***REMOVED*** Hermes
-ssh root@agent.${DOMAIN} 'kubectl logs -n hermes -l app=hermes-agent --tail=100'
+***REMOVED*** Zet
+ssh root@${DOMAIN} 'kubectl logs -n zet -l app=zet-agent --tail=100'
 
 ***REMOVED*** Headroom dashboard
-ssh root@agent.${DOMAIN} 'kubectl exec -n headroom deploy/headroom -- headroom dashboard'
+ssh root@${DOMAIN} 'kubectl exec -n zet deploy/headroom -- headroom dashboard'
 ```
 
 ***REMOVED******REMOVED******REMOVED*** Backups (DEFERRED)
@@ -279,8 +278,8 @@ See `headroom/local-setup.md` for detailed instructions including systemd servic
 This repo is standalone, but the NixOS configs can be integrated into your
 existing `nix-config` flake:
 
-1. Copy `nix/` → your `nix-config` flake under `nixos/hosts/agent/`
-2. Add to `flake.nix` as a new `nixosConfigurations.agent`
+1. Copy `nix/` → your `nix-config` flake under `nixos/hosts/zet/`
+2. Add to `flake.nix` as a new `nixosConfigurations.zet`
 3. Import shared modules from `../../common`
 
 ***REMOVED******REMOVED*** Costs
@@ -294,5 +293,5 @@ existing `nix-config` flake:
 | Domain ${DOMAIN} | Already owned | €0 |
 | **Total base** | | **~€7/month** |
 
-LLM usage costs depend on how much you use Hermes and opencode. Headroom
+LLM usage costs depend on how much you use Zet and opencode. Headroom
 reduces token costs by 60-95% on both local and VPS traffic.

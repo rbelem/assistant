@@ -5,18 +5,18 @@
 # ansible_user, ansible_port, domain, and subdomains are envsubst'd.
 all:
   hosts:
-    assistant:
+    zet:
       ansible_host: ${VPS_HOST}
       ansible_user: ${VPS_SSH_USER}
       ansible_port: ${VPS_SSH_PORT}
       ansible_python_interpreter: /usr/bin/env python3
   vars:
     namespace_list:
-      - hermes
+      - zet
       - monitoring
       - n8n
       - auth
-    vps_hostname: assistant
+    vps_hostname: zet
     domain: ${DOMAIN}
     subdomains: ${SUBDOMAINS_JSON}
     k8s_manifests_base: /opt/k8s

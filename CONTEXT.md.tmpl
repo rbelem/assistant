@@ -15,19 +15,19 @@ TLS via Caddy Let's Encrypt using **DNS-01 challenge** with Cloudflare API — w
 
 | Service | Domain | Access |
 |---------|--------|--------|
-| Hermes  | `hermes.${DOMAIN}` | Public |
+| Zet     | `hermes.${DOMAIN}` | Public |
 | Status  | `status.${DOMAIN}` | Public |
 | n8n     | `n8n.${DOMAIN}` | Tailscale-gated |
 | Zitadel | `auth.${DOMAIN}` | Tailscale-gated |
 
-***REMOVED******REMOVED*** Hermes
-Self-hosted AI agent by Nous Research. Agentic tasks: memory, skills, scheduling, multi-platform gateways. Initial gateway: **Discord only** (no Telegram, Signal, or Matrix at launch). Runs in k3s namespace `hermes`. LLM calls route through Headroom proxy via `MINIMAX_BASE_URL`. Default model: **MiniMax-M3** (`minimax/MiniMax-M3`) via minimax.io.
+***REMOVED******REMOVED*** Zet
+Self-hosted AI agent by Nous Research. Agentic tasks: memory, skills, scheduling, multi-platform gateways. Initial gateway: **Discord only** (no Telegram, Signal, or Matrix at launch). Runs in k3s namespace `zet`. LLM calls route through Headroom proxy via `MINIMAX_BASE_URL`. Default model: **MiniMax-M3** (`minimax/MiniMax-M3`) via minimax.io.
 
 ***REMOVED******REMOVED*** Headroom
-Token compression proxy for LLM calls. Runs as an internal ClusterIP-only service inside the `hermes` namespace — consumed by Hermes via `MINIMAX_BASE_URL`. No external exposure.
+Token compression proxy for LLM calls. Runs as an internal ClusterIP-only service inside the `zet` namespace — consumed by Zet via `MINIMAX_BASE_URL`. No external exposure.
 
 ***REMOVED******REMOVED*** n8n
-Self-hosted workflow automation (node-based编排, 400+ integrations). Additive to Hermes — handles external API integrations, notifications, data pipelines while Hermes handles agentic tasks. Runs in k3s namespace `n8n`. Deployed via Helm chart (managed through Helmfile). 2Gi PVC for workflow data. PostgreSQL via shared Bitnami chart (5Gi PVC, shared with Zitadel). Encryption key stored in Bitwarden Secrets Manager. Authenticated via Zitadel OIDC.
+Self-hosted workflow automation (node-based编排, 400+ integrations). Additive to Zet — handles external API integrations, notifications, data pipelines while Zet handles agentic tasks. Runs in k3s namespace `n8n`. Deployed via Helm chart (managed through Helmfile). 2Gi PVC for workflow data. PostgreSQL via shared Bitnami chart (5Gi PVC, shared with Zitadel). Encryption key stored in Bitwarden Secrets Manager. Authenticated via Zitadel OIDC.
 
 ***REMOVED******REMOVED*** Zitadel
 Identity provider (Go-based, OIDC/OAuth2, WebAuthn). Provides auth for n8n and future expansion to professional multi-user use. ~500MB total with DB. Deployed via Helmfile in k3s, namespace `auth`. Shares PostgreSQL with n8n (Bitnami chart, separate database, database created via Helm hook job). Masterkey and admin password stored in Bitwarden Secrets Manager.
@@ -36,10 +36,10 @@ Identity provider (Go-based, OIDC/OAuth2, WebAuthn). Provides auth for n8n and f
 Uptime monitoring dashboard. Runs in k3s namespace `monitoring`.
 
 ***REMOVED******REMOVED*** PostgreSQL
-Database for n8n and Zitadel (shared Bitnami Helm chart, separate databases). 5Gi PVC via local-path storage class. Hermes uses local file-based memory.
+Database for n8n and Zitadel (shared Bitnami Helm chart, separate databases). 5Gi PVC via local-path storage class. Zet uses local file-based memory.
 
 ***REMOVED******REMOVED*** Helmfile
-Declarative Helm release manager. Manages Bitnami PostgreSQL, n8n, and Zitadel Helm releases. Config in `k8s/helmfile.yaml` with values in `k8s/helm/`. Used alongside raw `kubectl apply` for non-Helm manifests (Hermes, Headroom, Uptime Kuma in `k8s/manifests/`).
+Declarative Helm release manager. Manages Bitnami PostgreSQL, n8n, and Zitadel Helm releases. Config in `k8s/helmfile.yaml` with values in `k8s/helm/`. Used alongside raw `kubectl apply` for non-Helm manifests (Zet, Headroom, Uptime Kuma in `k8s/manifests/`).
 
 ***REMOVED******REMOVED*** OCR
-Text extraction from images/PDFs using Baidu Unlimited-OCR model. Lambda Cloud dropped 2026-07-27; OCR skill stays as dead config. On-demand lifecycle was: Tofu provisions the instance, `scripts/ocr.sh` manages the full flow. Hermes can invoke via the `ocr` skill (currently non-functional).
+Text extraction from images/PDFs using Baidu Unlimited-OCR model. Lambda Cloud dropped 2026-07-27; OCR skill stays as dead config. On-demand lifecycle was: Tofu provisions the instance, `scripts/ocr.sh` manages the full flow. Zet can invoke via the `ocr` skill (currently non-functional).

@@ -21,7 +21,7 @@ metadata:
   labels:
     app: uptime-kuma
     app.kubernetes.io/name: uptime-kuma
-    app.kubernetes.io/part-of: ai-agent-stack
+    app.kubernetes.io/part-of: zet-stack
 spec:
   replicas: 1
   strategy:

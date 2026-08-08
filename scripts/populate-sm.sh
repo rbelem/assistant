@@ -12,7 +12,7 @@
 #   VPS_HOST          — current VPS public IPv4
 #   DOMAIN            — base domain (e.g. example.com)
 #   SUBDOMAINS_JSON   — JSON array (e.g. '["app","www"]')
-#   PROJECT_NAME      — project prefix (e.g. assistant)
+#   PROJECT_NAME      — project prefix (e.g. zet)
 #   TOFU_INPUTS_JSON  — JSON object with Tofu vars (plan, datacenter, etc.)
 #   SSH_PRIVATE_KEY   — SSH private key (PEM format)
 #   SSH_PUBLIC_KEY    — SSH public key (e.g. ssh-ed25519 AAAA...)
@@ -23,9 +23,9 @@
 #
 # Usage:
 #   VPS_HOST=203.0.113.42 DOMAIN=example.com \
-#     PROJECT_NAME=assistant \
+#     PROJECT_NAME=zet \
 #     SUBDOMAINS_JSON='["app","www"]' \
-#     TOFU_INPUTS_JSON='{"vps_plan_code":"KVM 4","datacenter":"gra","vps_image_id":"...","state_bucket_name":"...-tofu-state","storage_region":"gra","storage_endpoint":"https://s3.gra.io.REDACTED-OVH-DOMAIN","storage_access_key":"...","storage_secret_key":"...","ssh_public_key":"...","vps_os":"debian-12","vps_display_name":"agent"}' \
+#     TOFU_INPUTS_JSON='{"vps_plan_code":"KVM 4","datacenter":"gra","vps_image_id":"...","state_bucket_name":"...-tofu-state","storage_region":"gra","storage_endpoint":"https://s3.gra.io.REDACTED-OVH-DOMAIN","storage_access_key":"...","storage_secret_key":"...","ssh_public_key":"...","vps_os":"debian-12","vps_display_name":"zet"}' \
 #     scripts/populate-sm.sh
 #
 # After successful run: scripts/fetch_vault.sh --check  # validate schema
@@ -37,7 +37,7 @@ source "$(dirname "$0")/lib/bws.sh"
 : "${VPS_HOST:?must set VPS_HOST (VPS public IPv4)}"
 : "${DOMAIN:?must set DOMAIN (e.g. example.com)}"
 : "${SUBDOMAINS_JSON:?must set SUBDOMAINS_JSON (JSON array string)}"
-: "${PROJECT_NAME:?must set PROJECT_NAME (e.g. assistant)}"
+: "${PROJECT_NAME:?must set PROJECT_NAME (e.g. zet)}"
 : "${TOFU_INPUTS_JSON:?must set TOFU_INPUTS_JSON (JSON object)}"
 : "${SSH_PRIVATE_KEY:?must set SSH_PRIVATE_KEY (PEM format)}"
 : "${SSH_PUBLIC_KEY:?must set SSH_PUBLIC_KEY (e.g. ssh-ed25519 AAAA...)}"

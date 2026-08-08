@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# rotate-secrets.sh — credential rotation for the assistant vault
+# rotate-secrets.sh — credential rotation for the zet vault
 #
 # Rotates Bitwarden items listed in scripts/rotate-secrets.conf.
 # Auto-rotate items (stateless): zitadel-admin-password
@@ -256,11 +256,11 @@ generate_value() {
 _bws_map_sm_key() {
   local item_name="$1"
   case "$item_name" in
-    assistant/zitadel-admin-password) echo "ZITADEL_ADMIN_PASSWORD" ;;
-    assistant/n8n-encryption-key)     echo "N8N_ENCRYPTION_KEY" ;;
-    assistant/postgres-password)      echo "POSTGRES_PASSWORD" ;;
-    assistant/zitadel-masterkey)      echo "ZITADEL_MASTERKEY" ;;
-    assistant/restic-backup-password) echo "RESTIC_BACKUP_PASSWORD" ;;
+    zet/zitadel-admin-password) echo "ZITADEL_ADMIN_PASSWORD" ;;
+    zet/n8n-encryption-key)     echo "N8N_ENCRYPTION_KEY" ;;
+    zet/postgres-password)      echo "POSTGRES_PASSWORD" ;;
+    zet/zitadel-masterkey)      echo "ZITADEL_MASTERKEY" ;;
+    zet/restic-backup-password) echo "RESTIC_BACKUP_PASSWORD" ;;
     *)                                echo "" ;;
   esac
 }
@@ -278,8 +278,8 @@ _bws_sync_after_rotate() {
   [[ -z "$BWS_ACCESS_TOKEN" ]] && { err "BWS_ACCESS_TOKEN not set — SM sync for $sm_key cannot proceed"; return 1; }
 
   local pid sid
-  pid="$(bws project list -o json 2>/dev/null | jq -r '.[] | select(.name == "assistant") | .id')"
-  [[ -z "$pid" || "$pid" == "null" ]] && { warn "bws: assistant project not found — skipping SM sync for $sm_key"; return 1; }
+  pid="$(bws project list -o json 2>/dev/null | jq -r '.[] | select(.name == "zet") | .id')"
+  [[ -z "$pid" || "$pid" == "null" ]] && { warn "bws: zet project not found — skipping SM sync for $sm_key"; return 1; }
 
   sid="$(bws secret list -o json "$pid" 2>/dev/null | jq -r --arg k "$sm_key" '.[] | select(.key == $k) | .id')"
   [[ -z "$sid" || "$sid" == "null" ]] && { warn "bws: SM secret $sm_key not found — skipping"; return 1; }

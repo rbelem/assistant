@@ -18,7 +18,7 @@ Works with any OpenAI-API-compatible agent:
 - Claude Code / Claude Desktop
 - GitHub Copilot
 - Cursor
-- Hermes Agent
+- Zet Agent
 - Any custom agent using the OpenAI chat completions API
 
 ***REMOVED******REMOVED*** Deployment Modes
@@ -34,7 +34,7 @@ through it. No code changes needed — it patches the config automatically.
 
 ***REMOVED******REMOVED******REMOVED*** VPS — run as a standalone proxy
 
-Deploy the proxy alongside your agent (e.g., Hermes on k3s). Point the agent's
+Deploy the proxy alongside your agent (e.g., Zet on k3s). Point the agent's
 `base_url` to the proxy instead of the upstream LLM API.
 
 See [`local-setup.md`](local-setup.md) and [`integration-guide.md`](integration-guide.md)
@@ -72,7 +72,7 @@ headroom dashboard
 | File | Purpose |
 |---|---|
 | [`local-config.yaml`](local-config.yaml) | Proxy config for local machine (wrapping opencode) |
-| [`server-config.yaml`](server-config.yaml) | Proxy config for VPS (Hermes Agent on k3s) |
+| [`server-config.yaml`](server-config.yaml) | Proxy config for VPS (Zet Agent on k3s) |
 
 ***REMOVED******REMOVED*** Key Features
 

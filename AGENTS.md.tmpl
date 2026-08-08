@@ -2,16 +2,16 @@
 
 <!-- Subdomains are composed inline (e.g. hermes.${DOMAIN}) because envsubst does not support shell-style variable composition. -->
 
-IaC repo for a self-hosted AI agent runtime (Hermes + Headroom) on OVHcloud VPS running NixOS + k3s.
+IaC repo for a self-hosted AI agent runtime (Zet + Headroom) on OVHcloud VPS running NixOS + k3s.
 
 ***REMOVED******REMOVED*** Architecture snapshot
 
 ```
 Local: opencode → Headroom(:8787) → minimax.io
-VPS:   Caddy(host) → NodePort → k3s { Hermes Agent, Headroom proxy, Uptime Kuma, n8n, Zitadel }
+VPS:   Caddy(host) → NodePort → k3s { Zet Agent, Headroom proxy, Uptime Kuma, n8n, Zitadel }
 ```
 
-Caddy runs as a NixOS service on the host (not k8s Ingress). It proxies to k8s services **via NodePort**. Don't use ClusterIP or k8s Ingress — Caddy does TLS termination. NodePort mappings: Hermes=30080, Uptime Kuma=30001, n8n=30002, Zitadel=30003. Headroom is ClusterIP-only (internal).
+Caddy runs as a NixOS service on the host (not k8s Ingress). It proxies to k8s services **via NodePort**. Don't use ClusterIP or k8s Ingress — Caddy does TLS termination. NodePort mappings: Zet=30080, Uptime Kuma=30001, n8n=30002, Zitadel=30003. Headroom is ClusterIP-only (internal).
 
 k3s is installed with `--disable traefik --disable servicelb`. Traefik conflicts with Caddy.
 
@@ -34,13 +34,13 @@ ssh root@$VPS_IP 'curl -sL https://raw.githubusercontent.com/elitak/nixos-infect
   | NIX_CHANNEL=nixos-unstable bash'
 ```
 
-**NixOS:** NixOS config lives in the separate `nix-config` repo (`~/Workspace/github.com/rbelem/nix-config`). Deploy with `nixos-rebuild switch --flake path:$NIX_CONFIG_DIR#agent --target-host root@$VPS_IP`.
+**NixOS:** NixOS config lives in the separate `nix-config` repo (`~/Workspace/github.com/rbelem/nix-config`). Deploy with `nixos-rebuild switch --flake path:$NIX_CONFIG_DIR#zet --target-host root@$VPS_IP`.
 
 **Ansible secrets** are split into two playbooks: `secrets-render.yml` runs on the **workstation** (localhost, connection: local) and renders Bitwarden Secrets Manager keys to `.rendered/` (gitignored). `secrets-apply.yml` runs on the **VPS** and copies the pinned allowlist from `.rendered/` to the VPS. The SM access token never touches the VPS — bitw on the workstation reads SM via `bitw sm get` using a machine-account token (SM_ACCESS_TOKEN env or ~/.config/bitw/config). The VPS has no bitw binary, no SM token, no master password. Compromise of the VPS yields only rendered runtime secrets (bounded blast radius), not the SM access token (force multiplier).
 
 If the workstation is unavailable, the VPS cannot self-heal secrets. Recovery: new workstation → configure SM access token → re-render.
 
-**k8s manifests:** rsync to `/opt/k8s/` on VPS, then `kubectl apply -f /opt/k8s/manifests/hermes/` etc. Namespaces are managed by Ansible (`namespace_list` in `ansible/inventory/hosts.yml`).
+**k8s manifests:** rsync to `/opt/k8s/` on VPS, then `kubectl apply -f /opt/k8s/manifests/zet/` etc. Namespaces are managed by Ansible (`namespace_list` in `ansible/inventory/hosts.yml`).
 
 ***REMOVED******REMOVED*** Key files
 
@@ -58,23 +58,23 @@ If the workstation is unavailable, the VPS cannot self-heal secrets. Recovery: n
 | `k8s/helm/n8n-values.yaml` | n8n Helm chart values |
 | `k8s/helm/zitadel-values.yaml` | Zitadel Helm chart values |
 | `ansible/inventory/hosts.yml` | Ansible inventory with `namespace_list` (source of truth for k8s namespaces) |
-| `k8s/manifests/hermes/deployment.yaml` | Hermes: 1 replica, Recreate strategy (PVC), probes, 2CPU/4Gi limits |
-| `k8s/manifests/hermes/configmap.yaml` | Hermes config: Discord gateway, opencode-go model `deepseek-v4-flash` (fallback: openrouter), OCR skill |
-| `k8s/manifests/headroom/service.yaml` | ClusterIP in hermes namespace |
-| `k8s/manifests/hermes/service.yaml` | NodePort 30080 |
+| `k8s/manifests/zet/deployment.yaml` | Zet: 1 replica, Recreate strategy (PVC), probes, 2CPU/4Gi limits |
+| `k8s/manifests/zet/configmap.yaml` | Zet config: Discord gateway, opencode-go model `deepseek-v4-flash` (fallback: openrouter), OCR skill |
+| `k8s/manifests/headroom/service.yaml` | ClusterIP in zet namespace |
+| `k8s/manifests/zet/service.yaml` | NodePort 30080 |
 | `scripts/deploy.sh` | Phase-aware deploy pipeline. Source of truth for deploy order |
 
 ***REMOVED******REMOVED*** Secrets (Bitwarden Secrets Manager)
 
-Secrets live in Bitwarden Secrets Manager, accessed via a machine-account access token (`SM_ACCESS_TOKEN` env or `~/.config/bitw/config` key `sm_access_token`). All keys namespaced under `assistant/`. The `secrets-render.yml` playbook fetches them by key on the workstation. See `ansible/vault.yml` for the full key table. Key items: `assistant/minimax-api-key`, `assistant/hermes-discord-token`, `assistant/tailscale-authkey`, `assistant/vps-ssh-key`, `assistant/domain-config`, `assistant/tofu-inputs`.
+Secrets live in Bitwarden Secrets Manager, accessed via a machine-account access token (`SM_ACCESS_TOKEN` env or `~/.config/bitw/config` key `sm_access_token`). All keys namespaced under `zet/`. The `secrets-render.yml` playbook fetches them by key on the workstation. See `ansible/vault.yml` for the full key table. Key items: `zet/minimax-api-key`, `zet/hermes-discord-token`, `zet/tailscale-authkey`, `zet/vps-ssh-key`, `zet/domain-config`, `zet/tofu-inputs`.
 
-One item stays in the **personal vault** (not SM): `assistant/tofu-state-snapshot` — written by `scripts/snapshot-state.sh` (SM is read-only for this repo's automation).
+One item stays in the **personal vault** (not SM): `zet/tofu-state-snapshot` — written by `scripts/snapshot-state.sh` (SM is read-only for this repo's automation).
 
 ***REMOVED******REMOVED*** Operations
 
 - Status: `./scripts/deploy.sh status`
 - Update workloads: `ansible-playbook -i inventory/hosts.yml playbooks/update.yml` (does rollout restart)
-- NixOS update: `nixos-rebuild switch --flake path:$NIX_CONFIG_DIR#agent --target-host root@agent.${DOMAIN} --upgrade` (from nix-config repo)
+- NixOS update: `nixos-rebuild switch --flake path:$NIX_CONFIG_DIR#zet --target-host root@${DOMAIN} --upgrade` (from nix-config repo)
 - Destroy: `./scripts/deploy.sh destroy`
 - Verify VPS clean: `scripts/verify-g3.sh` (asserts no SM token or master password artifacts on VPS)
 
@@ -94,10 +94,10 @@ On-demand GPU OCR for images and PDFs. Lambda Cloud dropped 2026-07-27; OCR skil
 First call auto-launches the GPU instance (~2 min). Subsequent calls reuse a warm
 instance. Instance auto-terminates after 5 min idle (`--keep` to hold).
 
-***REMOVED******REMOVED******REMOVED*** Hermes integration
+***REMOVED******REMOVED******REMOVED*** Zet integration
 
-Hermes has an `ocr` skill (`skills/ocr.md`). Send a file attachment on Discord
-and say "extract text from this" — Hermes invokes the skill automatically.
+Zet has an `ocr` skill (`skills/ocr.md`). Send a file attachment on Discord
+and say "extract text from this" — Zet invokes the skill automatically.
 
 ***REMOVED******REMOVED******REMOVED*** Requirements (DEFERRED — Lambda Cloud dropped)
 
@@ -112,11 +112,11 @@ and say "extract text from this" — Hermes invokes the skill automatically.
 - **NO Longhorn or k8s Ingress** — this repo deliberately avoids them as overengineered for single-node.
 - **Don't run `tofu apply` in CI** — OVH API rate-limits aggressively.
 - **NixOS locale** uses `en_GB.UTF-8` default with `pt_BR.UTF-8` overrides for regional fields. This matches the user's nix-config convention.
-- **Headroom runs in two places**: local machine (wraps opencode via `headroom wrap opencode`) and VPS (k3s deployment that Hermes routes through).
+- **Headroom runs in two places**: local machine (wraps opencode via `headroom wrap opencode`) and VPS (k3s deployment that Zet routes through).
 - **DNS records managed via `tofu/dns.tf`** (Cloudflare provider), not `scripts/dns-sync.sh`. The script is kept for reference only. After `tofu apply`, records appear in Cloudflare dashboard — no script needed.
 - **Lambda GPU instance is NOT always running** — Lambda Cloud dropped 2026-07-27. OCR skill stays as dead config.
-- **SM access token never touches the VPS by design.** Do not re-add `/etc/agent/bw_master_pw`, a VPS-side bitw install, or an SM token to the VPS. The VPS receives only rendered runtime secrets via `secrets-apply.yml`.
+- **SM access token never touches the VPS by design.** Do not re-add `/etc/zet/bw_master_pw`, a VPS-side bitw install, or an SM token to the VPS. The VPS receives only rendered runtime secrets via `secrets-apply.yml`.
 
 ***REMOVED******REMOVED*** Deferred decisions
 
-- **Bitwarden Secrets Manager machine accounts** — resolved. The repo now uses SM machine-account access tokens for workstation-side secret rendering. No master password needed at render time. The personal vault is used only for `assistant/tofu-state-snapshot` (written by `scripts/snapshot-state.sh`).
+- **Bitwarden Secrets Manager machine accounts** — resolved. The repo now uses SM machine-account access tokens for workstation-side secret rendering. No master password needed at render time. The personal vault is used only for `zet/tofu-state-snapshot` (written by `scripts/snapshot-state.sh`).

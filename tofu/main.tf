@@ -13,8 +13,8 @@
 
 #Upload SSH key to Hetzner (Tofu-managed). Was data source lookup; tofu apply
 #now creates the key in Hetzner so no manual upload step needed.
-resource "hcloud_ssh_key" "agent" {
-  name       = "assistant-agent"
+resource "hcloud_ssh_key" "zet" {
+  name       = "zet-agent"
   public_key = var.ssh_public_key
 }
 
@@ -26,15 +26,15 @@ resource "hcloud_ssh_key" "agent" {
 #SSH key is injected inline via Hetzner's first-boot mechanism.
 #-----------------------------------------------------------------------------
 
-resource "hcloud_server" "agent" {
+resource "hcloud_server" "zet" {
   name        = var.vps_display_name
   server_type = var.hcloud_server_type
   image       = var.hcloud_image  # image name (e.g. "ubuntu-26.04") or numeric ID
   location    = var.hcloud_location
-  ssh_keys    = [hcloud_ssh_key.agent.id]
+  ssh_keys    = [hcloud_ssh_key.zet.id]
   
   labels = {
-    project = "assistant"
+    project = "zet"
     env     = "production"
   }
 
@@ -42,6 +42,19 @@ resource "hcloud_server" "agent" {
     #Prevent accidental destruction of the running server (now that initial setup is complete)
     prevent_destroy = true
   }
+}
+
+#--- Renames (no destroy/recreate) ----------------------------------------------
+#Resource identifiers renamed agent → zet during the project rename; moved
+#blocks let tofu update state in place instead of destroying the resources.
+moved {
+  from = hcloud_ssh_key.agent
+  to   = hcloud_ssh_key.zet
+}
+
+moved {
+  from = hcloud_server.agent
+  to   = hcloud_server.zet
 }
 
 #-----------------------------------------------------------------------------

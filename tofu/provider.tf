@@ -65,7 +65,7 @@ provider "aws" {
 #Hetzner Cloud Provider
 #-----------------------------------------------------------------------------
 #Manages the VPS, SSH keys, and DNS-adjacent resources via the Hetzner Cloud API.
-#Token sourced from var.hcloud_token (Bitwarden assistant/tofu-inputs).
+#Token sourced from var.hcloud_token (Bitwarden zet/tofu-inputs).
 #-----------------------------------------------------------------------------
 provider "hcloud" {
   token = var.hcloud_token

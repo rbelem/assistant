@@ -7,27 +7,27 @@
 
 output "vps_id" {
   description = "Hetzner Cloud server ID"
-  value       = hcloud_server.agent.id
+  value       = hcloud_server.zet.id
 }
 
 output "vps_name" {
   description = "Display name of the VPS"
-  value       = hcloud_server.agent.name
+  value       = hcloud_server.zet.name
 }
 
 output "vps_ip" {
   description = "Primary public IPv4 address of the VPS"
-  value       = hcloud_server.agent.ipv4_address
+  value       = hcloud_server.zet.ipv4_address
 }
 
 output "vps_ipv6" {
   description = "Primary public IPv6 address of the VPS"
-  value       = hcloud_server.agent.ipv6_address
+  value       = hcloud_server.zet.ipv6_address
 }
 
 output "vps_status" {
   description = "Current status of the VPS"
-  value       = hcloud_server.agent.status
+  value       = hcloud_server.zet.status
 }
 
 output "dns_fqdn" {
@@ -52,7 +52,7 @@ output "storage_endpoint" {
 
 output "ssh_command" {
   description = "SSH command to access the provisioned VPS"
-  value       = "ssh -p ${var.ssh_port} ${var.ssh_user}@${hcloud_server.agent.ipv4_address}"
+  value       = "ssh -p ${var.ssh_port} ${var.ssh_user}@${hcloud_server.zet.ipv4_address}"
 }
 
 # -----------------------------------------------------------------------------

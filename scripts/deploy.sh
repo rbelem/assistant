@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────
-# assistant deployment pipeline
+# zet deployment pipeline
 # ─────────────────────────────────────────────────────────────
 # Order: tofu → nixos-infect → ansible → nixos-rebuild → helmfile → kubectl
 #
@@ -56,7 +56,7 @@ err()   { echo -e "${RED}[ERR]${NC}   $*"; }
 step()  { echo; echo -e "${BLUE}═══ $* ═══${NC}"; }
 
 # === SSH key setup =============================================================
-# The SSH private key lives in Bitwarden Secrets Manager (assistant/vps-ssh-key).
+# The SSH private key lives in Bitwarden Secrets Manager (zet/vps-ssh-key).
 # fetch_vault.sh exports SSH_PRIVATE_KEY into .rendered/vault.env.
 # We write it to a temp file and load it into ssh-agent for all SSH operations.
 # Falls back to ~/.ssh/id_ed25519 if SSH_PRIVATE_KEY is empty.
@@ -160,7 +160,7 @@ phase_tofu() {
   step "1/6 — Provision VPS with OpenTofu"
   cd "$DIR"
 
-  # Skip if VPS already exists (state has hcloud_server.agent).
+  # Skip if VPS already exists (state has hcloud_server.zet).
   if "$DIR/tofu/tofu-wrapper.sh" output -raw vps_ip 2>/dev/null; then
     VPS_IP="$("$DIR/tofu/tofu-wrapper.sh" output -raw vps_ip 2>/dev/null)"
     ok "VPS already provisioned (IP: $VPS_IP). Skipping tofu init/plan/apply."
@@ -252,7 +252,7 @@ phase_nixos() {
 
   info "Building and switching NixOS configuration from $NIX_CONFIG_DIR..."
   nixos-rebuild switch \
-    --flake "path:$NIX_CONFIG_DIR#agent" \
+    --flake "path:$NIX_CONFIG_DIR#zet" \
     --target-host "$EFFECTIVE_SSH_USER@$VPS_IP" \
     --use-substitutes
 
@@ -300,7 +300,7 @@ phase_secrets_apply() {
   step "Apply rendered secrets to VPS"
   cd "$DIR/ansible"
 
-  info "Running secrets-apply playbook (hosts: assistant)..."
+  info "Running secrets-apply playbook (hosts: zet)..."
   ansible-playbook -i "$INVENTORY" "$PLAYBOOKS/secrets-apply.yml"
 
   ok "Secrets applied to VPS."
@@ -320,7 +320,7 @@ phase_snapshot() {
   else
     warn "Tofu state snapshot failed (non-fatal — SM secret may not exist yet)."
     warn "Create it in Secrets Manager (SM) with:"
-    warn "  bws secret create 'TOFU_STATE_SNAPSHOT' '{\"schema_version\":1,\"snapshots\":[]}' <assistant-project-id>"
+    warn "  bws secret create 'TOFU_STATE_SNAPSHOT' '{\"schema_version\":1,\"snapshots\":[]}' <zet-project-id>"
   fi
 }
 
@@ -375,8 +375,8 @@ phase_kubectl() {
   rsync -avz -e "ssh -i $SSH_KEY" \
     "$K8S_MANIFESTS/" "$EFFECTIVE_SSH_USER@$VPS_IP:/opt/k8s/manifests/"
 
-  info "Deploying Hermes Agent..."
-  run_ssh "kubectl apply -f /opt/k8s/manifests/hermes/"
+  info "Deploying Zet Agent..."
+  run_ssh "kubectl apply -f /opt/k8s/manifests/zet/"
 
   info "Deploying Headroom proxy..."
   run_ssh "kubectl apply -f /opt/k8s/manifests/headroom/"

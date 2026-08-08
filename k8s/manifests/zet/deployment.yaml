@@ -1,12 +1,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hermes-agent
-  namespace: hermes
+  name: zet-agent
+  namespace: zet
   labels:
-    app: hermes-agent
-    app.kubernetes.io/name: hermes-agent
-    app.kubernetes.io/part-of: ai-agent-stack
+    app: zet-agent
+    app.kubernetes.io/name: zet-agent
+    app.kubernetes.io/part-of: zet-stack
 spec:
   # Single replica — stateful agent, do not scale beyond 1
   replicas: 1
@@ -14,16 +14,16 @@ spec:
     type: Recreate # Avoid two pods fighting over the same PVC
   selector:
     matchLabels:
-      app: hermes-agent
+      app: zet-agent
   template:
     metadata:
       labels:
-        app: hermes-agent
-        app.kubernetes.io/name: hermes-agent
+        app: zet-agent
+        app.kubernetes.io/name: zet-agent
     spec:
       containers:
-        - name: hermes-agent
-          # Nous Research Hermes Agent — self-hosted AI agent (Discord gateway)
+        - name: zet-agent
+          # Upstream image nousresearch/hermes-agent:latest — self-hosted AI agent (Discord gateway)
           image: nousresearch/hermes-agent:latest
           imagePullPolicy: IfNotPresent
           args:
@@ -42,7 +42,7 @@ spec:
             # OPENROUTER_API_KEY, API_SERVER_KEY,
             # HERMES_DASHBOARD_BASIC_AUTH_USERNAME/_PASSWORD_HASH/_SECRET
             - secretRef:
-                name: hermes-secrets
+                name: zet-secrets
           env:
             - name: HERMES_HOME
               value: "/opt/data"
@@ -57,9 +57,9 @@ spec:
             - name: TZ
               value: "REDACTED-TZ"
           volumeMounts:
-            - name: hermes-data
+            - name: zet-data
               mountPath: /opt/data
-            - name: hermes-config
+            - name: zet-config
               mountPath: /opt/data/config.yaml
               subPath: config.yaml
           livenessProbe:
@@ -86,9 +86,9 @@ spec:
               cpu: "2"
               memory: 4Gi
       volumes:
-        - name: hermes-data
+        - name: zet-data
           persistentVolumeClaim:
-            claimName: hermes-data-pvc
-        - name: hermes-config
+            claimName: zet-data-pvc
+        - name: zet-config
           configMap:
-            name: hermes-config
+            name: zet-config

@@ -6,8 +6,11 @@
 ***REMOVED*** In normal use, scripts/fetch_vault.sh renders terraform.tfvars from Bitwarden.
 ***REMOVED*** ─────────────────────────────────────────────────────────────
 
-***REMOVED*** Base domain name (managed by your DNS provider)
+***REMOVED*** Project base domain (services compose as <subdomain>.<domain_name>, e.g. hermes.zet.rclb.dev)
 domain_name = "your-domain.example.com"
+
+***REMOVED*** Cloudflare zone (apex, e.g. example.com) — zone lookup + apex records
+zone_name = "example.com"
 
 ***REMOVED*** SSH connection metadata for the VPS
 ssh_user = "your-ssh-user"
@@ -20,7 +23,7 @@ vps_ip = "203.0.113.1"
 subdomains = ["app", "www"]
 
 ***REMOVED*** VPS configuration in your provider's control panel
-vps_display_name = "my-agent"
+vps_display_name = "my-zet"
 vps_plan_code    = "<your-plan-code>"
 vps_os           = "Debian 12"
 
@@ -29,7 +32,7 @@ ssh_public_key = "ssh-ed25519 AAAA..."
 vps_image_id   = "00000000-0000-0000-0000-000000000000"
 
 ***REMOVED*** S3-compatible Object Storage bucket for Tofu state (backups deferred)
-state_bucket_name  = "my-agent-tofu-state"
+state_bucket_name  = "my-zet-tofu-state"
 
 ***REMOVED*** S3-compatible Object Storage connection settings
 storage_region     = "<your-region>"

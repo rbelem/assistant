@@ -7,7 +7,7 @@ How the two deployments work, how to verify compression, and how to troubleshoot
 ```
 LOCAL MACHINE                          VPS (k3s)
 ┌─────────────┐                     ┌──────────────┐
-│  opencode   │                     │ Hermes Agent  │
+│  opencode   │                     │ Zet Agent     │
 │  (client)   │                     │  (client)     │
 └──────┬──────┘                     └──────┬────────┘
        │                                   │
@@ -45,20 +45,20 @@ opencode config show
 ***REMOVED*** The base_url should point to localhost:8787
 ```
 
-***REMOVED******REMOVED*** How Hermes Agent Uses Headroom (VPS)
+***REMOVED******REMOVED*** How Zet Agent Uses Headroom (VPS)
 
-Hermes doesn't need `headroom wrap`. Instead, configure its `base_url` directly:
+Zet doesn't need `headroom wrap`. Instead, configure its `base_url` directly:
 
 ```yaml
-***REMOVED*** In Hermes's LLM config
+***REMOVED*** In Zet's LLM config
 llm:
   base_url: http://headroom-proxy:8787   ***REMOVED*** k8s service name, or localhost if same pod
   api_key: ${MINIMAX_API_KEY}
   model: minimax/MiniMax-M3
 ```
 
-The Headroom proxy is deployed as a k8s Deployment/Service. Hermes routes through
-it automatically. No code changes to Hermes needed.
+The Headroom proxy is deployed as a k8s Deployment/Service. Zet routes through
+it automatically. No code changes to Zet needed.
 
 ***REMOVED******REMOVED*** Verify Compression Is Working
 
@@ -155,10 +155,10 @@ headroom memory reset
 headroom memory list
 ```
 
-***REMOVED******REMOVED******REMOVED*** VPS proxy not reachable from Hermes
+***REMOVED******REMOVED******REMOVED*** VPS proxy not reachable from Zet
 
 ```bash
-***REMOVED*** From the Hermes pod/container, test connectivity
+***REMOVED*** From the Zet pod/container, test connectivity
 curl http://headroom-proxy:8787/health
 
 ***REMOVED*** Check the k8s service exists and has endpoints

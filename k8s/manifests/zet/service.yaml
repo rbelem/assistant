@@ -1,17 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: hermes-service
-  namespace: hermes
+  name: zet-service
+  namespace: zet
   labels:
-    app: hermes-agent
+    app: zet-agent
 spec:
   # NodePort so host-level Caddy can proxy without k8s DNS resolution.
-  # 30080 → OpenAI-compatible API server (hermes.rclb.dev/v1/*)
-  # 30090 → web dashboard (hermes.rclb.dev/*)
+  # 30080 → OpenAI-compatible API server (hermes.zet.rclb.dev/v1/*)
+  # 30090 → web dashboard (hermes.zet.rclb.dev/*)
   type: NodePort
   selector:
-    app: hermes-agent
+    app: zet-agent
   ports:
     - name: api
       port: 8642

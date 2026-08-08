@@ -4,7 +4,7 @@ Extract text from images and PDFs using the Baidu Unlimited-OCR model deployed o
 
 ***REMOVED******REMOVED*** Invocation
 
-Ask Hermes: "ocr this image" or "extract text from this pdf" with an attachment.
+Ask Zet: "ocr this image" or "extract text from this pdf" with an attachment.
 
 ***REMOVED******REMOVED*** Supported formats
 
@@ -21,7 +21,7 @@ png, jpg, jpeg, webp, bmp, tiff, tif, pdf
 ***REMOVED******REMOVED*** CLI
 
 ```bash
-cd assistant
+cd zet
 ./scripts/ocr.sh document.pdf
 ./scripts/ocr.sh image.png --keep
 ./scripts/ocr.sh --status
