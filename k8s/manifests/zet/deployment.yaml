@@ -24,7 +24,7 @@ spec:
       containers:
         - name: zet-agent
           # Upstream image nousresearch/hermes-agent:latest — self-hosted AI agent (Discord gateway)
-          image: nousresearch/hermes-agent:latest
+          image: nousresearch/hermes-agent@sha256:5d43289c8aeb1883a27fd303021b6b90d2b9e0c45644a90b0952474d56345c28
           imagePullPolicy: IfNotPresent
           args:
             - "gateway"
@@ -55,7 +55,7 @@ spec:
             - name: HERMES_DASHBOARD_HOST
               value: "0.0.0.0"
             - name: TZ
-              value: "REDACTED-TZ"
+              value: "America/Manaus"
           volumeMounts:
             - name: zet-data
               mountPath: /opt/data

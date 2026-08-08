@@ -38,15 +38,15 @@ env:
         name: postgres-secrets
         key: postgres-password
   - name: N8N_HOST
-    value: n8n.REDACTED-DOMAIN
+    value: n8n.zet.rclb.dev
   - name: N8N_PROTOCOL
     value: https
   - name: WEBHOOK_URL
-    value: https://n8n.REDACTED-DOMAIN/
+    value: https://n8n.zet.rclb.dev/
   - name: N8N_EDITOR_BASE_URL
-    value: https://n8n.REDACTED-DOMAIN/
+    value: https://n8n.zet.rclb.dev/
   - name: GENERIC_TIMEZONE
-    value: REDACTED-TZ
+    value: America/Manaus
   - name: N8N_SECURE_COOKIE
     value: "true"
 

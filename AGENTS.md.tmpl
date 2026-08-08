@@ -42,6 +42,39 @@ If the workstation is unavailable, the VPS cannot self-heal secrets. Recovery: n
 
 **k8s manifests:** rsync to `/opt/k8s/` on VPS, then `kubectl apply -f /opt/k8s/manifests/zet/` etc. Namespaces are managed by Ansible (`namespace_list` in `ansible/inventory/hosts.yml`).
 
+***REMOVED******REMOVED*** One-time rename cutover (assistant/hermes/agent → zet) — DO NOT SKIP
+
+The stack was renamed in 2026-08: k8s namespace `hermes` → `zet`, host `agent` → `zet`,
+DNS scheme `X.rclb.dev` → `X.zet.rclb.dev` (project domain `zet.rclb.dev`, Cloudflare zone
+`rclb.dev`). The IaC is renamed; the **live cluster and DNS are not yet**. First deploy after
+this change requires a sequenced cutover — running `tofu apply` or `nixos-rebuild` alone
+breaks TLS (Caddy uses HTTP-01 and cannot issue certs for the new names until DNS resolves):
+
+1. `scripts/fetch_vault.sh` — regenerates `.rendered/` (domain=zet.rclb.dev + zone) BEFORE any infra step. Stale `.rendered/` breaks caddy.nix.
+2. `tofu apply` — destroys the 4 old `X.rclb.dev` A records and creates the 4 new `X.zet.rclb.dev` A records plus the `zet.rclb.dev` host A record. The VPS server itself is safe (moved blocks + `prevent_destroy` in `tofu/main.tf`). Apex/www/CAA/mail/TXT records are hardcoded in `dns.tf` and untouched. Review the plan output: expect exactly 4 record destroys + 5 record creates, no server changes.
+3. **Repoint Helm values to the new domain.** `k8s/helm/n8n-values.yaml` (N8N_HOST, WEBHOOK_URL, N8N_EDITOR_BASE_URL) and `k8s/helm/zitadel-values.yaml` (ExternalDomain) still carry the old domain — they are NOT .tmpl files, so deploy.sh never regenerates them. Edit both to `*.zet.rclb.dev` and run `helmfile sync` (or the deploy.sh helmfile phase) AFTER the DNS records exist, or n8n webhooks/editor and Zitadel OIDC issuer break on the new domain.
+4. `nixos-rebuild switch --flake path:$NIX_CONFIG_DIR#zet` — Caddy picks up new vhosts and issues fresh Let's Encrypt certs.
+
+Accept **5–20 min** total service downtime between step 2 and step 4: old names stop resolving the moment tofu destroys them, new names resolve but Caddy still serves old vhosts until nixos-rebuild completes, the flake must build (--use-substitutes), Caddy must restart, and new DNS records have TTL 600 seconds (resolver cache adds up to 10 min of cold resolution before the new names are usable). Zero-downtime alternative: temporarily add the new records alongside the old ones, run nixos-rebuild with dual vhosts, verify, then remove the old records (not encoded in dns.tf — manual transitional step).
+
+**PVC data migration (do before `kubectl apply` of the new manifests):** the new
+`zet-data-pvc` is a fresh volume — the agent's state (`/opt/data`: memory, skills, sessions)
+lives in the old `hermes/hermes-data-pvc`. Migrate before cutover, or the agent boots stateless:
+
+**The old hermes-agent must be scaled to 0 BEFORE applying the new zet/ manifests — two pods on the same DISCORD_BOT_TOKEN = gateway session conflict / split-brain.**
+
+```bash
+kubectl scale deployment hermes-agent -n hermes --replicas=0   # free Discord gateway + quiesce PVC writes BEFORE the new zet-agent starts (dual-bot token conflict otherwise)
+kubectl apply -f /opt/k8s/manifests/zet/pvc.yaml               # create empty zet/zet-data-pvc first
+# Copy PVC contents hermes/hermes-data-pvc → zet/zet-data-pvc (single-node k3s: host-level rsync of the
+# two local-path dirs under /var/lib/rancher/k3s/storage/ is fastest; or a temp busybox pod mounting both PVCs)
+kubectl apply -f /opt/k8s/manifests/zet/                       # zet-agent starts with migrated data
+# validate agent boots with memory/skills/sessions intact
+kubectl delete ns hermes                                       # only after validation
+```
+
+Alternatively relax the DNS cutover by adding new records before removing old ones.
+
 ***REMOVED******REMOVED*** Key files
 
 | Path | Purpose |

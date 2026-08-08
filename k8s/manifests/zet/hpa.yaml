@@ -1,6 +1,6 @@
 # Optional HorizontalPodAutoscaler for Zet Agent
 # NOTE: Zet is stateful — scaling beyond 1 replica requires shared storage
-# and careful handling of memory/skills directories. Keep min=max=1 for now.
+# This manifest is disabled for now — do not apply (stateful single-replica, shared PVC).
 # This manifest is prepared for future use if stateless mode is supported.
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -15,7 +15,7 @@ spec:
     kind: Deployment
     name: zet-agent
   minReplicas: 1
-  maxReplicas: 2
+  maxReplicas: 1
   metrics:
     - type: Resource
       resource:

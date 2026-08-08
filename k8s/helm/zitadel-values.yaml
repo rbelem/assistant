@@ -2,7 +2,7 @@ replicaCount: 1
 
 zitadel:
   configmapConfig:
-    ExternalDomain: auth.REDACTED-DOMAIN
+    ExternalDomain: auth.zet.rclb.dev
     ExternalSecure: true
     TLS:
       Enabled: false  # Caddy handles TLS
